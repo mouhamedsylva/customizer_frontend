@@ -1,0 +1,28 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Configurateur Theme",
+    "theme_version": "1.0.0",
+    "theme_author": "Custom",
+    "theme_documentation_url": "https://github.com/customizer",
+    "theme_support_url": "https://github.com/customizer/issues"
+  },
+  {
+    "name": "API Configuration",
+    "settings": [
+      {
+        "type": "text",
+        "id": "api_endpoint",
+        "label": "API Endpoint",
+        "default": "http://localhost:3000/api",
+        "info": "URL de votre backend API (ex: https://mon-api.herokuapp.com/api)"
+      },
+      {
+        "type": "text",
+        "id": "api_key",
+        "label": "API Key",
+        "info": "Clé API pour l'authentification backend"
+      }
+    ]
+  }
+]

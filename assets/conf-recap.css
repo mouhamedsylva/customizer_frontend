@@ -1,0 +1,804 @@
+/**
+ * Styles pour le panneau récapitulatif (sidebar droite)
+ * Affiche le résumé du produit, prix, quantité et actions
+ */
+
+/* ============================================
+   RÉCAPITULATIF - Container principal
+   ============================================ */
+
+.conf-recap {
+  width: 380px;
+  background: #ffffff;
+  border-left: 1px solid #e5e5e5;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.conf-recap-header {
+  padding: 24px 20px;
+  border-bottom: 2px solid #e5e5e5;
+  background: #fafafa;
+}
+
+.conf-recap-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #1a1a1a;
+  text-transform: uppercase;
+}
+
+.conf-recap-content {
+  padding: 24px 20px;
+  flex: 1;
+}
+
+/* ============================================
+   APERÇU PRODUIT
+   ============================================ */
+
+.conf-recap-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f8f8f8;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  border: 1px solid #e5e5e5;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conf-recap-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 16px;
+}
+
+.conf-recap-preview::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(0,0,0,0.03), transparent);
+  pointer-events: none;
+}
+
+/* Badge sur l'aperçu */
+.conf-recap-preview-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #2c5aa0;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   DÉTAILS PRODUIT
+   ============================================ */
+
+.conf-recap-details {
+  margin-bottom: 24px;
+}
+
+.conf-recap-product-info h4 {
+  font-size: 20px;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+
+.conf-recap-specs {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.conf-recap-specs p {
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.conf-recap-specs strong {
+  color: #333;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+/* ============================================
+   PERSONNALISATIONS
+   ============================================ */
+
+.conf-recap-customizations {
+  margin-bottom: 24px;
+  padding: 18px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%);
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+}
+
+.conf-recap-customizations h5 {
+  font-size: 13px;
+  margin: 0 0 14px 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #495057;
+}
+
+.conf-recap-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.conf-recap-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.conf-recap-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.conf-recap-list li span:first-child {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.conf-recap-list li span:last-child {
+  color: #212529;
+  font-weight: 600;
+}
+
+/* Liste vide */
+.conf-recap-list-empty {
+  text-align: center;
+  padding: 20px;
+  color: #adb5bd;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ============================================
+   QUANTITÉ
+   ============================================ */
+
+.conf-recap-quantity {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+}
+
+.conf-recap-quantity > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+  color: #495057;
+  text-transform: uppercase;
+}
+
+.conf-quantity-note {
+  font-size: 12px;
+  color: #6c757d;
+  margin: 0 0 12px 0;
+}
+
+.conf-quantity-note span {
+  font-weight: 600;
+  color: #2c5aa0;
+}
+
+.conf-quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.conf-qty-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid #dee2e6;
+  background: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #495057;
+}
+
+.conf-qty-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #2c5aa0;
+  color: #2c5aa0;
+  transform: scale(1.05);
+}
+
+.conf-qty-btn:active {
+  transform: scale(0.95);
+}
+
+.conf-qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.conf-qty-input {
+  flex: 1;
+  height: 44px;
+  text-align: center;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #212529;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.conf-qty-input:focus {
+  outline: none;
+  border-color: #2c5aa0;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+
+/* ============================================
+   PRICING
+   ============================================ */
+
+.conf-recap-pricing {
+  margin: 28px 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 2px solid #dee2e6;
+}
+
+.conf-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.conf-price-row span {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.conf-price-row strong {
+  color: #212529;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.conf-price-discount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #d1f4e0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0f5132;
+}
+
+.conf-price-discount strong {
+  font-weight: 700;
+}
+
+.conf-price-total {
+  padding-top: 16px;
+  border-top: 2px solid #adb5bd;
+  margin-bottom: 12px;
+  margin-top: 16px;
+}
+
+.conf-price-total span {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.conf-total-prices {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.conf-price-ht {
+  font-size: 18px !important;
+  color: #495057 !important;
+}
+
+.conf-price-label {
+  font-size: 11px;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.conf-price-ttc {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.conf-price-ttc-value {
+  font-size: 36px;
+  font-weight: 800;
+  color: #2c5aa0;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.conf-price-ttc-label {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Animation prix update */
+@keyframes priceUpdate {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.conf-price-ttc-value.updating {
+  animation: priceUpdate 0.3s ease;
+}
+
+/* ============================================
+   ACTIONS
+   ============================================ */
+
+.conf-recap-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.conf-btn-full {
+  width: 100%;
+  justify-content: center;
+  padding: 16px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.conf-btn-primary {
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.2);
+}
+
+.conf-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(44, 90, 160, 0.3);
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+}
+
+.conf-btn-primary:active {
+  transform: translateY(0);
+}
+
+.conf-btn-secondary {
+  background: white;
+  color: #2c5aa0;
+  border: 2px solid #2c5aa0;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.conf-btn-secondary:hover {
+  background: #f0f4ff;
+  transform: translateY(-1px);
+}
+
+/* États des boutons */
+.conf-btn-primary:disabled,
+.conf-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.conf-btn-primary.loading,
+.conf-btn-secondary.loading {
+  position: relative;
+  color: transparent;
+}
+
+.conf-btn-primary.loading::after,
+.conf-btn-secondary.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ============================================
+   INFORMATIONS COMPLÉMENTAIRES
+   ============================================ */
+
+.conf-recap-info {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid #e9ecef;
+}
+
+.conf-info-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.conf-info-item svg {
+  flex-shrink: 0;
+  color: #2c5aa0;
+  margin-top: 2px;
+}
+
+.conf-info-item strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #212529;
+  font-weight: 600;
+}
+
+.conf-info-item p {
+  font-size: 12px;
+  color: #6c757d;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ============================================
+   NOTE DE BAS & PAIEMENT
+   ============================================ */
+
+.conf-recap-note {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1px solid #dee2e6;
+}
+
+.conf-recap-note p {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #495057;
+}
+
+.conf-recap-note strong {
+  font-weight: 700;
+  color: #212529;
+}
+
+.conf-payment-methods {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.conf-payment-methods img {
+  height: 28px;
+  width: auto;
+  filter: grayscale(100%);
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.conf-payment-methods img:hover {
+  filter: grayscale(0%);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .conf-recap {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    position: relative;
+  }
+}
+
+@media (max-width: 768px) {
+  .conf-recap {
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    border-top: 2px solid #e5e5e5;
+  }
+  
+  .conf-recap-content {
+    padding: 20px 16px;
+  }
+  
+  .conf-recap-preview {
+    aspect-ratio: 4/3;
+  }
+  
+  .conf-price-ttc-value {
+    font-size: 28px;
+  }
+  
+  .conf-btn-full {
+    padding: 14px 20px;
+    font-size: 14px;
+  }
+  
+  .conf-recap-info {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .conf-recap-header {
+    padding: 16px;
+  }
+  
+  .conf-recap-content {
+    padding: 16px 12px;
+  }
+  
+  .conf-quantity-selector {
+    gap: 8px;
+  }
+  
+  .conf-qty-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .conf-qty-input {
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .conf-price-ttc-value {
+    font-size: 24px;
+  }
+}
+
+/* ============================================
+   DARK MODE (optionnel)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .conf-recap {
+    background: #1a1a1a;
+    border-left-color: #333;
+  }
+  
+  .conf-recap-header {
+    background: #222;
+    border-bottom-color: #333;
+  }
+  
+  .conf-recap-header h3 {
+    color: #fff;
+  }
+  
+  .conf-recap-preview {
+    background: #222;
+    border-color: #333;
+  }
+  
+  .conf-recap-product-info h4 {
+    color: #fff;
+  }
+  
+  .conf-recap-customizations {
+    background: #222;
+    border-color: #333;
+  }
+  
+  .conf-price-ttc-value {
+    color: #5b8dd6;
+  }
+  
+  /* À compléter selon besoins */
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.conf-recap-content > * {
+  animation: fadeInUp 0.4s ease backwards;
+}
+
+.conf-recap-preview { animation-delay: 0.1s; }
+.conf-recap-details { animation-delay: 0.15s; }
+.conf-recap-customizations { animation-delay: 0.2s; }
+.conf-recap-quantity { animation-delay: 0.25s; }
+.conf-recap-pricing { animation-delay: 0.3s; }
+.conf-recap-actions { animation-delay: 0.35s; }
+
+/* ============================================
+   UTILITAIRES
+   ============================================ */
+
+.conf-recap .conf-hidden {
+  display: none !important;
+}
+
+.conf-recap .conf-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.conf-recap .conf-error {
+  border-color: #dc2626 !important;
+  background: #fef2f2 !important;
+}
+
+.conf-recap .conf-success {
+  border-color: #22c55e !important;
+  background: #d1f4e0 !important;
+}
+
+/* Scrollbar personnalisée */
+.conf-recap::-webkit-scrollbar {
+  width: 8px;
+}
+
+.conf-recap::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.conf-recap::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.conf-recap::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ============================================
+   NOTIFICATIONS
+   ============================================ */
+
+.conf-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  opacity: 0;
+  transform: translateX(400px);
+  transition: all 0.3s ease;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.conf-notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.conf-notification-success {
+  border-left: 4px solid #22c55e;
+  color: #065f46;
+}
+
+.conf-notification-success svg {
+  color: #22c55e;
+}
+
+.conf-notification-error {
+  border-left: 4px solid #dc2626;
+  color: #991b1b;
+}
+
+.conf-notification-error svg {
+  color: #dc2626;
+}
+
+.conf-notification span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .conf-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    min-width: auto;
+  }
+}

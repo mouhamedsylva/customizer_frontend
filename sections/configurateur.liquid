@@ -1,0 +1,1158 @@
+  {% layout none %}
+  <!DOCTYPE html>
+  <html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurateur Custom Textile</title>
+    {{ 'configurateur.css' | asset_url | stylesheet_tag }}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #1a1a1a;
+      --white: #ffffff;
+      --border: #e5e5e5;
+      --bg-light: #f8f8f8;
+      --muted: #666;
+      --faint: #999;
+      --blue: #2c5aa0;
+      --r: 7px;
+      --header-h: 58px;
+      --typebar-h: 90px;
+      --sidebar-w: 268px;
+      --recap-w: 252px;
+    }
+
+    .conf-app-root {
+      height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--black);
+      background: var(--white);
+      font-size: 12px;
+      display: grid;
+      grid-template-columns: 1fr var(--recap-w);
+      grid-template-rows: var(--header-h) var(--typebar-h) 1fr;
+      grid-template-areas:
+        "header  header"
+        "typebar typebar"
+        "main    recap";
+    }
+
+    /* ══ HEADER ══ */
+    .hdr {
+      display: flex;
+      align-items: center;
+      height: var(--header-h);
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+      flex-shrink: 0;
+      gap: 12px;
+      position: relative;
+      z-index: 10;
+      grid-area: header;
+      border-right: 1px solid var(--border);
+    }
+    .hdr-brand {
+      display: flex; align-items: center; gap: 10px;
+      min-width: 190px;
+    }
+    .hdr-icon {
+      width: 34px; height: 34px;
+      background: var(--black); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 17px; flex-shrink: 0;
+    }
+    .hdr-name { font-size: 13px; font-weight: 700; letter-spacing: .4px; line-height: 1.1; }
+    .hdr-sub  { font-size: 10px; color: var(--muted); }
+    .hdr-steps {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .step { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+    .step-n {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; background: var(--white);
+    }
+    .step.on .step-n { background: var(--black); border-color: var(--black); color: #fff; }
+    .step.on .step-lbl { color: var(--black); font-weight: 600; }
+    .step-line { width: 36px; height: 1px; background: var(--border); }
+    .hdr-btns { display: flex; gap: 8px; min-width: 190px; justify-content: flex-end; }
+    .obtn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 13px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--white); font-size: 12px; font-weight: 500;
+      cursor: pointer; color: var(--black); transition: border-color .15s;
+    }
+    .obtn:hover { border-color: var(--black); }
+
+    /* ══ BODY ══ */
+    .app {
+      display: flex;
+      height: 100%;
+      overflow: hidden;
+      grid-area: main;
+    }
+
+    /* ══ SIDEBAR ══ */
+    .sidebar {
+      width: var(--sidebar-w);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    /* inner scroll only if needed but designed to NOT need it */
+    .sb-inner {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .sb-inner::-webkit-scrollbar { width: 3px; }
+    .sb-inner::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+    .sec {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sec-title {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      margin-bottom: 2px; color: var(--black);
+    }
+    .sec-sub {
+      font-size: 10px; color: var(--faint); margin-bottom: 8px;
+    }
+
+    /* Product type grid */
+    .pg {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .pc {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 7px;
+      border: 2px solid var(--border); border-radius: 6px;
+      cursor: pointer; transition: all .15s;
+      font-size: 9px; font-weight: 600; color: var(--black);
+      text-align: center; line-height: 1.2; gap: 4px;
+      position: relative; background: var(--white);
+    }
+    .pc:hover { border-color: #999; }
+    .pc.on { background: var(--black); border-color: var(--black); color: #fff; }
+    .pc.on .pc-ico { background: rgba(255,255,255,.15); }
+    .pc-ico {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg-light);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pc-ico svg { width: 18px; height: 18px; }
+    .ck {
+      position: absolute; top: 3px; right: 3px;
+      width: 14px; height: 14px; background: var(--white);
+      border-radius: 50%; display: none; align-items: center;
+      justify-content: center; font-size: 8px; color: var(--black); font-weight: 900;
+    }
+    .pc.on .ck { display: flex; }
+
+    /* Color grid */
+    .cg {
+      display: flex;
+      flex-wrap: wrap;
+      row-gap: 4px;
+    }
+    .cg-row {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+    }
+    .cs {
+      width: 18px; height: 18px; border-radius: 4px;
+      cursor: pointer; border: 2px solid transparent;
+      transition: transform .13s;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .cs:hover { transform: scale(1.12); }
+    .cs.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--black); }
+    .cs.on::after {
+      content: '✓'; position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 9px; font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0,0,0,.6);
+    }
+
+    /* Size */
+    .sg { display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; }
+    .sb {
+      padding: 3px 8px;
+      border: 1.5px solid var(--border); border-radius: 4px;
+      font-size: 10px; font-weight: 600; cursor: pointer;
+      background: var(--white); color: var(--black); transition: all .13s;
+      min-width: 26px; text-align: center;
+    }
+    .sb:hover { border-color: var(--black); }
+    .sb.on { background: var(--black); border-color: var(--black); color: #fff; }
+    .sgd { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--muted); margin-top: 5px; cursor: pointer; text-decoration: underline; }
+
+    /* Upload */
+    .uz {
+      border: 2px dashed var(--border); border-radius: 6px;
+      padding: 7px 8px; text-align: center; cursor: pointer;
+      background: #fafafa; transition: all .15s;
+      display: flex; align-items: center; gap: 8px;
+      justify-content: center;
+    }
+    .uz:hover { border-color: #999; background: #f3f3f3; }
+    .uz-ico {
+      width: 22px; height: 22px; background: #eee; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .uz p { font-size: 9px; color: var(--muted); line-height: 1.3; text-align: left; }
+    .uz strong { color: var(--muted); }
+
+    .uprev {
+      display: none; margin-top: 4px;
+      border: 1px solid var(--border); border-radius: 5px;
+      padding: 4px 6px; position: relative;
+      background: #fafafa;
+    }
+    .uprev img { width: 100%; height: 32px; object-fit: contain; display: block; }
+    .uprev-lbl {
+      display: none; align-items: center; justify-content: space-between;
+      margin-top: 2px; font-size: 9px; color: var(--muted);
+    }
+    .rmv { color: #e33; font-size: 10px; cursor: pointer; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 2px; }
+
+    /* Sleeve grid */
+    .slvg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .slvg label { font-size: 9px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px; }
+
+    /* Info note */
+    .note {
+      display: flex; gap: 6px; background: #f5f5f5;
+      border-radius: 5px; padding: 7px 8px;
+      margin-top: 6px; font-size: 10px; color: var(--muted); line-height: 1.4;
+      align-items: flex-start;
+    }
+    .note svg { flex-shrink: 0; margin-top: 1px; }
+
+    /* ══ CANVAS ══ */
+    .canvas {
+      flex: 1;
+      display: flex; flex-direction: column;
+      background: var(--white);
+      padding: 16px 20px 0;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .cv-hdr { margin-bottom: 8px; flex-shrink: 0; }
+    .cv-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+    .cv-sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .vtabs { display: flex; gap: 6px; }
+    .vt {
+      padding: 6px 14px; border: 1px solid var(--border);
+      border-radius: 5px; background: #fff; font-size: 12px;
+      font-weight: 500; cursor: pointer; color: var(--black); transition: all .13s;
+    }
+    .vt.on { background: var(--black); border-color: var(--black); color: #fff; }
+
+    .cv-wrap {
+      flex: 1;
+      background: var(--white);
+      border-radius: 0;
+      box-shadow: none;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .cv-view {
+      display: none;
+      align-items: center; justify-content: center;
+      gap: 16px; height: 100%; width: 100%;
+      padding: 16px 32px 60px;
+    }
+    .cv-view.on { display: flex; }
+
+    .pslot {
+      flex: 1; max-width: 260px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .pslot img.product-img {
+      max-width: 100%; max-height: 280px;
+      object-fit: contain; display: block;
+      transition: filter .3s;
+    }
+    .pslot svg.product-svg {
+      max-width: 100%; max-height: 280px;
+    }
+
+    /* measurement label */
+    .mlbl {
+      position: absolute; left: -36px; top: 35%;
+      display: flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700;
+    }
+    .mline {
+      width: 1px; height: 50px; background: var(--black);
+      position: relative;
+    }
+    .mline::before, .mline::after {
+      content: ''; position: absolute; left: -3px;
+      width: 7px; height: 1px; background: var(--black);
+    }
+    .mline::before { top: 0; }
+    .mline::after { bottom: 0; }
+    .mlbl-r { left: auto; right: -36px; }
+
+    /* Controls */
+    .cv-ctrl {
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.95);
+      border: 1px solid var(--border); border-radius: 40px;
+      padding: 6px 16px; box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      backdrop-filter: blur(8px);
+    }
+    .cbtn {
+      width: 28px; height: 28px; border: none; background: none;
+      cursor: pointer; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .13s; color: var(--black);
+    }
+    .cbtn:hover { background: var(--bg-light); }
+    .zlvl { font-size: 12px; font-weight: 600; min-width: 40px; text-align: center; }
+    .cdiv { width: 1px; height: 18px; background: var(--border); }
+
+    /* Info bar */
+    .cv-info {
+      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 5px;
+      background: transparent; border: none;
+      padding: 0;
+      font-size: 10px; color: var(--faint);
+      white-space: nowrap;
+    }
+
+    /* ══ RECAP ══ */
+    .recap {
+      width: var(--recap-w);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden; flex-shrink: 0;
+      grid-area: recap;
+    }
+    .recap::-webkit-scrollbar { width: 3px; }
+    .rp-hdr {
+      padding: 12px 16px 10px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .6px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .rp-items { flex: 1; overflow-y: auto; }
+    .rp-items::-webkit-scrollbar { width: 3px; }
+    .rp-items::-webkit-scrollbar-thumb { background: #ddd; }
+
+    .ri {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+    }
+    .ri-thumb {
+      width: 40px; height: 40px; border-radius: 5px;
+      background: var(--bg-light); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .ri-thumb img { width: 100%; height: 100%; object-fit: contain; }
+    .ri-info { flex: 1; min-width: 0; }
+    .ri-name { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+    .ri-det  { font-size: 10px; color: var(--muted); }
+    .ri-ok   { font-size: 10px; color: #16a34a; font-weight: 600; }
+
+    .rp-price {
+      padding: 14px 16px 16px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .rp-plbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .rp-pval { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+    .rp-pvat { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+    .rp-acts {
+      padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+    }
+    .btn-cart {
+      width: 100%; padding: 11px;
+      background: var(--black); color: #fff;
+      border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 700;
+      cursor: pointer; letter-spacing: .3px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background .2s;
+    }
+    .btn-cart:hover { background: #333; }
+    .btn-save {
+      width: 100%; padding: 9px;
+      background: #fff; color: var(--black);
+      border: 1.5px solid var(--border); border-radius: 6px;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: border-color .15s;
+    }
+    .btn-save:hover { border-color: var(--black); }
+
+    .rp-trust {
+      padding: 10px 16px 24px;
+      display: flex; flex-direction: column; gap: 8px;
+      border-top: 1px solid var(--border); margin-top: auto;
+    }
+    .ti { display: flex; align-items: center; gap: 8px; }
+    .ti-ico {
+      width: 28px; height: 28px; background: var(--bg-light);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ti-txt { font-size: 11px; font-weight: 600; line-height: 1; }
+    .ti-txt span { display: block; font-size: 10px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+
+    /* ══ SHOPIFY COMPAT: Reset thème parent ══ */
+    .conf-app-root *,
+    .conf-app-root *::before,
+    .conf-app-root *::after {
+      box-sizing: border-box;
+    }
+    /* Annule le padding/margin du main Shopify si présent */
+    .conf-app-root {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+    }
+    /* Sidebar scroll invisible mais fonctionnel */
+    .sb-inner { scrollbar-width: thin; scrollbar-color: #ddd transparent; }
+    /* Canvas occupe tout l'espace disponible */
+    .cv-wrap { flex: 1 1 0; min-height: 0; }
+    /* Recap: pas de scroll horizontal */
+    .recap { overflow-x: hidden; }
+    /* Assure que les hoodies SVG s'adaptent */
+    .product-svg { width: 100%; height: auto; }
+
+
+    /* ══ TYPE BAR ══ */
+    .type-bar {
+      height: var(--typebar-h);
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      flex-shrink: 0;
+      grid-area: typebar;
+      border-right: 1px solid var(--border);
+    }
+    .type-bar-inner {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+    }
+    .type-bar-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      min-width: 160px;
+    }
+    .type-bar-num {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--black);
+    }
+    .type-bar-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      line-height: 1.2;
+    }
+    .type-bar-sub {
+      font-size: 10px;
+      color: var(--faint);
+      margin-top: 1px;
+    }
+    .type-bar-cards {
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+    .type-bar-cards::-webkit-scrollbar { display: none; }
+
+    /* Product type card — vertical layout with image */
+    .pt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px 5px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--black);
+      background: var(--white);
+      white-space: nowrap;
+      position: relative;
+      flex-shrink: 0;
+      min-width: 72px;
+    }
+    .pt:hover { border-color: #999; background: var(--bg-light); }
+    .pt.on {
+      background: var(--black);
+      border-color: var(--black);
+      color: #fff;
+    }
+    .pt.on .pt-ico svg { color: #fff; fill: #fff; }
+    .pt.on .pt-img { filter: invert(1) brightness(2); }
+    .pt-ico {
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .pt-img {
+      width: 38px; height: 38px;
+      object-fit: contain;
+      display: block;
+    }
+    .pt-ck {
+      position: absolute; top: 3px; right: 4px;
+      font-size: 8px; font-weight: 900;
+      color: var(--white); display: none;
+    }
+    .pt.on .pt-ck { display: block; }
+
+
+  </style>
+  </head>
+  <body>
+  <div class="conf-app-root">
+
+  <!-- ══ HEADER ══ -->
+  <header class="hdr">
+    <div class="hdr-brand">
+      <div class="hdr-icon">👕</div>
+      <div>
+        <div class="hdr-name">CUSTOM TEXTILE</div>
+        <div class="hdr-sub">Créez votre style</div>
+      </div>
+    </div>
+
+    <div class="hdr-steps">
+      <div class="step on">
+        <div class="step-n">1</div>
+        <span class="step-lbl">Personnalisation</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step">
+        <div class="step-n">2</div>
+        <span class="step-lbl">Récapitulatif</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step">
+        <div class="step-n">3</div>
+        <span class="step-lbl">Commande</span>
+      </div>
+    </div>
+
+    <div class="hdr-btns">
+      <button class="obtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+        Partager
+      </button>
+      <button class="obtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        Réinitialiser
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ TYPE BAR ══ -->
+  <div class="type-bar">
+    <div class="type-bar-inner">
+      <div class="type-bar-label">
+        <div class="type-bar-num">1.</div>
+        <div>
+          <div class="type-bar-title">Type de produit</div>
+          <div class="type-bar-sub">Choisissez le type</div>
+        </div>
+      </div>
+      <div class="type-bar-cards">
+
+        <div class="pt on" onclick="selProd(this)">
+          <span class="pt-ck">✓</span>
+          <div class="pt-ico">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M16 5v2h-3V3H11v4H8V5L3 8v3h2v9h14V11h2V8l-5-3z"/></svg>
+          </div>
+          <span>Sweatshirt</span>
+        </div>
+
+        <div class="pt" onclick="selProd(this)">
+          <span class="pt-ck">✓</span>
+          <div class="pt-ico">
+            <svg viewBox="0 0 36 36" width="34" height="34" fill="currentColor">
+              <path d="M13 2 L8 6 L2 8 L4 14 L8 13 L8 34 L28 34 L28 13 L32 14 L34 8 L28 6 L23 2 L20 5 L18 3 L16 5 Z"/>
+            </svg>
+          </div>
+          <span>T-shirt coton</span>
+        </div>
+
+        <div class="pt" onclick="selProd(this)">
+          <span class="pt-ck">✓</span>
+          <div class="pt-ico">
+            <svg viewBox="0 0 36 36" width="34" height="34" fill="currentColor">
+              <path d="M13 2 L8 5 L2 8 L4 14 L8 13 L8 34 L28 34 L28 13 L32 14 L34 8 L28 5 L23 2 L20 4 L18 2 L16 4 Z"/>
+            </svg>
+          </div>
+          <span>T-shirt polyester</span>
+        </div>
+
+        <div class="pt" onclick="selProd(this)">
+          <span class="pt-ck">✓</span>
+          <div class="pt-ico">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="4"/></svg>
+          </div>
+          <span>Coins</span>
+        </div>
+
+        <div class="pt" onclick="selProd(this)">
+          <span class="pt-ck">✓</span>
+          <div class="pt-ico">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+          </div>
+          <span>Drapeaux</span>
+        </div>
+
+        <div class="pt" onclick="selProd(this)">
+          <span class="pt-ck">✓</span>
+          <div class="pt-ico">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/></svg>
+          </div>
+          <span>Patchs</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ APP ══ -->
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sb-inner">
+
+  <!-- 2. Couleur -->
+        <div class="sec">
+          <div class="sec-title">2. Couleur</div>
+          <div class="sec-sub">Choisissez la couleur de votre article</div>
+          <div class="cg">
+            <div class="cg-row">
+              <div class="cs on" style="background:#1a1a1a" title="Noir" onclick="selColor(this,'#1a1a1a','Noir')"></div>
+              <div class="cs" style="background:#f5f2ed;border:1.5px solid #ddd" title="Blanc cassé" onclick="selColor(this,'#f5f2ed','Blanc cassé')"></div>
+              <div class="cs" style="background:#9e9e9e" title="Gris" onclick="selColor(this,'#9e9e9e','Gris')"></div>
+              <div class="cs" style="background:#555555" title="Gris foncé" onclick="selColor(this,'#555555','Gris foncé')"></div>
+              <div class="cs" style="background:#607d8b" title="Gris ardoise" onclick="selColor(this,'#607d8b','Gris ardoise')"></div>
+            </div>
+            <div class="cg-row">
+              <div class="cs" style="background:#1e3a5f" title="Bleu marine" onclick="selColor(this,'#1e3a5f','Bleu marine')"></div>
+              <div class="cs" style="background:#5bb8e8" title="Bleu ciel" onclick="selColor(this,'#5bb8e8','Bleu ciel')"></div>
+              <div class="cs" style="background:#2e6b45" title="Vert foncé" onclick="selColor(this,'#2e6b45','Vert foncé')"></div>
+              <div class="cs" style="background:#f0c8d8;border:1.5px solid #e0afc4" title="Rose clair" onclick="selColor(this,'#f0c8d8','Rose clair')"></div>
+              <div class="cs" style="background:#e8729a" title="Rose" onclick="selColor(this,'#e8729a','Rose')"></div>
+            </div>
+            <div class="cg-row">
+              <div class="cs" style="background:#c0392b" title="Rouge" onclick="selColor(this,'#c0392b','Rouge')"></div>
+              <div class="cs" style="background:#e8842a" title="Orange" onclick="selColor(this,'#e8842a','Orange')"></div>
+              <div class="cs" style="background:#f5c842;border:1.5px solid #d4aa20" title="Jaune" onclick="selColor(this,'#f5c842','Jaune')"></div>
+              <div class="cs" style="background:#9b6bb5" title="Violet" onclick="selColor(this,'#9b6bb5','Violet')"></div>
+              <div class="cs" style="background:#7d4e2d" title="Marron" onclick="selColor(this,'#7d4e2d','Marron')"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Taille -->
+        <div class="sec">
+          <div class="sec-title">3. Taille</div>
+          <div class="sec-sub">Choisissez la taille</div>
+          <div class="sg">
+            <button class="sb" onclick="selSize(this)">XS</button>
+            <button class="sb" onclick="selSize(this)">S</button>
+            <button class="sb on" onclick="selSize(this)">M</button>
+            <button class="sb" onclick="selSize(this)">L</button>
+            <button class="sb" onclick="selSize(this)">XL</button>
+            <button class="sb" onclick="selSize(this)">XXL</button>
+          </div>
+          <a class="sgd" href="#">📏 Guide des tailles</a>
+        </div>
+
+        <!-- 4. Logo cœur -->
+        <div class="sec">
+          <div class="sec-title">4. Logo Cœur</div>
+          <div class="sec-sub">Ajoutez un logo sur le cœur (côté gauche)</div>
+          <div class="uz" onclick="document.getElementById('uf').click()">
+            <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
+            <p><strong>Cliquez ou glissez votre logo ici</strong><br>PNG, JPG, SVG (max. 5Mo)</p>
+          </div>
+          <input type="file" id="uf" style="display:none" accept="image/*" onchange="doUpload(event,'f')">
+          <div class="uprev" id="pf">
+            <img id="if" src="" alt="" style="height:28px">
+          </div>
+          <div class="uprev-lbl" id="lf">
+            <span>Aperçu du logo</span>
+            <button class="rmv" onclick="rmUp('f')">🗑 Supprimer</button>
+          </div>
+        </div>
+
+        <!-- 5. Logo dos -->
+        <div class="sec">
+          <div class="sec-title">5. Logo Dos</div>
+          <div class="sec-sub">Ajoutez un logo au dos de l'article</div>
+          <div class="uz" onclick="document.getElementById('ub').click()">
+            <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
+            <p><strong>Cliquez ou glissez votre logo ici</strong><br>PNG, JPG, SVG (max. 5Mo)</p>
+          </div>
+          <input type="file" id="ub" style="display:none" accept="image/*" onchange="doUpload(event,'b')">
+          <div class="uprev" id="pb">
+            <img id="ib" src="" alt="" style="height:28px">
+          </div>
+          <div class="uprev-lbl" id="lb">
+            <span>Aperçu du logo</span>
+            <button class="rmv" onclick="rmUp('b')">🗑 Supprimer</button>
+          </div>
+        </div>
+
+        <!-- 6. Manches -->
+        <div class="sec">
+          <div class="sec-title">6. Personnalisation Manches 👕</div>
+          <div class="sec-sub">Ajoutez un logo ou texte sur les manches (facultatif)</div>
+          <div class="note">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            Position : à 5 cm de la couture de l'épaule
+          </div>
+          <div class="slvg" style="margin-top:6px">
+            <div>
+              <label>Manche gauche</label>
+              <div class="uz" style="padding:5px 4px;flex-direction:column;gap:3px" onclick="document.getElementById('usl').click()">
+                <div class="uz-ico" style="width:18px;height:18px;margin:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
+                <p style="font-size:8px;text-align:center">Cliquez ou glissez<br><em>PNG, JPG, SVG</em></p>
+              </div>
+              <input type="file" id="usl" style="display:none" accept="image/*" onchange="doUpload(event,'sl')">
+              <div class="uprev" id="psl"><img id="isl" src="" alt="" style="height:24px"></div>
+              <div class="uprev-lbl" id="lsl">
+                <span>Aperçu</span>
+                <button class="rmv" onclick="rmUp('sl')">🗑 Suppr.</button>
+              </div>
+            </div>
+            <div>
+              <label>Manche droite</label>
+              <div class="uz" style="padding:5px 4px;flex-direction:column;gap:3px" onclick="document.getElementById('usr').click()">
+                <div class="uz-ico" style="width:18px;height:18px;margin:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
+                <p style="font-size:8px;text-align:center">Cliquez ou glissez<br><em>PNG, JPG, SVG</em></p>
+              </div>
+              <input type="file" id="usr" style="display:none" accept="image/*" onchange="doUpload(event,'sr')">
+              <div class="uprev" id="psr"><img id="isr" src="" alt="" style="height:24px"></div>
+              <div class="uprev-lbl" id="lsr">
+                <span>Aperçu</span>
+                <button class="rmv" onclick="rmUp('sr')">🗑 Suppr.</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /sb-inner -->
+    </aside>
+
+    <!-- ══ CANVAS ══ -->
+    <main class="canvas">
+      <div class="cv-hdr">
+        <h2 class="cv-title">Personnalisez votre article</h2>
+        <p class="cv-sub">Visualisez votre design en temps réel</p>
+        <div class="vtabs">
+          <button class="vt on" onclick="selView(this,'face')">Vue de face</button>
+          <button class="vt" onclick="selView(this,'dos')">Vue de dos</button>
+          <button class="vt" onclick="selView(this,'cote')">Vue de côté</button>
+        </div>
+      </div>
+
+      <div class="cv-wrap">
+
+        <!-- ── FACE view (3 hoodies) ── -->
+        <div class="cv-view on" id="view-face">
+
+          <!-- Front hoodie -->
+          <div class="pslot">
+            <div class="mlbl">
+              <div class="mline"></div>
+              <span>5 cm</span>
+            </div>
+            
+                <img class="product-img" id="hoodie-front-img"
+                  src="{{ 'sweatshirt-face.png' | asset_url }}"
+                  alt="Sweatshirt face"
+                  width="500" height="550"
+                  style="filter: var(--product-filter, none);">
+
+            {% comment %} <svg id="svg-front" class="product-svg" viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+              <g id="hoodie-body" fill="#1a1a1a">
+                <!-- Body -->
+                <path d="M38,82 L38,235 L162,235 L162,82 Q162,80 160,80 L140,80 Q138,80 138,82 L38,82 Z" rx="4"/>
+                <!-- Left sleeve -->
+                <path d="M38,82 L8,95 L8,175 L38,165 Z"/>
+                <!-- Right sleeve -->
+                <path d="M162,82 L192,95 L192,175 L162,165 Z"/>
+                <!-- Left shoulder yoke -->
+                <path d="M38,82 L38,80 C70,75 80,50 80,42 L74,42 C70,55 58,72 38,80 Z"/>
+                <!-- Right shoulder yoke -->
+                <path d="M162,82 L162,80 C130,75 120,50 120,42 L126,42 C130,55 142,72 162,80 Z"/>
+                <!-- Hood outer -->
+                <path d="M74,42 C74,20 100,8 100,8 C100,8 126,20 126,42 C126,58 116,68 100,70 C84,68 74,58 74,42 Z"/>
+                <!-- Hood inner (lighter) -->
+                <path d="M80,42 C80,25 100,16 100,16 C100,16 120,25 120,42 C120,55 112,64 100,65 C88,64 80,55 80,42 Z" fill="#333"/>
+                <!-- Kangaroo pocket -->
+                <rect x="58" y="162" width="84" height="45" rx="4" fill="#111"/>
+                <!-- Pocket seam -->
+                <line x1="100" y1="162" x2="100" y2="207" stroke="#222" stroke-width="1"/>
+                <!-- Cuffs -->
+                <rect x="38" y="225" width="124" height="10" rx="3" fill="#111"/>
+                <rect x="8" y="168" width="30" height="10" rx="3" fill="#111"/>
+                <rect x="162" y="168" width="30" height="10" rx="3" fill="#111"/>
+              </g>
+              <!-- Front logo overlay -->
+              <image id="ov-f" x="82" y="96" width="42" height="42" style="display:none" preserveAspectRatio="xMidYMid meet" clip-path="url(#chest-clip)"/>
+              <!-- Left sleeve logo overlay -->
+              <image id="ov-sl" x="10" y="108" width="26" height="52" style="display:none" preserveAspectRatio="xMidYMid meet"/>
+              <!-- Right sleeve logo overlay -->
+              <image id="ov-sr" x="164" y="108" width="26" height="52" style="display:none" preserveAspectRatio="xMidYMid meet"/>
+            </svg> {% endcomment %}
+          </div>
+
+          <!-- Back hoodie -->
+          <div class="pslot">
+              <img class="product-img" id="hoodie-back-img"
+                  src="{{ 'sweatshirt-dos.png' | asset_url }}" alt="Sweatshirt dos" width="500" height="550">
+
+            {% comment %} <svg id="svg-back" class="product-svg" viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+              <g id="hoodie-back-body" fill="#1a1a1a">
+                <path d="M38,82 L38,235 L162,235 L162,82 Q162,80 160,80 L140,80 Q138,80 138,82 L38,82 Z"/>
+                <path d="M38,82 L8,95 L8,175 L38,165 Z"/>
+                <path d="M162,82 L192,95 L192,175 L162,165 Z"/>
+                <path d="M38,82 L38,80 C70,75 80,50 80,42 L74,42 C70,55 58,72 38,80 Z"/>
+                <path d="M162,82 L162,80 C130,75 120,50 120,42 L126,42 C130,55 142,72 162,80 Z"/>
+                <!-- Back hood -->
+                <path d="M74,42 C74,20 100,8 100,8 C100,8 126,20 126,42 C126,58 116,68 100,70 C84,68 74,58 74,42 Z"/>
+                <!-- Hood drawstring bar -->
+                <rect x="76" y="70" width="48" height="6" rx="3" fill="#111"/>
+                <!-- Cuffs -->
+                <rect x="38" y="225" width="124" height="10" rx="3" fill="#111"/>
+                <rect x="8" y="168" width="30" height="10" rx="3" fill="#111"/>
+                <rect x="162" y="168" width="30" height="10" rx="3" fill="#111"/>
+              </g>
+              <!-- Back logo overlay -->
+              <image id="ov-b" x="55" y="88" width="90" height="90" style="display:none" preserveAspectRatio="xMidYMid meet"/>
+              <!-- Sleeve overlays -->
+              <image id="ov-sl2" x="10" y="108" width="26" height="52" style="display:none" preserveAspectRatio="xMidYMid meet"/>
+              <image id="ov-sr2" x="164" y="108" width="26" height="52" style="display:none" preserveAspectRatio="xMidYMid meet"/>
+            </svg> {% endcomment %}
+            <div class="mlbl mlbl-r">
+              <span>5 cm</span>
+              <div class="mline"></div>
+            </div>
+          </div>
+
+          <!-- Side hoodie -->
+          <div class="pslot">
+ 
+                <img class="product-img" id="hoodie-side-img"
+                  src="{{ 'sweatshirt-cote.png' | asset_url }}" alt="Sweatshirt côté" width="500" height="250">
+
+            {% comment %} <svg id="svg-side" class="product-svg" viewBox="0 0 120 250" xmlns="http://www.w3.org/2000/svg">
+              <g id="hoodie-side-body" fill="#1a1a1a">
+                <path d="M30,82 L30,235 L90,235 L90,82 Z"/>
+                <path d="M30,82 L8,95 L8,175 L30,165 Z"/>
+                <path d="M30,82 L30,80 C55,75 62,50 62,42 L56,42 C54,55 44,72 30,80 Z"/>
+                <!-- Hood side view -->
+                <path d="M56,42 C56,20 65,8 65,8 C65,8 78,20 78,42 C78,58 72,68 65,70 C58,68 56,58 56,42 Z"/>
+                <path d="M60,42 C60,26 65,16 65,16 C65,16 74,26 74,42 C74,54 70,62 65,64 C60,62 60,54 60,42 Z" fill="#333"/>
+                <!-- Cuffs -->
+                <rect x="30" y="225" width="60" height="10" rx="3" fill="#111"/>
+                <rect x="8" y="168" width="22" height="10" rx="3" fill="#111"/>
+              </g>
+            </svg> {% endcomment %}
+          </div>
+
+        </div><!-- /face view -->
+
+        <!-- Controls -->
+        <div class="cv-ctrl">
+          <button class="cbtn" onclick="zoom(-10)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13H5v-2h14v2z"/></svg>
+          </button>
+          <span class="zlvl" id="zlvl">100%</span>
+          <button class="cbtn" onclick="zoom(10)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </button>
+          <div class="cdiv"></div>
+          <button class="cbtn" onclick="resetZoom()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+          </button>
+        </div>
+
+        <div class="cv-info">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          Les couleurs affichées peuvent légèrement varier selon votre écran.
+        </div>
+
+      </div><!-- /cv-wrap -->
+    </main>
+
+  </div><!-- /app -->
+
+    <!-- ══ RECAP ══ -->
+    <aside class="recap">
+      <div class="rp-hdr">Récapitulatif</div>
+
+      <div class="rp-items">
+        <!-- Product row (always visible) -->
+        <div class="ri">
+          <div class="ri-thumb">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="#1a1a1a"><path d="M16 5v2h-3V3H11v4H8V5L3 8v3h2v9h14V11h2V8l-5-3z"/></svg>
+          </div>
+          <div class="ri-info">
+            <div class="ri-name" id="rc-prod">Sweatshirt</div>
+            <div class="ri-det" id="rc-color">Couleur : Noir</div>
+            <div class="ri-det" id="rc-size">Taille : M</div>
+          </div>
+        </div>
+
+        <!-- Logo cœur row -->
+        <div class="ri" id="rc-front" style="display:none">
+          <div class="ri-thumb"><img id="rc-img-f" src="" alt="Logo cœur"></div>
+          <div class="ri-info">
+            <div class="ri-name">Logo cœur</div>
+            <div class="ri-ok">✓ Personnalisé</div>
+          </div>
+        </div>
+
+        <!-- Logo dos row -->
+        <div class="ri" id="rc-back" style="display:none">
+          <div class="ri-thumb"><img id="rc-img-b" src="" alt="Logo dos"></div>
+          <div class="ri-info">
+            <div class="ri-name">Logo dos</div>
+            <div class="ri-ok">✓ Personnalisé</div>
+          </div>
+        </div>
+
+        <!-- Manches row -->
+        <div class="ri" id="rc-sleeves" style="display:none">
+          <div class="ri-thumb">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="#888"><path d="M16 5v2h-3V3H11v4H8V5L3 8v3h2v9h14V11h2V8l-5-3z"/></svg>
+          </div>
+          <div class="ri-info">
+            <div class="ri-name">Manches</div>
+            <div class="ri-ok">✓ Personnalisé</div>
+          </div>
+        </div>
+      </div><!-- /rp-items -->
+
+      <div class="rp-price">
+        <div class="rp-plbl">Prix Total</div>
+        <div class="rp-pval">45,00 € <span class="rp-pvat">TTC</span></div>
+      </div>
+
+      <div class="rp-acts">
+        <button class="btn-cart">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
+          Ajouter au panier
+        </button>
+        <button class="btn-save">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+          Sauvegarder le design
+        </button>
+      </div>
+
+      <div class="rp-trust">
+        <div class="ti">
+          <div class="ti-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="#666"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+          <div class="ti-txt">Paiement sécurisé<span>Transactions 100% sécurisées</span></div>
+        </div>
+        <div class="ti">
+          <div class="ti-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="#666"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
+          <div class="ti-txt">Service client<span>À votre écoute 7j/7</span></div>
+        </div>
+      </div>
+    </aside>
+
+  <script>
+    /* ── State ── */
+    let zl = 100;
+    let currentColor = '#1a1a1a';
+    let currentColorName = 'Noir';
+
+    /* ── Helpers: apply hoodie color ── */
+    function applyColor(hex) {
+      // If using SVG hoodies, tint each shape
+      ['hoodie-body','hoodie-back-body','hoodie-side-body'].forEach(id => {
+        const g = document.getElementById(id);
+        if (!g) return;
+        g.querySelectorAll('path, rect').forEach((el, i) => {
+          const orig = el.getAttribute('data-orig-fill');
+          if (!orig) el.setAttribute('data-orig-fill', el.getAttribute('fill') || '#1a1a1a');
+          const base = el.getAttribute('data-orig-fill');
+          if (base === '#111' || base === '#333') {
+            // Keep darker shading relative; shift by same hue
+            el.setAttribute('fill', shadeHex(hex, base === '#333' ? -20 : -40));
+          } else {
+            el.setAttribute('fill', hex);
+          }
+        });
+      });
+
+      // If using real product images with CSS filter
+      // document.querySelectorAll('.product-img').forEach(img => {
+      //   img.style.filter = hexToHueRotate(hex);
+      // });
+    }
+
+    function shadeHex(hex, pct) {
+      const n = parseInt(hex.replace('#',''), 16);
+      const r = Math.min(255, Math.max(0, (n>>16) + pct));
+      const g = Math.min(255, Math.max(0, ((n>>8)&0xff) + pct));
+      const b = Math.min(255, Math.max(0, (n&0xff) + pct));
+      return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+    }
+
+    /* ── Product select ── */
+    function selProd(el) {
+      document.querySelectorAll('.pt').forEach(c => c.classList.remove('on'));
+      el.classList.add('on');
+    }
+
+    /* ── Color select ── */
+    function selColor(el, hex, name) {
+      document.querySelectorAll('.cs').forEach(s => s.classList.remove('on'));
+      el.classList.add('on');
+      currentColor = hex;
+      currentColorName = name;
+      applyColor(hex);
+      document.getElementById('rc-color').textContent = 'Couleur : ' + name;
+    }
+
+    /* ── Size select ── */
+    function selSize(el) {
+      document.querySelectorAll('.sb').forEach(b => b.classList.remove('on'));
+      el.classList.add('on');
+      document.getElementById('rc-size').textContent = 'Taille : ' + el.textContent;
+    }
+
+    /* ── View tabs ── */
+    function selView(el, view) {
+      document.querySelectorAll('.vt').forEach(t => t.classList.remove('on'));
+      el.classList.add('on');
+      // For now single face view; extend with dos/cote views if needed
+    }
+
+    /* ── Zoom ── */
+    function zoom(d) {
+      zl = Math.min(200, Math.max(50, zl + d));
+      document.getElementById('zlvl').textContent = zl + '%';
+      document.querySelectorAll('.cv-view').forEach(v => {
+        v.style.transform = `scale(${zl/100})`;
+        v.style.transformOrigin = 'center center';
+      });
+    }
+    function resetZoom() {
+      zl = 100;
+      document.getElementById('zlvl').textContent = '100%';
+      document.querySelectorAll('.cv-view').forEach(v => { v.style.transform = ''; });
+    }
+
+    /* ── File upload ── */
+    function doUpload(e, zone) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const src = ev.target.result;
+
+        // Sidebar preview
+        const prev = document.getElementById('p' + zone);
+        const img  = document.getElementById('i' + zone);
+        const lbl  = document.getElementById('l' + zone);
+        if (prev && img) { img.src = src; prev.style.display = 'block'; }
+        if (lbl)          lbl.style.display = 'flex';
+
+        // SVG overlay
+        const ov = document.getElementById('ov-' + zone);
+        if (ov) { ov.setAttribute('href', src); ov.style.display = 'block'; }
+
+        // Mirror sleeves to back view
+        if (zone === 'sl') {
+          const o2 = document.getElementById('ov-sl2');
+          if (o2) { o2.setAttribute('href', src); o2.style.display = 'block'; }
+          document.getElementById('rc-sleeves').style.display = 'flex';
+        }
+        if (zone === 'sr') {
+          const o2 = document.getElementById('ov-sr2');
+          if (o2) { o2.setAttribute('href', src); o2.style.display = 'block'; }
+          document.getElementById('rc-sleeves').style.display = 'flex';
+        }
+
+        // Recap rows
+        if (zone === 'f') {
+          document.getElementById('rc-img-f').src = src;
+          document.getElementById('rc-front').style.display = 'flex';
+        }
+        if (zone === 'b') {
+          document.getElementById('rc-img-b').src = src;
+          document.getElementById('rc-back').style.display = 'flex';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function rmUp(zone) {
+      ['p','i','l'].forEach(pfx => {
+        const el = document.getElementById(pfx + zone);
+        if (!el) return;
+        if (pfx === 'i') el.src = '';
+        else if (pfx === 'p') el.style.display = 'none';
+        else el.style.display = 'none';
+      });
+      const input = document.getElementById('u' + zone);
+      if (input) input.value = '';
+      const ov = document.getElementById('ov-' + zone);
+      if (ov) { ov.removeAttribute('href'); ov.style.display = 'none'; }
+      if (zone === 'f') document.getElementById('rc-front').style.display = 'none';
+      if (zone === 'b') document.getElementById('rc-back').style.display = 'none';
+      if (zone === 'sl' || zone === 'sr') {
+        const slSrc = document.getElementById('isl')?.src;
+        const srSrc = document.getElementById('isr')?.src;
+        if (!slSrc && !srSrc) document.getElementById('rc-sleeves').style.display = 'none';
+      }
+    }
+  </script>
+  </div><!-- /conf-app-root -->
+  </body>
+  </html>

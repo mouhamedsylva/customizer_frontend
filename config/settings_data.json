@@ -1,0 +1,15 @@
+{
+  "current": {
+    "api_endpoint": "http://localhost:3000/api",
+    "api_key": "",
+    "sections": {
+      "configurateur": {
+        "type": "configurateur",
+        "settings": {
+          "api_endpoint": "http://localhost:3000/api",
+          "api_key": ""
+        }
+      }
+    }
+  }
+}

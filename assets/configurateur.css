@@ -1,0 +1,572 @@
+/**
+ * Configurateur - Styles principaux
+ * Version: 1.0.0
+ */
+
+/* ========================================
+   Variables CSS
+======================================== */
+:root {
+  --conf-primary: #1a1a1a;
+  --conf-secondary: #2c5aa0;
+  --conf-accent: #f97316;
+  --conf-text: #333;
+  --conf-text-light: #666;
+  --conf-border: #e5e5e5;
+  --conf-bg: #ffffff;
+  --conf-bg-light: #f8f8f8;
+  --conf-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --conf-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --conf-radius: 8px;
+  --conf-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========================================
+   Reset et base
+======================================== */
+.configurateur-container {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--conf-bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  color: var(--conf-text);
+}
+
+.configurateur-container * {
+  box-sizing: border-box;
+}
+
+/* ========================================
+   Header
+======================================== */
+.conf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--conf-bg);
+  border-bottom: 1px solid var(--conf-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--conf-shadow);
+}
+
+.conf-header-left {
+  flex: 1;
+}
+
+.conf-header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.conf-header-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ========================================
+   Sélecteur de produit
+======================================== */
+.conf-product-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.conf-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.conf-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--conf-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+}
+
+.conf-icon::before {
+  content: '👕';
+}
+
+.conf-icon[data-icon="drapeaux"]::before {
+  content: '🏴';
+}
+
+.conf-icon[data-icon="patches"]::before {
+  content: '⭕';
+}
+
+.conf-icon[data-icon="coins"]::before {
+  content: '🪙';
+}
+
+.conf-title-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.conf-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.conf-subtitle {
+  font-size: 14px;
+  color: var(--conf-text-light);
+  margin: 4px 0 0 0;
+}
+
+/* ========================================
+   Types de produits (horizontal)
+======================================== */
+.conf-product-types {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.conf-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--conf-bg);
+  border: 2px solid var(--conf-border);
+  border-radius: var(--conf-radius);
+  cursor: pointer;
+  transition: var(--conf-transition);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--conf-text);
+  min-width: 80px;
+}
+
+.conf-type-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.conf-type-btn:hover {
+  border-color: var(--conf-secondary);
+  background: var(--conf-bg-light);
+  transform: translateY(-2px);
+  box-shadow: var(--conf-shadow);
+}
+
+.conf-type-btn.active {
+  border-color: var(--conf-primary);
+  background: var(--conf-primary);
+  color: #fff;
+}
+
+.conf-type-btn.active svg {
+  color: #fff;
+}
+
+/* ========================================
+   Étapes
+======================================== */
+.conf-steps {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.conf-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--conf-text-light);
+  position: relative;
+}
+
+.conf-step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--conf-bg-light);
+  border: 2px solid var(--conf-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--conf-transition);
+}
+
+.conf-step.active .conf-step-number {
+  background: var(--conf-primary);
+  border-color: var(--conf-primary);
+  color: #fff;
+}
+
+.conf-step.active .conf-step-label {
+  color: var(--conf-primary);
+  font-weight: 600;
+}
+
+.conf-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: calc(100% + 12px);
+  width: 24px;
+  height: 2px;
+  background: var(--conf-border);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ========================================
+   Boutons
+======================================== */
+.conf-btn-primary,
+.conf-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--conf-radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--conf-transition);
+  border: none;
+  text-decoration: none;
+}
+
+.conf-btn-primary {
+  background: var(--conf-primary);
+  color: #fff;
+}
+
+.conf-btn-primary:hover {
+  background: #000;
+  transform: translateY(-2px);
+  box-shadow: var(--conf-shadow);
+}
+
+.conf-btn-secondary {
+  background: transparent;
+  color: var(--conf-text);
+  border: 1px solid var(--conf-border);
+}
+
+.conf-btn-secondary:hover {
+  background: var(--conf-bg-light);
+  border-color: var(--conf-text);
+}
+
+/* ========================================
+   Corps principal
+======================================== */
+.conf-body {
+  display: flex;
+  height: calc(100vh - 150px);
+  overflow: hidden;
+}
+
+/* ========================================
+   Sidebar
+======================================== */
+.conf-sidebar {
+  width: 320px;
+  background: var(--conf-bg);
+  border-right: 1px solid var(--conf-border);
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.conf-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ========================================
+   Sections de la sidebar
+======================================== */
+.conf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.conf-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--conf-border);
+}
+
+.conf-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.conf-section-subtitle {
+  font-size: 12px;
+  color: var(--conf-text-light);
+  margin: 0;
+}
+
+.conf-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ========================================
+   Canvas
+======================================== */
+.conf-canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--conf-bg-light);
+  padding: 24px;
+  overflow: hidden;
+}
+
+.conf-canvas-header {
+  margin-bottom: 20px;
+}
+
+.conf-canvas-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.conf-canvas-subtitle {
+  font-size: 14px;
+  color: var(--conf-text-light);
+  margin: 0 0 16px 0;
+}
+
+.conf-view-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.conf-view-tab {
+  padding: 10px 20px;
+  background: #fff;
+  border: 1px solid var(--conf-border);
+  border-radius: var(--conf-radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--conf-transition);
+}
+
+.conf-view-tab:hover {
+  background: var(--conf-bg-light);
+}
+
+.conf-view-tab.active {
+  background: var(--conf-primary);
+  color: #fff;
+  border-color: var(--conf-primary);
+}
+
+.conf-canvas-wrapper {
+  flex: 1;
+  position: relative;
+  background: #fff;
+  border-radius: var(--conf-radius);
+  box-shadow: var(--conf-shadow);
+  overflow: hidden;
+}
+
+.conf-canvas {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#product-canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.conf-canvas-views {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 40px;
+}
+
+.conf-canvas-view {
+  flex: 1;
+  max-width: 400px;
+  aspect-ratio: 1;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.conf-canvas-view.active {
+  display: block;
+  opacity: 1;
+}
+
+.conf-canvas-view img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.conf-canvas-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 24px;
+  border-radius: 50px;
+  box-shadow: var(--conf-shadow-lg);
+  backdrop-filter: blur(10px);
+}
+
+.conf-control-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--conf-transition);
+}
+
+.conf-control-btn:hover {
+  background: var(--conf-bg-light);
+}
+
+.conf-zoom-level {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}
+
+.conf-canvas-info {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 20px;
+  border-radius: var(--conf-radius);
+  box-shadow: var(--conf-shadow);
+  max-width: 600px;
+  font-size: 13px;
+  color: var(--conf-text-light);
+}
+
+.conf-canvas-info svg {
+  flex-shrink: 0;
+  color: var(--conf-secondary);
+}
+
+/* ========================================
+   Responsive
+======================================== */
+@media (max-width: 1440px) {
+  .conf-sidebar {
+    width: 280px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .conf-header {
+    flex-wrap: wrap;
+  }
+  
+  .conf-header-left,
+  .conf-header-center,
+  .conf-header-right {
+    flex: 0 0 100%;
+  }
+  
+  .conf-header-center {
+    order: 3;
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 968px) {
+  .conf-body {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .conf-sidebar {
+    width: 100%;
+    max-height: 400px;
+  }
+  
+  .conf-recap {
+    width: 100%;
+    position: static;
+    border-left: none;
+    border-top: 1px solid var(--conf-border);
+  }
+}
+
+/* ========================================
+   Utilitaires
+======================================== */
+.conf-hidden {
+  display: none !important;
+}
+
+.conf-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.conf-error {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.conf-success {
+  color: #16a34a;
+  border-color: #16a34a;
+}

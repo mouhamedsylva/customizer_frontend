@@ -1,0 +1,80 @@
+{% comment %}
+  Header section - Navigation principale
+{% endcomment %}
+
+<header class="header">
+  <div class="header__wrapper">
+    <div class="header__logo">
+      {% if section.settings.logo != blank %}
+        <a href="/">
+          <img src="{{ section.settings.logo | image_url: width: 200 }}" alt="{{ shop.name }}">
+        </a>
+      {% else %}
+        <a href="/">
+          <h1>{{ shop.name }}</h1>
+        </a>
+      {% endif %}
+    </div>
+
+    <nav class="header__nav">
+      <ul>
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/pages/configurateur">Configurateur</a></li>
+        <li><a href="/cart">Panier ({{ cart.item_count }})</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .header {
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 20px 0;
+  }
+  
+  .header__wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .header__logo a {
+    text-decoration: none;
+    color: #000;
+  }
+  
+  .header__nav ul {
+    display: flex;
+    gap: 30px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .header__nav a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+  }
+  
+  .header__nav a:hover {
+    color: #2c5aa0;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    }
+  ]
+}
+{% endschema %}

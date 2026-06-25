@@ -1,0 +1,693 @@
+/**
+ * Styles pour la zone canvas (zone centrale)
+ * Gère l'affichage du canvas Fabric.js et les contrôles
+ */
+
+/* ============================================
+   CANVAS AREA - Container principal
+   ============================================ */
+
+.conf-canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  min-height: 100vh;
+  position: relative;
+}
+
+.conf-canvas-header {
+  padding: 24px 32px;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 10;
+}
+
+.conf-canvas-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #1a1a1a;
+}
+
+.conf-canvas-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 20px 0;
+}
+
+/* ============================================
+   ONGLETS DE VUE
+   ============================================ */
+
+.conf-view-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e5e5e5;
+  margin-top: 16px;
+  margin-bottom: -24px;
+  padding-bottom: 0;
+}
+
+.conf-view-tab {
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  bottom: -2px;
+}
+
+.conf-view-tab:hover {
+  color: #2c5aa0;
+  background: rgba(44, 90, 160, 0.05);
+}
+
+.conf-view-tab.active {
+  color: #2c5aa0;
+  border-bottom-color: #2c5aa0;
+  background: white;
+}
+
+/* ============================================
+   CANVAS WRAPPER
+   ============================================ */
+
+.conf-canvas-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.conf-canvas {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Canvas Fabric.js */
+#product-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.canvas-container {
+  margin: 0 auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+}
+
+/* ============================================
+   VUES MULTIPLES
+   ============================================ */
+
+.conf-canvas-views {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  z-index: 20;
+}
+
+.conf-canvas-view {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.2s ease;
+  background: #f8f8f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.conf-canvas-view img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.conf-canvas-view:hover {
+  border-color: #2c5aa0;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.2);
+}
+
+.conf-canvas-view:hover img {
+  transform: scale(1.1);
+}
+
+.conf-canvas-view.active {
+  border-color: #2c5aa0;
+  box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+
+.conf-canvas-view::after {
+  content: attr(data-view-angle);
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.conf-canvas-view:hover::after {
+  opacity: 1;
+}
+
+/* ============================================
+   CONTRÔLES DE ZOOM
+   ============================================ */
+
+.conf-canvas-controls {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 20;
+}
+
+.conf-control-btn {
+  width: 44px;
+  height: 44px;
+  background: white;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #666;
+}
+
+.conf-control-btn:hover {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  color: white;
+  transform: scale(1.1);
+}
+
+.conf-control-btn:active {
+  transform: scale(0.95);
+}
+
+.conf-zoom-level {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  padding: 8px 0;
+  user-select: none;
+}
+
+/* ============================================
+   MESSAGE INFO RENDU
+   ============================================ */
+
+.conf-canvas-info {
+  position: absolute;
+  bottom: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  max-width: 500px;
+  z-index: 15;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.conf-canvas-info svg {
+  flex-shrink: 0;
+  color: #2c5aa0;
+}
+
+/* Animation d'apparition */
+.conf-canvas-info {
+  animation: slideUp 0.4s ease backwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ============================================
+   OVERLAYS & ÉTATS
+   ============================================ */
+
+.conf-canvas-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  backdrop-filter: blur(4px);
+}
+
+.conf-canvas-loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #e5e5e5;
+  border-top-color: #2c5aa0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.conf-canvas-loading-text {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Message vide */
+.conf-canvas-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #999;
+  z-index: 5;
+}
+
+.conf-canvas-empty svg {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.conf-canvas-empty h3 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: #666;
+}
+
+.conf-canvas-empty p {
+  font-size: 14px;
+  margin: 0;
+  color: #999;
+}
+
+/* ============================================
+   GRILLE DE FOND (optionnel)
+   ============================================ */
+
+.conf-canvas.show-grid {
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 19px, #e5e5e5 19px, #e5e5e5 20px),
+    repeating-linear-gradient(90deg, transparent, transparent 19px, #e5e5e5 19px, #e5e5e5 20px);
+  background-size: 20px 20px;
+}
+
+/* ============================================
+   TOOLBAR CANVAS (optionnel)
+   ============================================ */
+
+.conf-canvas-toolbar {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 20;
+}
+
+.conf-toolbar-btn {
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.conf-toolbar-btn:hover {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  color: white;
+}
+
+.conf-toolbar-btn.active {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  color: white;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .conf-canvas-wrapper {
+    padding: 24px;
+  }
+  
+  .conf-canvas-controls {
+    top: 24px;
+    right: 24px;
+  }
+  
+  .conf-canvas-toolbar {
+    top: 24px;
+    left: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .conf-canvas-area {
+    min-height: 60vh;
+  }
+  
+  .conf-canvas-header {
+    padding: 20px 16px;
+  }
+  
+  .conf-canvas-title {
+    font-size: 20px;
+  }
+  
+  .conf-canvas-subtitle {
+    font-size: 13px;
+  }
+  
+  .conf-view-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .conf-view-tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  
+  .conf-canvas-wrapper {
+    padding: 16px;
+  }
+  
+  /* Contrôles en bas sur mobile */
+  .conf-canvas-controls {
+    top: auto;
+    bottom: 140px;
+    right: 16px;
+    flex-direction: row;
+  }
+  
+  .conf-control-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .conf-zoom-level {
+    padding: 0 8px;
+    min-width: 50px;
+  }
+  
+  /* Vues plus petites sur mobile */
+  .conf-canvas-views {
+    bottom: 20px;
+    gap: 8px;
+    padding: 8px;
+  }
+  
+  .conf-canvas-view {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .conf-canvas-info {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    bottom: 100px;
+    max-width: none;
+    font-size: 11px;
+  }
+  
+  .conf-canvas-toolbar {
+    left: 16px;
+    top: auto;
+    bottom: 200px;
+  }
+  
+  .conf-toolbar-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .conf-canvas-header {
+    padding: 16px 12px;
+  }
+  
+  .conf-canvas-wrapper {
+    padding: 12px;
+  }
+  
+  .conf-canvas-views {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .conf-canvas-view {
+    width: 50px;
+    height: 50px;
+  }
+  
+  #product-canvas {
+    max-width: 100%;
+  }
+}
+
+/* ============================================
+   MODE PLEIN ÉCRAN
+   ============================================ */
+
+.conf-canvas-area.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #f5f5f5;
+}
+
+.conf-canvas-area.fullscreen .conf-canvas-header {
+  position: relative;
+}
+
+.conf-fullscreen-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  background: white;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 25;
+}
+
+.conf-fullscreen-toggle:hover {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  color: white;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.conf-canvas {
+  animation: zoomIn 0.4s ease backwards;
+}
+
+.conf-canvas-controls,
+.conf-canvas-toolbar,
+.conf-canvas-views {
+  animation: fadeIn 0.5s ease backwards;
+  animation-delay: 0.2s;
+}
+
+/* ============================================
+   MODE SOMBRE (optionnel)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .conf-canvas-area {
+    background: #1a1a1a;
+  }
+  
+  .conf-canvas-header {
+    background: #222;
+    border-bottom-color: #333;
+  }
+  
+  .conf-canvas-title {
+    color: #fff;
+  }
+  
+  .conf-canvas-subtitle {
+    color: #999;
+  }
+  
+  .conf-canvas {
+    background: #2a2a2a;
+  }
+  
+  .conf-view-tab {
+    color: #999;
+  }
+  
+  .conf-view-tab:hover,
+  .conf-view-tab.active {
+    color: #5b8dd6;
+  }
+  
+  .conf-canvas-info {
+    background: rgba(34, 34, 34, 0.95);
+    color: #ccc;
+  }
+}
+
+/* ============================================
+   UTILITAIRES
+   ============================================ */
+
+.conf-canvas-hidden {
+  display: none !important;
+}
+
+.conf-canvas-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Sélection désactivée pour éviter bugs UX */
+.conf-canvas-wrapper,
+.conf-canvas-controls,
+.conf-canvas-views {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Curseur personnalisé pour canvas */
+.conf-canvas.drawing {
+  cursor: crosshair;
+}
+
+.conf-canvas.moving {
+  cursor: move;
+}
+
+.conf-canvas.selecting {
+  cursor: default;
+}
