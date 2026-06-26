@@ -244,6 +244,31 @@ class DynamicLayoutManager {
   
   init() {
     console.log('🎨 DynamicLayoutManager initialisé');
+    this.restorePendingProduct();
+  }
+
+  // Après un rechargement (retour vers un textile), resélectionne le produit choisi
+  restorePendingProduct() {
+    let pending = null;
+    try {
+      pending = sessionStorage.getItem('pendingProduct');
+      sessionStorage.removeItem('pendingProduct');
+    } catch (e) {}
+
+    if (!pending || pending === 'sweatshirt') return;
+
+    // Clique sur la carte produit correspondante une fois le DOM prêt
+    const apply = () => {
+      const card = document.querySelector('.pt[data-product="' + pending + '"]');
+      if (card && typeof selProd === 'function') {
+        selProd(card);
+      }
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', apply);
+    } else {
+      apply();
+    }
   }
   
   handleProductChange(productType) {
@@ -268,11 +293,11 @@ class DynamicLayoutManager {
     
     if (category !== this.currentCategory) {
       this.currentCategory = category;
-      this.switchLayout(category);
+      this.switchLayout(category, productType);
     }
   }
-  
-  switchLayout(category) {
+
+  switchLayout(category, productType) {
     console.log('🎨 Switch layout vers:', category);
     
     const layout = PRODUCT_LAYOUTS[category];
@@ -300,7 +325,7 @@ class DynamicLayoutManager {
       this.loadPatchesCanvas();
       this.loadPatchesRecap();
     } else if (category === 'textile') {
-      this.loadTextileSidebar();
+      this.loadTextileSidebar(productType);
     }
   }
   
@@ -512,8 +537,13 @@ class DynamicLayoutManager {
     console.log('✅ Récap Coins mis à jour');
   }
   
-  loadTextileSidebar() {
-    // Recharger la page pour revenir au layout textile
+  loadTextileSidebar(productType) {
+    // On revient à un textile depuis une catégorie spéciale : il faut restaurer
+    // le markup d'origine de la page. On recharge en mémorisant le produit choisi
+    // pour ne pas retomber par défaut sur le sweatshirt.
+    try {
+      sessionStorage.setItem('pendingProduct', productType || 'sweatshirt');
+    } catch (e) {}
     location.reload();
   }
   

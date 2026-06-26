@@ -13,17 +13,21 @@ function selView(btn, viewName) {
   document.querySelectorAll('.product-img-single').forEach(img => {
     img.classList.remove('on');
   });
-  
+
   // Afficher l'image correspondante
   const imageId = 'view-' + viewName;
   const targetImage = document.getElementById(imageId);
-  
+
   if (targetImage) {
     targetImage.classList.add('on');
     console.log('✅ Vue changée vers:', viewName);
   } else {
     console.warn('⚠️ Image non trouvée:', imageId);
   }
+
+  // Mettre à jour la couche des logos (n'affiche que les logos de la vue active)
+  const logoLayer = document.getElementById('logo-layer');
+  if (logoLayer) logoLayer.setAttribute('data-view', viewName);
 }
 
 // Initialisation au chargement

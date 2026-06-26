@@ -13,6 +13,73 @@
   padding: 20px;
 }
 
+/* ── Couche des logos déplaçables ── */
+.logo-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* laisse passer les clics sauf sur les logos */
+  z-index: 5;
+}
+
+/* N'afficher que les logos de la vue active.
+   data-view sur la couche = face | dos | cote */
+.logo-layer[data-view="face"] .for-dos,
+.logo-layer[data-view="cote"] .for-dos,
+.logo-layer[data-view="cote"] .for-face,
+.logo-layer[data-view="dos"]  .for-face {
+  display: none !important;
+}
+
+.design-logo {
+  position: absolute;
+  /* width défini en inline (modifiable au redimensionnement) */
+  cursor: grab;
+  pointer-events: auto;
+  user-select: none;
+  touch-action: none;
+  border: 1.5px dashed transparent;
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+}
+
+.design-logo:hover,
+.design-logo.dragging,
+.design-logo.resizing {
+  border-color: #1a1a1a;
+}
+
+.design-logo.dragging { cursor: grabbing; }
+
+.design-logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+
+/* Poignée de redimensionnement (coin bas-droit) */
+.logo-resize {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: #1a1a1a;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: nwse-resize;
+  display: none;
+  touch-action: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Poignée visible au survol ou pendant manipulation */
+.design-logo:hover .logo-resize,
+.design-logo.dragging .logo-resize,
+.design-logo.resizing .logo-resize {
+  display: block;
+}
+
 /* Images - une seule visible à la fois - TAILLE MOYENNE */
 .product-img-single {
   max-width: 100%;

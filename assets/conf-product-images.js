@@ -69,10 +69,11 @@ class ProductImageSwitcher {
       card.classList.remove('active');
     });
     document.querySelector(`[data-product="${productType}"]`)?.classList.add('active');
-    
-    // Changer les images
-    this.updateImages(productType);
-    
+
+    // NOTE : le chargement des images textile (avec couleur) est désormais géré
+    // par selProd()/updateProductImages() dans la page. On ne touche plus aux src ici
+    // pour ne pas écraser la couleur sélectionnée.
+
     // Dispatch event pour autres composants
     document.dispatchEvent(new CustomEvent('product:changed', {
       detail: { productType }
@@ -81,27 +82,27 @@ class ProductImageSwitcher {
   
   updateImages(productType) {
     const images = PRODUCT_IMAGES[productType];
-    
+
     if (!images) {
       console.warn('⚠️ Images non trouvées pour:', productType);
       return;
     }
-    
+
     // Mettre à jour les 3 vues
     const viewFace = document.getElementById('view-face');
     const viewDos = document.getElementById('view-dos');
     const viewCote = document.getElementById('view-cote');
-    
+
     if (viewFace && viewDos && viewCote) {
       // Utiliser le même pattern que les images actuelles
       const currentSrc = viewFace.src;
       const basePath = currentSrc.substring(0, currentSrc.lastIndexOf('/') + 1);
-      
+
       // Construire les nouvelles URLs
       viewFace.src = basePath + images.face;
       viewDos.src = basePath + images.dos;
       viewCote.src = basePath + images.cote;
-      
+
       console.log('✅ Images mises à jour:');
       console.log('  Face:', viewFace.src);
       console.log('  Dos:', viewDos.src);

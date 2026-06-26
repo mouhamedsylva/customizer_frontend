@@ -23,11 +23,28 @@
         flag4anRecto: "{{ 'flag-4an-recto.png' | asset_url }}",
         flag4anVerso: "{{ 'flag-4an-verso.png' | asset_url }}"
       };
+
+      // Dictionnaire de toutes les images textile (clé = "produit-couleur-vue")
+      // Généré côté Liquid pour avoir les URLs CDN exactes (avec ?v=...).
+      window.PRODUCT_IMAGE_URLS = {
+        {%- assign tx_products = "sweatshirt,tshirt,tshirt-polyester" | split: "," -%}
+        {%- assign tx_colors = "noir,blanc-casse,gris,gris-fonce,gris-ardoise,bleu-marine,bleu-ciel,vert-fonce,rose-clair,rose,rouge,orange,jaune,violet,marron" | split: "," -%}
+        {%- assign tx_views = "face,dos,cote" | split: "," -%}
+        {%- for p in tx_products -%}
+          {%- for c in tx_colors -%}
+            {%- for v in tx_views -%}
+              {%- assign fname = p | append: "-" | append: c | append: "-" | append: v | append: ".png" -%}
+              "{{ p }}-{{ c }}-{{ v }}": "{{ fname | asset_url }}",
+            {%- endfor -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      };
     </script>
     <script src="{{ 'conf-product-images.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-dynamic-layout.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-drapeaux.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-patches.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-logo-drag.js' | asset_url }}" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -840,20 +857,34 @@
             </div>
             
             <!-- Vue de face (visible par défaut) -->
-            <img class="product-img-single on" id="view-face" 
+            <img class="product-img-single on" id="view-face"
               src="{{ 'sweatshirt-face.png' | asset_url }}"
               alt="Sweatshirt vue de face">
-            
+
             <!-- Vue de dos (cachée) -->
-            <img class="product-img-single" id="view-dos" 
+            <img class="product-img-single" id="view-dos"
               src="{{ 'sweatshirt-dos.png' | asset_url }}"
               alt="Sweatshirt vue de dos">
-            
+
             <!-- Vue de côté (cachée) -->
-            <img class="product-img-single" id="view-cote" 
+            <img class="product-img-single" id="view-cote"
               src="{{ 'sweatshirt-cote.png' | asset_url }}"
               alt="Sweatshirt vue de côté">
             
+            <!-- Couche des logos déplaçables (par-dessus le vêtement) -->
+            <div class="logo-layer" id="logo-layer" data-view="face">
+              <!-- Logo cœur : visible sur la vue de face -->
+              <div class="design-logo for-face" id="logo-f" data-zone="f" style="display:none; left:38%; top:34%; width:18%;">
+                <img src="" alt="Logo cœur" draggable="false">
+                <span class="logo-resize" data-resize="f"></span>
+              </div>
+              <!-- Logo dos : visible sur la vue de dos -->
+              <div class="design-logo for-dos" id="logo-b" data-zone="b" style="display:none; left:32%; top:30%; width:34%;">
+                <img src="" alt="Logo dos" draggable="false">
+                <span class="logo-resize" data-resize="b"></span>
+              </div>
+            </div>
+
             <div class="mlbl mlbl-r">
               <span>5 cm</span>
               <div class="mline"></div>
@@ -966,30 +997,66 @@
     let zl = 100;
     let currentColor = '#1a1a1a';
     let currentColorName = 'Noir';
+    let currentColorSlug = 'noir';
+    let currentProductKey = 'sweatshirt';
 
-    /* ── Helpers: apply hoodie color ── */
-    function applyColor(hex) {
-      // If using SVG hoodies, tint each shape
-      ['hoodie-body','hoodie-back-body','hoodie-side-body'].forEach(id => {
-        const g = document.getElementById(id);
-        if (!g) return;
-        g.querySelectorAll('path, rect').forEach((el, i) => {
-          const orig = el.getAttribute('data-orig-fill');
-          if (!orig) el.setAttribute('data-orig-fill', el.getAttribute('fill') || '#1a1a1a');
-          const base = el.getAttribute('data-orig-fill');
-          if (base === '#111' || base === '#333') {
-            // Keep darker shading relative; shift by same hue
-            el.setAttribute('fill', shadeHex(hex, base === '#333' ? -20 : -40));
-          } else {
-            el.setAttribute('fill', hex);
-          }
-        });
+    /* ── Couleurs : nom affiché -> slug de fichier ── */
+    const COLOR_SLUGS = {
+      'Noir': 'noir',
+      'Blanc cassé': 'blanc-casse',
+      'Gris': 'gris',
+      'Gris foncé': 'gris-fonce',
+      'Gris ardoise': 'gris-ardoise',
+      'Bleu marine': 'bleu-marine',
+      'Bleu ciel': 'bleu-ciel',
+      'Vert foncé': 'vert-fonce',
+      'Rose clair': 'rose-clair',
+      'Rose': 'rose',
+      'Rouge': 'rouge',
+      'Orange': 'orange',
+      'Jaune': 'jaune',
+      'Violet': 'violet',
+      'Marron': 'marron'
+    };
+
+    /* ── Produits : data-product -> préfixe de fichier ── */
+    const PRODUCT_SLUGS = {
+      'sweatshirt': 'sweatshirt',
+      'tshirt': 'tshirt',
+      'tshirt_polyester': 'tshirt-polyester'
+    };
+
+    /* Charge les images {produit}-{couleur}-{vue}.png pour les 3 vues.
+       Repli automatique sur l'image générique si le fichier couleur manque. */
+    function updateProductImages() {
+      const prefix = PRODUCT_SLUGS[currentProductKey];
+      if (!prefix) return; // produit non textile (coins, drapeaux...) : on ne touche pas
+
+      const urls = window.PRODUCT_IMAGE_URLS || {};
+
+      ['face', 'dos', 'cote'].forEach(view => {
+        const imgEl = document.getElementById('view-' + view);
+        if (!imgEl) return;
+
+        const key = prefix + '-' + currentColorSlug + '-' + view;
+        const colorUrl = urls[key];
+        if (!colorUrl) return; // pas d'URL générée pour cette combinaison : on ne touche pas
+        if (imgEl.src === colorUrl) return; // déjà la bonne image
+
+        // Précharge la nouvelle image, puis la remplace INSTANTANÉMENT une fois prête.
+        // Comme elle est déjà en cache, le changement est net et sans clignotement :
+        // on a l'impression que seule la couleur change.
+        imgEl.style.transition = 'none';
+        const test = new Image();
+        test.onload = () => { imgEl.src = colorUrl; };
+        test.onerror = () => { /* image absente : on conserve l'image actuelle */ };
+        test.src = colorUrl;
       });
+    }
 
-      // If using real product images with CSS filter
-      // document.querySelectorAll('.product-img').forEach(img => {
-      //   img.style.filter = hexToHueRotate(hex);
-      // });
+    /* ── Applique la couleur : charge les images correspondantes ── */
+    function applyColor(hex) {
+      updateProductImages();
     }
 
     function shadeHex(hex, pct) {
@@ -1010,11 +1077,11 @@
       if (productType && window.dynamicLayoutManager) {
         window.dynamicLayoutManager.handleProductChange(productType);
       }
-      
-      // Pour les textiles, changer aussi les images
-      if (productType && window.productImageSwitcher && 
-          (productType === 'sweatshirt' || productType === 'tshirt' || productType === 'tshirt_polyester')) {
-        window.productImageSwitcher.updateImages(productType);
+
+      // Pour les textiles : charger les images avec la couleur courante
+      if (productType && (productType === 'sweatshirt' || productType === 'tshirt' || productType === 'tshirt_polyester')) {
+        currentProductKey = productType;
+        updateProductImages();
       }
     }
 
@@ -1024,6 +1091,7 @@
       el.classList.add('on');
       currentColor = hex;
       currentColorName = name;
+      currentColorSlug = COLOR_SLUGS[name] || 'noir';
       applyColor(hex);
       document.getElementById('rc-color').textContent = 'Couleur : ' + name;
     }
@@ -1032,15 +1100,28 @@
     function selSize(el) {
       document.querySelectorAll('.sb').forEach(b => b.classList.remove('on'));
       el.classList.add('on');
-      document.getElementById('rc-size').textContent = 'Taille : ' + el.textContent;
+
+      const size = el.textContent.trim();
+      document.getElementById('rc-size').textContent = 'Taille : ' + size;
+
+      // Répercute la taille sur le visuel du produit (échelle proportionnelle)
+      applyProductSize(size);
     }
 
-    /* ── View tabs ── */
-    function selView(el, view) {
-      document.querySelectorAll('.vt').forEach(t => t.classList.remove('on'));
-      el.classList.add('on');
-      // For now single face view; extend with dos/cote views if needed
+    // Facteurs d'échelle visuelle par taille
+    const SIZE_SCALES = { 'XS': 0.84, 'S': 0.92, 'M': 1.0, 'L': 1.08, 'XL': 1.16, 'XXL': 1.24 };
+
+    function applyProductSize(size) {
+      const scale = SIZE_SCALES[size] || 1.0;
+      const view = document.querySelector('.cv-single-view');
+      if (view) {
+        view.style.transform = `scale(${scale})`;
+        view.style.transformOrigin = 'center center';
+        view.style.transition = 'transform 0.25s ease';
+      }
     }
+
+    /* ── View tabs : gérées par conf-view-switcher.js (selView global) ── */
 
     /* ── Zoom ── */
     function zoom(d) {
@@ -1150,6 +1231,31 @@
           const o2 = document.getElementById('ov-sr2');
           if (o2) { o2.setAttribute('href', src); o2.style.display = 'block'; }
           document.getElementById('rc-sleeves').style.display = 'flex';
+        }
+
+        // Logo cœur déplaçable sur le produit (vue de face)
+        if (zone === 'f') {
+          const logo = document.getElementById('logo-f');
+          if (logo) {
+            const limg = logo.querySelector('img');
+            if (limg) limg.src = src;
+            logo.style.display = 'block';
+          }
+        }
+
+        // Logo dos déplaçable sur le produit + bascule automatique vers la vue de dos
+        if (zone === 'b') {
+          const logo = document.getElementById('logo-b');
+          if (logo) {
+            const limg = logo.querySelector('img');
+            if (limg) limg.src = src;
+            logo.style.display = 'block';
+          }
+          // Basculer vers la vue de dos pour que le client positionne le logo
+          const dosBtn = document.querySelector('.vt[onclick*="dos"]');
+          if (dosBtn && typeof selView === 'function') {
+            selView(dosBtn, 'dos');
+          }
         }
 
         // Recap rows
@@ -1326,6 +1432,11 @@
       alert('Contactez-nous pour une commande PVC ou Tissé personnalisée !\n\nEmail: contact@customtextile.com\nTél: +33 1 23 45 67 89');
       // TODO: Implémenter un vrai formulaire de contact ou modal
     }
+
+    /* ── Init : charge les images de la couleur par défaut au démarrage ── */
+    document.addEventListener('DOMContentLoaded', () => {
+      updateProductImages();
+    });
   </script>
   </div><!-- /conf-app-root -->
   </body>
