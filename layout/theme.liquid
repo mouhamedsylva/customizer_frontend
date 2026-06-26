@@ -45,6 +45,8 @@
     {{ 'conf-sidebar.css' | asset_url | stylesheet_tag }}
     {{ 'conf-recap.css' | asset_url | stylesheet_tag }}
     {{ 'conf-canvas.css' | asset_url | stylesheet_tag }}
+    {{ 'conf-canvas-single.css' | asset_url | stylesheet_tag }}
+    {{ 'conf-coins.css' | asset_url | stylesheet_tag }}
   {% endif %}
 
   <script>document.documentElement.className = document.documentElement.className.replace('no-js','js');</script>
@@ -67,6 +69,9 @@
     <script src="{{ 'conf-product-switch.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-recap.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-upload.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-view-switcher.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-product-images.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-dynamic-layout.js' | asset_url }}" defer></script>
   {% endif %}
 </body>
 </html>

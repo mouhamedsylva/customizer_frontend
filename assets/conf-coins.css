@@ -1,0 +1,1297 @@
+/**
+ * Coins/Patches - Styles spécifiques
+ */
+
+/* ========================================
+   Shape Grid (Formes)
+======================================== */
+.conf-shape-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.conf-shape-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: #fff;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.conf-shape-option:hover {
+  border-color: #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.conf-shape-option.active {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #fff;
+}
+
+.conf-shape-option svg {
+  color: currentColor;
+}
+
+.conf-shape-option span {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ========================================
+   Size Grid pour Coins
+======================================== */
+.conf-size-grid-coins {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.conf-size-option {
+  padding: 10px;
+  font-size: 12px;
+  background: #fff;
+  border: 2px solid #e5e5e5;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-weight: 600;
+}
+
+.conf-size-option:hover {
+  border-color: #1a1a1a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.conf-size-option.active {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #fff;
+}
+
+/* ========================================
+   Fabrication Options
+======================================== */
+.conf-fabrication-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.conf-fabrication-option {
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.conf-fabrication-option:hover {
+  border-color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.conf-fabrication-option.active {
+  border-color: #2c5aa0;
+  background: #f0f7ff;
+}
+
+.conf-fabrication-option input[type="radio"] {
+  display: none;
+}
+
+.conf-fabrication-option label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.fab-icon {
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+  background: #f5f5f5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.conf-fabrication-option.active .fab-icon {
+  background: #2c5aa0;
+  color: #fff;
+}
+
+.fab-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fab-info strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.fab-info span {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.fab-check {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5e5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 14px;
+  font-weight: bold;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.conf-fabrication-option.active .fab-check {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  color: #fff;
+}
+
+/* ========================================
+   Help Text
+======================================== */
+.conf-help-text {
+  font-size: 11px;
+  color: #666;
+  margin-top: 8px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conf-help-text svg {
+  align-self: flex-start;
+}
+
+.conf-help-text span {
+  font-weight: 600;
+  color: #333;
+}
+
+.conf-help-text ul {
+  margin: 4px 0 0 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.conf-help-text li {
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
+/* ========================================
+   Canvas Circle pour Coins
+======================================== */
+.coins-canvas-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 20px;
+}
+
+.coins-canvas-circle {
+  width: 100%;
+  max-width: 350px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid #e5e5e5;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transition: border-radius 0.3s ease, aspect-ratio 0.3s ease;
+}
+
+/* Formes dynamiques */
+.coins-canvas-circle.shape-rond {
+  border-radius: 50%;
+  aspect-ratio: 1;
+}
+
+.coins-canvas-circle.shape-carre {
+  border-radius: 8px;
+  aspect-ratio: 1;
+}
+
+.coins-canvas-circle.shape-rectangle {
+  border-radius: 8px;
+  aspect-ratio: 1.4 / 1;
+  max-width: 420px;
+}
+
+.coins-canvas-circle.shape-blason {
+  border-radius: 0;
+  border: none;
+  aspect-ratio: 0.9 / 1;
+  max-width: 340px;
+  clip-path: polygon(
+    50% 0%,
+    90% 5%,
+    92% 15%,
+    92% 45%,
+    85% 65%,
+    70% 80%,
+    50% 96%,
+    30% 80%,
+    15% 65%,
+    8% 45%,
+    8% 15%,
+    10% 5%
+  );
+  position: relative;
+}
+
+/* Tailles dynamiques pour formes rondes (6cm à 10cm) */
+.coins-canvas-circle.size-6cm {
+  max-width: 240px;
+}
+
+.coins-canvas-circle.size-7cm {
+  max-width: 280px;
+}
+
+.coins-canvas-circle.size-8cm {
+  max-width: 320px;
+}
+
+.coins-canvas-circle.size-9cm {
+  max-width: 360px;
+}
+
+.coins-canvas-circle.size-10cm {
+  max-width: 400px;
+}
+
+/* Tailles rectangulaires */
+.coins-canvas-circle.size-8x6cm {
+  max-width: 380px;
+}
+
+.coins-canvas-circle.size-10x7-5cm {
+  max-width: 450px;
+}
+
+.coins-canvas-circle.shape-blason {
+  border-radius: 0;
+  border: none;
+  aspect-ratio: 0.9 / 1;
+  max-width: 340px;
+  clip-path: polygon(
+    50% 0%,          /* point haut centre */
+    90% 5%,          /* coin haut droit légèrement incliné */
+    92% 15%,         /* début côté droit */
+    92% 45%,         /* milieu côté droit */
+    85% 65%,         /* début courbe droite */
+    70% 80%,         /* courbe droite */
+    50% 96%,         /* pointe bas centre */
+    30% 80%,         /* courbe gauche */
+    15% 65%,         /* début courbe gauche */
+    8% 45%,          /* milieu côté gauche */
+    8% 15%,          /* début côté gauche */
+    10% 5%           /* coin haut gauche légèrement incliné */
+  );
+  position: relative;
+}
+
+/* Bordure pour le blason avec pseudo-élément */
+.coins-canvas-circle.shape-blason::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  clip-path: polygon(
+    50% 0%,
+    90% 5%,
+    92% 15%,
+    92% 45%,
+    85% 65%,
+    70% 80%,
+    50% 96%,
+    30% 80%,
+    15% 65%,
+    8% 45%,
+    8% 15%,
+    10% 5%
+  );
+  box-shadow: inset 0 0 0 3px #e5e5e5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.coins-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: #999;
+}
+
+.coins-placeholder p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.coins-canvas-circle img {
+  max-width: 70%;
+  max-height: 70%;
+  object-fit: contain;
+  display: none;
+}
+
+.coins-canvas-circle img[style*="display: block"],
+.coins-canvas-circle img[style*="display:block"] {
+  display: block !important;
+}
+
+.coins-canvas-circle.has-image .coins-placeholder {
+  display: none;
+}
+
+.coins-canvas-circle.has-image img {
+  display: block;
+}
+
+.coins-canvas-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid #e5e5e5;
+  border-radius: 40px;
+  padding: 10px 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  backdrop-filter: blur(8px);
+}
+
+/* ========================================
+   Responsive
+======================================== */
+@media (max-width: 968px) {
+  .conf-shape-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .conf-size-grid-coins {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .fab-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+  
+  .fab-info strong {
+    font-size: 12px;
+  }
+  
+  .fab-info span {
+    font-size: 9px;
+  }
+}
+
+
+/* ========================================
+   Récapitulatif Coins - Sections spéciales
+======================================== */
+
+/* Section Quantité */
+.rp-quantity {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e5e5;
+  flex-shrink: 0;
+}
+
+.rp-qty-header {
+  margin-bottom: 10px;
+}
+
+.rp-qty-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.rp-qty-note {
+  font-size: 9px;
+  color: #666;
+  line-height: 1.3;
+}
+
+.rp-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.qty-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-btn:hover {
+  border-color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+.qty-input {
+  width: 70px;
+  height: 36px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  background: #fff;
+}
+
+.qty-input:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+/* Section Prix Unitaire */
+.rp-unit-price {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e5e5;
+  flex-shrink: 0;
+}
+
+.rp-unit-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.rp-unit-value {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #1a1a1a;
+}
+
+.rp-unit-ht {
+  font-size: 11px;
+  color: #666;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.rp-unit-ttc {
+  font-size: 10px;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Bouton Contact */
+.btn-contact {
+  width: 100%;
+  padding: 9px;
+  background: #fff;
+  color: #1a1a1a;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.btn-contact:hover {
+  border-color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .rp-qty-controls {
+    gap: 8px;
+  }
+  
+  .qty-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  
+  .qty-input {
+    width: 60px;
+    height: 32px;
+    font-size: 13px;
+  }
+}
+
+
+/* Note: Type Bar reste visible pour toutes les catégories maintenant */
+
+
+/* ========================================
+   Bouton Contact pour PVC/Tissé
+======================================== */
+.conf-contact-btn {
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 12px;
+  background: #fff;
+  border: 2px solid #1a1a1a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.conf-contact-btn:hover {
+  background: #f5f5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.conf-contact-btn svg {
+  flex-shrink: 0;
+}
+
+.conf-contact-btn div {
+  flex: 1;
+}
+
+.conf-contact-btn strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.conf-contact-btn span {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+}
+
+/* ========================================
+   Section Besoin d'aide
+======================================== */
+.conf-help-section {
+  margin-top: 16px;
+  padding: 14px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.conf-help-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conf-help-text {
+  flex: 1;
+}
+
+.conf-help-text strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.conf-help-text p {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ========================================
+   Icons SVG dans fabrication
+======================================== */
+.fab-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.conf-fabrication-option.active .fab-icon {
+  background: #2c5aa0;
+}
+
+.conf-fabrication-option.active .fab-icon svg {
+  color: #fff;
+  fill: #fff;
+}
+
+.conf-fabrication-option:not(.active) .fab-icon {
+  background: #f5f5f5;
+}
+
+.conf-fabrication-option:not(.active) .fab-icon svg {
+  color: #666;
+  fill: #666;
+}
+
+
+/* ========================================
+   Upload Box
+======================================== */
+.coins-upload-box {
+  border: 2px dashed #e5e5e5;
+  border-radius: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.coins-upload-box:hover {
+  border-color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+.coins-upload-icon {
+  margin: 0 auto 12px;
+}
+
+.coins-upload-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.coins-upload-hint {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.coins-upload-tips {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.coins-tip-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.coins-tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.coins-tips-list li {
+  font-size: 9px;
+  color: #666;
+  padding: 3px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.3;
+}
+
+.coins-tips-list li svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ========================================
+   Shape Cards (horizontal)
+======================================== */
+.coins-shape-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.coins-shape-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 10px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.coins-shape-card:hover {
+  border-color: #1a1a1a;
+}
+
+.coins-shape-card.active {
+  border-color: #1a1a1a;
+  background: #fff;
+}
+
+.coins-shape-card svg {
+  color: #666;
+}
+
+.coins-shape-card.active svg {
+  color: #1a1a1a;
+}
+
+.coins-shape-card span {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+}
+
+.coins-shape-card.active span {
+  color: #1a1a1a;
+}
+
+.coins-shape-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.coins-shape-card.active .coins-shape-check {
+  display: flex;
+}
+
+/* ========================================
+   Size Grid (circles et rectangles)
+======================================== */
+.coins-size-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.coins-size-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 8px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 10px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.coins-size-card:hover {
+  border-color: #1a1a1a;
+}
+
+.coins-size-card.active {
+  border-color: #1a1a1a;
+  background: #fff;
+}
+
+/* Cercle vide centré */
+.coins-size-card.circle .coins-size-shape {
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid #999;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.coins-size-card.active.circle .coins-size-shape {
+  border-color: #1a1a1a;
+}
+
+/* Cartes rectangulaires : disposition horizontale (label gauche, rect droite) */
+.coins-size-card.rect {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px;
+}
+
+.coins-size-card.rect .coins-size-shape {
+  width: 28px;
+  height: 18px;
+  border: 1.5px solid #999;
+  border-radius: 3px;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.coins-size-card.active.rect .coins-size-shape {
+  border-color: #1a1a1a;
+}
+
+.coins-size-card p {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  margin: 0;
+  text-align: center;
+}
+
+.coins-size-card.rect p {
+  text-align: left;
+}
+
+.coins-size-card.active p {
+  color: #1a1a1a;
+}
+
+.coins-size-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.coins-size-card.active .coins-size-check {
+  display: flex;
+}
+
+.coins-size-note {
+  font-size: 10px;
+  color: #999;
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  line-height: 1.3;
+}
+
+.coins-size-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+
+/* ========================================
+   Récapitulatif Coins - Design complet
+======================================== */
+
+/* Header avec boutons */
+.rp-hdr {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.rp-action-btn {
+  flex: 1;
+  padding: 7px 10px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.rp-action-btn:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}
+
+/* Sections */
+.rp-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.rp-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+/* Preview du patch */
+.rp-patch-preview {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.rp-patch-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: 2px solid #e5e5e5;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.rp-patch-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rp-patch-info {
+  flex: 1;
+}
+
+.rp-patch-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 6px 0;
+}
+
+.rp-patch-details p {
+  font-size: 9px;
+  color: #666;
+  margin: 2px 0;
+  line-height: 1.3;
+}
+
+.rp-patch-details span {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Quantité */
+.rp-qty-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rp-qty-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #1a1a1a;
+}
+
+.rp-qty-subtitle {
+  font-size: 9px;
+  color: #666;
+}
+
+.rp-qty-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.rp-qty-btn {
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rp-qty-btn:hover {
+  border-color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+.rp-qty-input {
+  width: 44px;
+  height: 24px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.rp-qty-input:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+/* Prix unitaire */
+.rp-unit-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.rp-unit-price-big {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.rp-unit-ht {
+  font-size: 11px;
+  font-weight: 400;
+  color: #666;
+  margin-left: 4px;
+}
+
+.rp-unit-price-ttc {
+  font-size: 10px;
+  color: #666;
+  margin-top: 3px;
+}
+
+/* Prix total */
+.rp-total-section {
+  background: #f8f8f8;
+}
+
+.rp-total-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #1a1a1a;
+  margin-bottom: 3px;
+}
+
+.rp-total-subtitle {
+  font-size: 9px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.rp-total-price-line {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.rp-total-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.rp-total-ht {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.rp-total-ttc {
+  font-size: 10px;
+  color: #666;
+}
+
+/* Boutons d'action */
+.rp-actions-coins {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rp-btn-primary {
+  width: 100%;
+  padding: 11px;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.rp-btn-primary:hover {
+  background: #333;
+}
+
+.rp-btn-secondary {
+  width: 100%;
+  padding: 9px;
+  background: #fff;
+  color: #1a1a1a;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.rp-btn-secondary:hover {
+  border-color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+/* Trust badges */
+.rp-trust-coins {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rp-trust-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.rp-trust-item svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+}
+
+.rp-trust-item strong {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 1px;
+}
+
+.rp-trust-item p {
+  font-size: 9px;
+  color: #666;
+  line-height: 1.3;
+  margin: 0;
+}

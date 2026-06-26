@@ -20,14 +20,19 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding-top: 0;
 }
 
 /* ========================================
    Section Container
 ======================================== */
 .conf-option-section {
-  padding: 20px;
+  padding: 16px 20px;
   border-bottom: 1px solid #e5e5e5;
+}
+
+.conf-option-section:first-child {
+  padding-top: 12px;
 }
 
 .conf-option-section:last-child {
@@ -41,11 +46,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .conf-option-number {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #666;
   letter-spacing: 0.5px;
@@ -53,7 +58,7 @@
 }
 
 .conf-option-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #1a1a1a;
   text-transform: uppercase;
@@ -62,7 +67,7 @@
 }
 
 .conf-option-subtitle {
-  font-size: 11px;
+  font-size: 10px;
   color: #999;
   margin: 2px 0 0 0;
   font-weight: 400;

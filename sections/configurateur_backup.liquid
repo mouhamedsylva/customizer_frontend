@@ -6,28 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configurateur Custom Textile</title>
     {{ 'configurateur.css' | asset_url | stylesheet_tag }}
-    {{ 'conf-coins.css' | asset_url | stylesheet_tag }}
-    {{ 'conf-drapeaux.css' | asset_url | stylesheet_tag }}
-    {{ 'conf-patches.css' | asset_url | stylesheet_tag }}
-    <script>
-      window.ASSET_URLS = {
-        visa: "{{ 'visa.svg' | asset_url }}",
-        mastercard: "{{ 'mastercard.svg' | asset_url }}",
-        applepay: "{{ 'applepay.svg' | asset_url }}",
-        paypal: "{{ 'paypal.svg' | asset_url }}",
-        patchRecto: "{{ 'patch-recto.png' | asset_url }}",
-        patchVerso: "{{ 'patch-verso.png' | asset_url }}",
-        patchCote: "{{ 'patch-cote.png' | asset_url }}",
-        flagRecto: "{{ 'flag-recto.png' | asset_url }}",
-        flagVerso: "{{ 'flag-verso.png' | asset_url }}",
-        flag4anRecto: "{{ 'flag-4an-recto.png' | asset_url }}",
-        flag4anVerso: "{{ 'flag-4an-verso.png' | asset_url }}"
-      };
-    </script>
-    <script src="{{ 'conf-product-images.js' | asset_url }}" defer></script>
-    <script src="{{ 'conf-dynamic-layout.js' | asset_url }}" defer></script>
-    <script src="{{ 'conf-drapeaux.js' | asset_url }}" defer></script>
-    <script src="{{ 'conf-patches.js' | asset_url }}" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -41,8 +19,8 @@
       --blue: #2c5aa0;
       --r: 7px;
       --header-h: 58px;
-      --typebar-h: 132px;
-      --sidebar-w: 320px;
+      --typebar-h: 150px;
+      --sidebar-w: 268px;
       --recap-w: 252px;
     }
 
@@ -337,25 +315,14 @@
     .mline::after { bottom: 0; }
     .mlbl-r { left: auto; right: -36px; }
 
-    /* Canvas row : image + zoom côte à côte */
-    .cv-canvas-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      flex: 1;
-      min-height: 0;
-      width: 100%;
-    }
-
-    /* Controls zoom – colonne verticale à droite de l'image */
+    /* Controls */
     .cv-ctrl {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 10px;
       background: rgba(255,255,255,.95);
       border: 1px solid var(--border); border-radius: 40px;
-      padding: 10px 8px; box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      padding: 6px 16px; box-shadow: 0 2px 10px rgba(0,0,0,.08);
       backdrop-filter: blur(8px);
-      flex-shrink: 0;
     }
     .cbtn {
       width: 28px; height: 28px; border: none; background: none;
@@ -365,7 +332,7 @@
     }
     .cbtn:hover { background: var(--bg-light); }
     .zlvl { font-size: 12px; font-weight: 600; min-width: 40px; text-align: center; }
-    .cdiv { width: 18px; height: 1px; background: var(--border); }
+    .cdiv { width: 1px; height: 18px; background: var(--border); }
 
     /* Info bar */
     .cv-info {
@@ -382,11 +349,10 @@
       width: var(--recap-w);
       border-left: 1px solid var(--border);
       display: flex; flex-direction: column;
-      overflow-y: auto; overflow-x: hidden; flex-shrink: 0;
+      overflow: hidden; flex-shrink: 0;
       grid-area: recap;
     }
     .recap::-webkit-scrollbar { width: 3px; }
-    .recap::-webkit-scrollbar-thumb { background: #ddd; }
     .rp-hdr {
       padding: 12px 16px 10px;
       font-size: 10px; font-weight: 700;
@@ -489,7 +455,7 @@
       background: var(--white);
       display: flex;
       align-items: center;
-      padding: 16px 20px 22px;
+      padding: 34px 20px 22px;
       flex-shrink: 0;
       grid-area: typebar;
       border-right: 1px solid var(--border);
@@ -638,7 +604,7 @@
       </div>
       <div class="type-bar-cards">
 
-        <div class="pt on" data-product="sweatshirt" onclick="selProd(this)">
+        <div class="pt on" onclick="selProd(this)">
           <span class="pt-ck">✓</span>
           <div class="pt-ico">
             <img class="pt-img" src="{{ 'sweatshirt-face.png' | asset_url }}" alt="Sweatshirt">
@@ -646,23 +612,23 @@
           <span>Sweatshirt</span>
         </div>
 
-        <div class="pt" data-product="tshirt" onclick="selProd(this)">
+        <div class="pt" onclick="selProd(this)">
           <span class="pt-ck">✓</span>
           <div class="pt-ico">
-            <img class="pt-img" src="{{ 'tshirt-face.png' | asset_url }}" alt="T-shirt coton">
+            <img class="pt-img" src="{{ 't-shirt-coton.png' | asset_url }}" alt="T-shirt coton">
           </div>
           <span>T-shirt coton</span>
         </div>
 
-        <div class="pt" data-product="tshirt_polyester" onclick="selProd(this)">
+        <div class="pt" onclick="selProd(this)">
           <span class="pt-ck">✓</span>
           <div class="pt-ico">
-            <img class="pt-img" src="{{ 'tshirt-polyester-face.png' | asset_url }}" alt="T-shirt polyester">
+            <img class="pt-img" src="{{ 't-shirt-polyester.png' | asset_url }}" alt="T-shirt polyester">
           </div>
           <span>T-shirt polyester</span>
         </div>
 
-        <div class="pt" data-product="coins" onclick="selProd(this)">
+        <div class="pt" onclick="selProd(this)">
           <span class="pt-ck">✓</span>
           <div class="pt-ico">
             <img class="pt-img" src="{{ 'icon-coins.png' | asset_url }}" alt="Coins">
@@ -670,7 +636,7 @@
           <span>Coins</span>
         </div>
 
-        <div class="pt" data-product="drapeaux" onclick="selProd(this)">
+        <div class="pt" onclick="selProd(this)">
           <span class="pt-ck">✓</span>
           <div class="pt-ico">
             <img class="pt-img" src="{{ 'icon-drapeaux.png' | asset_url }}" alt="Drapeaux">
@@ -678,7 +644,7 @@
           <span>Drapeaux</span>
         </div>
 
-        <div class="pt" data-product="patches" onclick="selProd(this)">
+        <div class="pt" onclick="selProd(this)">
           <span class="pt-ck">✓</span>
           <div class="pt-ico">
             <img class="pt-img" src="{{ 'icon-patchs.png' | asset_url }}" alt="Patchs">
@@ -695,7 +661,7 @@
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
-      <div class="sb-inner" id="sidebar-content">
+      <div class="sb-inner">
 
   <!-- 2. Couleur -->
         <div class="sec">
@@ -830,503 +796,5 @@
         </div>
       </div>
 
-            <div class="cv-wrap">
-        <div class="cv-canvas-row">
-          <!-- UNE SEULE grande image qui change -->
-          <div class="cv-single-view">
-            <div class="mlbl">
-              <div class="mline"></div>
-              <span>5 cm</span>
-            </div>
-            
-            <!-- Vue de face (visible par défaut) -->
-            <img class="product-img-single on" id="view-face" 
-              src="{{ 'sweatshirt-face.png' | asset_url }}"
-              alt="Sweatshirt vue de face">
-            
-            <!-- Vue de dos (cachée) -->
-            <img class="product-img-single" id="view-dos" 
-              src="{{ 'sweatshirt-dos.png' | asset_url }}"
-              alt="Sweatshirt vue de dos">
-            
-            <!-- Vue de côté (cachée) -->
-            <img class="product-img-single" id="view-cote" 
-              src="{{ 'sweatshirt-cote.png' | asset_url }}"
-              alt="Sweatshirt vue de côté">
-            
-            <div class="mlbl mlbl-r">
-              <span>5 cm</span>
-              <div class="mline"></div>
-            </div>
-          </div>
+      <div class="cv-wrap">
 
-          <!-- Zoom à droite de l'image, en colonne verticale -->
-          <div class="cv-ctrl">
-            <button class="cbtn" onclick="zoom(-10)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13H5v-2h14v2z"/></svg>
-            </button>
-            <span class="zlvl" id="zlvl">100%</span>
-            <button class="cbtn" onclick="zoom(10)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            </button>
-            <div class="cdiv"></div>
-            <button class="cbtn" onclick="resetZoom()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
-            </button>
-          </div>
-        </div><!-- /cv-canvas-row -->
-
-        <div class="cv-info">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-          Les couleurs affichées peuvent légèrement varier selon votre écran.
-        </div>
-
-      </div><!-- /cv-wrap -->
-    </main>
-
-  </div><!-- /app -->
-
-    <!-- ══ RECAP ══ -->
-    <aside class="recap">
-      <div class="rp-hdr">Récapitulatif</div>
-
-      <div class="rp-items">
-        <!-- Product row (always visible) -->
-        <div class="ri">
-          <div class="ri-thumb">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="#1a1a1a"><path d="M16 5v2h-3V3H11v4H8V5L3 8v3h2v9h14V11h2V8l-5-3z"/></svg>
-          </div>
-          <div class="ri-info">
-            <div class="ri-name" id="rc-prod">Sweatshirt</div>
-            <div class="ri-det" id="rc-color">Couleur : Noir</div>
-            <div class="ri-det" id="rc-size">Taille : M</div>
-          </div>
-        </div>
-
-        <!-- Logo cœur row -->
-        <div class="ri" id="rc-front" style="display:none">
-          <div class="ri-thumb"><img id="rc-img-f" src="" alt="Logo cœur"></div>
-          <div class="ri-info">
-            <div class="ri-name">Logo cœur</div>
-            <div class="ri-ok">✓ Personnalisé</div>
-          </div>
-        </div>
-
-        <!-- Logo dos row -->
-        <div class="ri" id="rc-back" style="display:none">
-          <div class="ri-thumb"><img id="rc-img-b" src="" alt="Logo dos"></div>
-          <div class="ri-info">
-            <div class="ri-name">Logo dos</div>
-            <div class="ri-ok">✓ Personnalisé</div>
-          </div>
-        </div>
-
-        <!-- Manches row -->
-        <div class="ri" id="rc-sleeves" style="display:none">
-          <div class="ri-thumb">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="#888"><path d="M16 5v2h-3V3H11v4H8V5L3 8v3h2v9h14V11h2V8l-5-3z"/></svg>
-          </div>
-          <div class="ri-info">
-            <div class="ri-name">Manches</div>
-            <div class="ri-ok">✓ Personnalisé</div>
-          </div>
-        </div>
-      </div><!-- /rp-items -->
-
-      <div class="rp-price">
-        <div class="rp-plbl">Prix Total</div>
-        <div class="rp-pval">45,00 € <span class="rp-pvat">TTC</span></div>
-      </div>
-
-      <div class="rp-acts">
-        <button class="btn-cart">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
-          Ajouter au panier
-        </button>
-        <button class="btn-save">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-          Sauvegarder le design
-        </button>
-      </div>
-
-      <div class="rp-trust">
-        <div class="ti">
-          <div class="ti-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="#666"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
-          <div class="ti-txt">Paiement sécurisé<span>Transactions 100% sécurisées</span></div>
-        </div>
-        <div class="ti">
-          <div class="ti-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="#666"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
-          <div class="ti-txt">Service client<span>À votre écoute 7j/7</span></div>
-        </div>
-      </div>
-    </aside>
-
-  <script>
-    /* ── State ── */
-    let zl = 100;
-    let currentColor = '#1a1a1a';
-    let currentColorName = 'Noir';
-
-    /* ── Helpers: apply hoodie color ── */
-    function applyColor(hex) {
-      // If using SVG hoodies, tint each shape
-      ['hoodie-body','hoodie-back-body','hoodie-side-body'].forEach(id => {
-        const g = document.getElementById(id);
-        if (!g) return;
-        g.querySelectorAll('path, rect').forEach((el, i) => {
-          const orig = el.getAttribute('data-orig-fill');
-          if (!orig) el.setAttribute('data-orig-fill', el.getAttribute('fill') || '#1a1a1a');
-          const base = el.getAttribute('data-orig-fill');
-          if (base === '#111' || base === '#333') {
-            // Keep darker shading relative; shift by same hue
-            el.setAttribute('fill', shadeHex(hex, base === '#333' ? -20 : -40));
-          } else {
-            el.setAttribute('fill', hex);
-          }
-        });
-      });
-
-      // If using real product images with CSS filter
-      // document.querySelectorAll('.product-img').forEach(img => {
-      //   img.style.filter = hexToHueRotate(hex);
-      // });
-    }
-
-    function shadeHex(hex, pct) {
-      const n = parseInt(hex.replace('#',''), 16);
-      const r = Math.min(255, Math.max(0, (n>>16) + pct));
-      const g = Math.min(255, Math.max(0, ((n>>8)&0xff) + pct));
-      const b = Math.min(255, Math.max(0, (n&0xff) + pct));
-      return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
-    }
-
-    /* ── Product select ── */
-    function selProd(el) {
-      document.querySelectorAll('.pt').forEach(c => c.classList.remove('on'));
-      el.classList.add('on');
-
-      // Changer la layout et les images via le DynamicLayoutManager
-      const productType = el.dataset.product;
-      if (productType && window.dynamicLayoutManager) {
-        window.dynamicLayoutManager.handleProductChange(productType);
-      }
-      
-      // Pour les textiles, changer aussi les images
-      if (productType && window.productImageSwitcher && 
-          (productType === 'sweatshirt' || productType === 'tshirt' || productType === 'tshirt_polyester')) {
-        window.productImageSwitcher.updateImages(productType);
-      }
-    }
-
-    /* ── Color select ── */
-    function selColor(el, hex, name) {
-      document.querySelectorAll('.cs').forEach(s => s.classList.remove('on'));
-      el.classList.add('on');
-      currentColor = hex;
-      currentColorName = name;
-      applyColor(hex);
-      document.getElementById('rc-color').textContent = 'Couleur : ' + name;
-    }
-
-    /* ── Size select ── */
-    function selSize(el) {
-      document.querySelectorAll('.sb').forEach(b => b.classList.remove('on'));
-      el.classList.add('on');
-      document.getElementById('rc-size').textContent = 'Taille : ' + el.textContent;
-    }
-
-    /* ── View tabs ── */
-    function selView(el, view) {
-      document.querySelectorAll('.vt').forEach(t => t.classList.remove('on'));
-      el.classList.add('on');
-      // For now single face view; extend with dos/cote views if needed
-    }
-
-    /* ── Zoom ── */
-    function zoom(d) {
-      zl = Math.min(200, Math.max(50, zl + d));
-      document.getElementById('zlvl').textContent = zl + '%';
-      document.querySelectorAll('.cv-view, .coins-canvas-circle, .flag-stage, .coin-stage').forEach(v => {
-        v.style.transform = `scale(${zl/100})`;
-        v.style.transformOrigin = 'center center';
-      });
-    }
-    function resetZoom() {
-      zl = 100;
-      document.getElementById('zlvl').textContent = '100%';
-      document.querySelectorAll('.cv-view, .coins-canvas-circle, .flag-stage, .coin-stage').forEach(v => { v.style.transform = ''; });
-    }
-
-    /* ── File upload ── */
-    function doUpload(e, zone) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const src = ev.target.result;
-
-        // Si c'est un upload de coin
-        if (zone === 'c') {
-          // Preview dans la sidebar
-          const prev = document.getElementById('pc');
-          const img  = document.getElementById('ic');
-          const lbl  = document.getElementById('lc');
-          if (prev && img) { img.src = src; prev.style.display = 'block'; }
-          if (lbl) lbl.style.display = 'flex';
-          
-          // Afficher dans le canvas circulaire
-          const coinsCanvas = document.getElementById('coins-canvas');
-          const coinsPreviewImg = document.getElementById('coins-preview-img');
-          if (coinsCanvas && coinsPreviewImg) {
-            coinsPreviewImg.src = src;
-            coinsPreviewImg.style.display = 'block';
-            coinsCanvas.classList.add('has-image');
-          }
-          
-          // Recap - dans la miniature ronde
-          const recapThumb = document.getElementById('coins-recap-thumb');
-          if (recapThumb) {
-            recapThumb.innerHTML = `<img src="${src}" alt="Patch" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-          }
-          
-          return;
-        }
-
-        // Si c'est un upload de coin métallique (recto / verso)
-        if (zone === 'coin-recto' || zone === 'coin-verso') {
-          const face = zone === 'coin-recto' ? 'recto' : 'verso';
-          const disc = document.getElementById('coin-disc-' + face);
-          if (disc) {
-            const ph  = disc.querySelector('.coin-placeholder');
-            const img = disc.querySelector('.coin-design-img');
-            if (ph)  ph.style.display = 'none';
-            if (img) { img.src = src; img.style.display = 'block'; }
-          }
-          // Miniatures du récap
-          const thumbMain = document.getElementById('coin-recap-thumb-main');
-          const thumbFace = document.getElementById('coin-recap-thumb-' + face);
-          const imgHtml = `<img src="${src}" alt="${face}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-          if (thumbFace) thumbFace.innerHTML = imgHtml;
-          if (face === 'recto' && thumbMain) thumbMain.innerHTML = imgHtml;
-          return;
-        }
-
-        // Si c'est un upload de drapeau (recto / verso)
-        if (zone === 'flag-recto' || zone === 'flag-verso') {
-          const wrap = document.getElementById(zone);
-          if (wrap) {
-            // Mettre à jour les deux vues (3D image + 2D codé)
-            wrap.querySelectorAll('.flag-canvas-placeholder').forEach(ph => ph.style.display = 'none');
-            wrap.querySelectorAll('.flag-design-img').forEach(img => { img.src = src; img.style.display = 'block'; });
-          }
-          // Miniature du récap (recto uniquement)
-          if (zone === 'flag-recto') {
-            const recapThumb = document.getElementById('flag-recap-thumb');
-            if (recapThumb) {
-              recapThumb.innerHTML = `<img src="${src}" alt="Drapeau" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`;
-            }
-          }
-          return;
-        }
-
-        // Sidebar preview (textiles)
-        const prev = document.getElementById('p' + zone);
-        const img  = document.getElementById('i' + zone);
-        const lbl  = document.getElementById('l' + zone);
-        if (prev && img) { img.src = src; prev.style.display = 'block'; }
-        if (lbl)          lbl.style.display = 'flex';
-
-        // SVG overlay
-        const ov = document.getElementById('ov-' + zone);
-        if (ov) { ov.setAttribute('href', src); ov.style.display = 'block'; }
-
-        // Mirror sleeves to back view
-        if (zone === 'sl') {
-          const o2 = document.getElementById('ov-sl2');
-          if (o2) { o2.setAttribute('href', src); o2.style.display = 'block'; }
-          document.getElementById('rc-sleeves').style.display = 'flex';
-        }
-        if (zone === 'sr') {
-          const o2 = document.getElementById('ov-sr2');
-          if (o2) { o2.setAttribute('href', src); o2.style.display = 'block'; }
-          document.getElementById('rc-sleeves').style.display = 'flex';
-        }
-
-        // Recap rows
-        if (zone === 'f') {
-          document.getElementById('rc-img-f').src = src;
-          document.getElementById('rc-front').style.display = 'flex';
-        }
-        if (zone === 'b') {
-          document.getElementById('rc-img-b').src = src;
-          document.getElementById('rc-back').style.display = 'flex';
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function rmUp(zone) {
-      // Si c'est un coin
-      if (zone === 'c') {
-        const prev = document.getElementById('pc');
-        const img  = document.getElementById('ic');
-        const lbl  = document.getElementById('lc');
-        const input = document.getElementById('uc');
-        
-        if (img) img.src = '';
-        if (prev) prev.style.display = 'none';
-        if (lbl) lbl.style.display = 'none';
-        if (input) input.value = '';
-        
-        // Cacher dans le canvas
-        const coinsCanvas = document.getElementById('coins-canvas');
-        const coinsPreviewImg = document.getElementById('coins-preview-img');
-        if (coinsCanvas) coinsCanvas.classList.remove('has-image');
-        if (coinsPreviewImg) {
-          coinsPreviewImg.src = '';
-          coinsPreviewImg.style.display = 'none';
-        }
-        
-        // Cacher dans le récap
-        const rcCoinLogo = document.getElementById('rc-coin-logo');
-        if (rcCoinLogo) rcCoinLogo.style.display = 'none';
-        
-        return;
-      }
-      
-      // Textiles
-      ['p','i','l'].forEach(pfx => {
-        const el = document.getElementById(pfx + zone);
-        if (!el) return;
-        if (pfx === 'i') el.src = '';
-        else if (pfx === 'p') el.style.display = 'none';
-        else el.style.display = 'none';
-      });
-      const input = document.getElementById('u' + zone);
-      if (input) input.value = '';
-      const ov = document.getElementById('ov-' + zone);
-      if (ov) { ov.removeAttribute('href'); ov.style.display = 'none'; }
-      if (zone === 'f') document.getElementById('rc-front').style.display = 'none';
-      if (zone === 'b') document.getElementById('rc-back').style.display = 'none';
-      if (zone === 'sl' || zone === 'sr') {
-        const slSrc = document.getElementById('isl')?.src;
-        const srSrc = document.getElementById('isr')?.src;
-        if (!slSrc && !srSrc) document.getElementById('rc-sleeves').style.display = 'none';
-      }
-    }
-
-    /* ── Coins functions ── */
-    function selectShape(el) {
-      document.querySelectorAll('.coins-shape-card').forEach(s => s.classList.remove('active'));
-      el.classList.add('active');
-      const shapeName = el.querySelector('span').textContent;
-      console.log('Forme sélectionnée:', el.dataset.shape);
-      
-      // Mettre à jour le récap
-      const recapShape = document.getElementById('coins-recap-shape');
-      if (recapShape) recapShape.textContent = shapeName;
-    }
-
-    function selectCoinSize(el) {
-      document.querySelectorAll('.coins-size-card').forEach(s => s.classList.remove('active'));
-      el.classList.add('active');
-      const sizeName = el.querySelector('p').textContent;
-      console.log('Taille sélectionnée:', el.dataset.size);
-      
-      // Mettre à jour le récap
-      const recapSize = document.getElementById('coins-recap-size');
-      if (recapSize) recapSize.textContent = sizeName;
-    }
-
-    function selectFabrication(el) {
-      document.querySelectorAll('.conf-fabrication-option').forEach(f => f.classList.remove('active'));
-      el.classList.add('active');
-      const radio = el.querySelector('input[type="radio"]');
-      if (radio) radio.checked = true;
-      const typeName = el.querySelector('strong').textContent;
-      console.log('Fabrication sélectionnée:', el.dataset.fabrication);
-      
-      // Mettre à jour le récap
-      const recapType = document.getElementById('coins-recap-type');
-      if (recapType) recapType.textContent = typeName;
-    }
-
-    function switchCoinsView(view) {
-      // Supprimer la classe 'on' de tous les onglets
-      document.querySelectorAll('.vtabs .vt').forEach(t => t.classList.remove('on'));
-      
-      // Ajouter la classe 'on' à l'onglet cliqué
-      event.target.classList.add('on');
-      
-      console.log('Vue coins:', view);
-      
-      // TODO: Implémenter vraiment les différentes vues (2D vs réel)
-      // Pour l'instant, juste changer l'apparence de l'onglet
-    }
-
-    /* ── Quantity management for Coins ── */
-    function changeQty(delta) {
-      const input = document.getElementById('coin-qty-input');
-      if (!input) return;
-      
-      let currentQty = parseInt(input.value) || 20;
-      let newQty = currentQty + delta;
-      
-      // Minimum 20 unités
-      if (newQty < 20) newQty = 20;
-      
-      input.value = newQty;
-      updateCoinPrice(newQty);
-    }
-
-    function handleQtyInput() {
-      const input = document.getElementById('coin-qty-input');
-      if (!input) return;
-      
-      let qty = parseInt(input.value) || 20;
-      
-      // Minimum 20 unités
-      if (qty < 20) {
-        qty = 20;
-        input.value = qty;
-      }
-      
-      updateCoinPrice(qty);
-    }
-
-    function updateCoinPrice(qty) {
-      const pricePerUnit = 2.45; // Prix unitaire HT
-      const totalHT = pricePerUnit * qty;
-      const totalTTC = totalHT * 1.20; // TVA 20%
-      
-      // Mettre à jour l'affichage de la quantité
-      const qtyDisplay = document.getElementById('coins-qty-display');
-      if (qtyDisplay) {
-        qtyDisplay.textContent = `à partir de (${qty} unités)`;
-      }
-      
-      // Mettre à jour le prix total HT
-      const totalPrice = document.getElementById('coins-total-price');
-      if (totalPrice) {
-        totalPrice.textContent = totalHT.toFixed(2) + ' €';
-      }
-      
-      // Mettre à jour le prix total TTC
-      const totalTtc = document.getElementById('coins-total-ttc');
-      if (totalTtc) {
-        totalTtc.textContent = totalTTC.toFixed(2) + ' € TTC';
-      }
-      
-      console.log('Quantité:', qty, '| Prix total HT:', totalHT.toFixed(2), '€ | TTC:', totalTTC.toFixed(2), '€');
-    }
-
-    /* ── Contact for custom (PVC/Tissé) ── */
-    function contactForCustom() {
-      // Ouvrir un modal ou rediriger vers la page de contact
-      alert('Contactez-nous pour une commande PVC ou Tissé personnalisée !\n\nEmail: contact@customtextile.com\nTél: +33 1 23 45 67 89');
-      // TODO: Implémenter un vrai formulaire de contact ou modal
-    }
-  </script>
-  </div><!-- /conf-app-root -->
-  </body>
-  </html>
