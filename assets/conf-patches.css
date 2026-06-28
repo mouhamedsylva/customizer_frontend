@@ -472,16 +472,16 @@
    L'image patch-*.png est neutre (gris/argent) ; on la colore par filtre. */
 
 /* Or brillant */
-.coin-disc.finish-or .coin-base-img,
+/* .coin-disc.finish-or .coin-base-img,
 .coin-edge.finish-or .coin-base-img {
   filter: sepia(0.75) saturate(2.2) hue-rotate(-8deg) brightness(1.08);
 }
 
 /* Argent brillant (neutre, légèrement éclairci) */
-.coin-disc.finish-argent .coin-base-img,
+/* .coin-disc.finish-argent .coin-base-img,
 .coin-edge.finish-argent .coin-base-img {
   filter: grayscale(0.15) brightness(1.12) contrast(1.02);
-}
+} */ 
 
 /* Nickel noir */
 .coin-disc.finish-nickel .coin-base-img,

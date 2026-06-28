@@ -24,9 +24,11 @@
 /* N'afficher que les logos de la vue active.
    data-view sur la couche = face | dos | cote */
 .logo-layer[data-view="face"] .for-dos,
-.logo-layer[data-view="cote"] .for-dos,
+.logo-layer[data-view="face"] .for-cote,
+.logo-layer[data-view="dos"]  .for-face,
+.logo-layer[data-view="dos"]  .for-cote,
 .logo-layer[data-view="cote"] .for-face,
-.logo-layer[data-view="dos"]  .for-face {
+.logo-layer[data-view="cote"] .for-dos {
   display: none !important;
 }
 

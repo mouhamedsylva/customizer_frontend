@@ -39,6 +39,45 @@
           {%- endfor -%}
         {%- endfor -%}
       };
+
+      window.COIN_IMAGE_URLS = {
+        'patch-recto-or':     "{{ 'patch-recto-or.png'     | asset_url }}",
+        'patch-recto-argent': "{{ 'patch-recto-argent.png' | asset_url }}",
+        'patch-recto-nickel': "{{ 'patch-recto-nickel.png' | asset_url }}",
+        'patch-recto-bronze': "{{ 'patch-recto-bronze.png' | asset_url }}",
+        'patch-recto-cuivre': "{{ 'patch-recto-cuivre.png' | asset_url }}",
+
+        'patch-verso-or':     "{{ 'patch-verso-or.png'     | asset_url }}",
+        'patch-verso-argent': "{{ 'patch-verso-argent.png' | asset_url }}",
+        'patch-verso-nickel': "{{ 'patch-verso-nickel.png' | asset_url }}",
+        'patch-verso-bronze': "{{ 'patch-verso-bronze.png' | asset_url }}",
+        'patch-verso-cuivre': "{{ 'patch-verso-cuivre.png' | asset_url }}",
+
+        'patch-cote-or':     "{{ 'patch-cote-or.png'     | asset_url }}",
+        'patch-cote-argent': "{{ 'patch-cote-argent.png' | asset_url }}",
+        'patch-cote-nickel': "{{ 'patch-cote-nickel.png' | asset_url }}",
+        'patch-cote-bronze': "{{ 'patch-cote-bronze.png' | asset_url }}",
+        'patch-cote-cuivre': "{{ 'patch-cote-cuivre.png' | asset_url }}"
+      };
+
+      // Images génériques (sans couleur) servant de repli si une image couleur manque
+      window.PRODUCT_FALLBACK_URLS = {
+        "sweatshirt": {
+          face: "{{ 'sweatshirt-face.png' | asset_url }}",
+          dos:  "{{ 'sweatshirt-dos.png' | asset_url }}",
+          cote: "{{ 'sweatshirt-t-cote.png' | asset_url }}"
+        },
+        "tshirt": {
+          face: "{{ 'tshirt-face.png' | asset_url }}",
+          dos:  "{{ 'tshirt-dos.png' | asset_url }}",
+          cote: "{{ 'tshirt-cote.png' | asset_url }}"
+        },
+        "tshirt-polyester": {
+          face: "{{ 'tshirt-polyester-face.png' | asset_url }}",
+          dos:  "{{ 'tshirt-polyester-dos.png' | asset_url }}",
+          cote: "{{ 'tshirt-polyester-cote.png' | asset_url }}"
+        }
+      };
     </script>
     <script src="{{ 'conf-product-images.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-dynamic-layout.js' | asset_url }}" defer></script>
@@ -883,6 +922,15 @@
                 <img src="" alt="Logo dos" draggable="false">
                 <span class="logo-resize" data-resize="b"></span>
               </div>
+              <!-- Logos manches : visibles sur la vue de côté -->
+              <div class="design-logo for-cote" id="logo-sl" data-zone="sl" style="display:none; left:42%; top:30%; width:12%;">
+                <img src="" alt="Logo manche gauche" draggable="false">
+                <span class="logo-resize" data-resize="sl"></span>
+              </div>
+              <div class="design-logo for-cote" id="logo-sr" data-zone="sr" style="display:none; left:42%; top:46%; width:12%;">
+                <img src="" alt="Logo manche droite" draggable="false">
+                <span class="logo-resize" data-resize="sr"></span>
+              </div>
             </div>
 
             <div class="mlbl mlbl-r">
@@ -925,7 +973,7 @@
         <!-- Product row (always visible) -->
         <div class="ri">
           <div class="ri-thumb">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="#1a1a1a"><path d="M16 5v2h-3V3H11v4H8V5L3 8v3h2v9h14V11h2V8l-5-3z"/></svg>
+            <img id="rc-prod-img" src="{{ 'sweatshirt-face.png' | asset_url }}" alt="Produit" style="width:38px;height:38px;object-fit:contain;display:block;">
           </div>
           <div class="ri-info">
             <div class="ri-name" id="rc-prod">Sweatshirt</div>
@@ -1000,6 +1048,8 @@
     let currentColorSlug = 'noir';
     let currentProductKey = 'sweatshirt';
 
+    const LOGO_STORE = {};
+
     /* ── Couleurs : nom affiché -> slug de fichier ── */
     const COLOR_SLUGS = {
       'Noir': 'noir',
@@ -1030,9 +1080,10 @@
        Repli automatique sur l'image générique si le fichier couleur manque. */
     function updateProductImages() {
       const prefix = PRODUCT_SLUGS[currentProductKey];
-      if (!prefix) return; // produit non textile (coins, drapeaux...) : on ne touche pas
+      if (!prefix) return;
 
       const urls = window.PRODUCT_IMAGE_URLS || {};
+      const fallbacks = (window.PRODUCT_FALLBACK_URLS || {})[prefix] || {};
 
       ['face', 'dos', 'cote'].forEach(view => {
         const imgEl = document.getElementById('view-' + view);
@@ -1040,18 +1091,37 @@
 
         const key = prefix + '-' + currentColorSlug + '-' + view;
         const colorUrl = urls[key];
-        if (!colorUrl) return; // pas d'URL générée pour cette combinaison : on ne touche pas
-        if (imgEl.src === colorUrl) return; // déjà la bonne image
+        const fallbackUrl = fallbacks[view];
 
-        // Précharge la nouvelle image, puis la remplace INSTANTANÉMENT une fois prête.
-        // Comme elle est déjà en cache, le changement est net et sans clignotement :
-        // on a l'impression que seule la couleur change.
         imgEl.style.transition = 'none';
+
+        if (!colorUrl) {
+          if (fallbackUrl) imgEl.src = fallbackUrl;
+          return;
+        }
+
         const test = new Image();
         test.onload = () => { imgEl.src = colorUrl; };
-        test.onerror = () => { /* image absente : on conserve l'image actuelle */ };
+        test.onerror = () => { if (fallbackUrl) imgEl.src = fallbackUrl; };
         test.src = colorUrl;
       });
+
+      // ← AJOUT : mettre à jour l'image miniature dans le récap avec la couleur courante
+      const rcProdImg = document.getElementById('rc-prod-img');
+      if (rcProdImg) {
+        const key = prefix + '-' + currentColorSlug + '-face';
+        const colorUrl = (window.PRODUCT_IMAGE_URLS || {})[key];
+        const fallbackUrl = ((window.PRODUCT_FALLBACK_URLS || {})[prefix] || {})['face'];
+
+        if (colorUrl) {
+          const test = new Image();
+          test.onload  = () => { rcProdImg.src = colorUrl; };
+          test.onerror = () => { if (fallbackUrl) rcProdImg.src = fallbackUrl; };
+          test.src = colorUrl;
+        } else if (fallbackUrl) {
+          rcProdImg.src = fallbackUrl;
+        }
+      }
     }
 
     /* ── Applique la couleur : charge les images correspondantes ── */
@@ -1072,16 +1142,37 @@
       document.querySelectorAll('.pt').forEach(c => c.classList.remove('on'));
       el.classList.add('on');
 
-      // Changer la layout et les images via le DynamicLayoutManager
       const productType = el.dataset.product;
+
+      const rcProdImg = document.getElementById('rc-prod-img');
+      if (rcProdImg) {
+        // Récupère l'image miniature du bouton de type cliqué
+        const ptImg = el.querySelector('.pt-img');
+        if (ptImg) rcProdImg.src = ptImg.src;
+      }
+
+      // Mettre à jour le nom du produit dans le récap
+      const rcProd = document.getElementById('rc-prod');
+      if (rcProd) {
+        const ptLabel = el.querySelector('span:not(.pt-ck)');
+        if (ptLabel) rcProd.textContent = ptLabel.textContent.trim();
+      }
+
+      // ← AJOUT : sauvegarder les logos du produit actuellement actif
+      if (currentProductKey) {
+        saveLogosForProduct(currentProductKey);
+      }
+
       if (productType && window.dynamicLayoutManager) {
         window.dynamicLayoutManager.handleProductChange(productType);
       }
 
-      // Pour les textiles : charger les images avec la couleur courante
       if (productType && (productType === 'sweatshirt' || productType === 'tshirt' || productType === 'tshirt_polyester')) {
         currentProductKey = productType;
         updateProductImages();
+
+        // ← AJOUT : restaurer les logos sauvegardés pour ce produit
+        restoreLogosForProduct(productType);
       }
     }
 
@@ -1094,6 +1185,75 @@
       currentColorSlug = COLOR_SLUGS[name] || 'noir';
       applyColor(hex);
       document.getElementById('rc-color').textContent = 'Couleur : ' + name;
+    }
+
+    function saveLogosForProduct(productKey) {
+      const zones = ['f', 'b', 'sl', 'sr'];
+      LOGO_STORE[productKey] = {};
+      zones.forEach(zone => {
+        const img = document.getElementById('i' + zone);
+        // img.src vaut l'URL absolue de la page quand il est vide — on filtre ça
+        const src = img ? img.getAttribute('src') : null;
+        LOGO_STORE[productKey][zone] = (src && src !== '' && src.startsWith('data:')) ? src : null;
+      });
+    }
+
+
+    function restoreLogosForProduct(productKey) {
+      const zones = ['f', 'b', 'sl', 'sr'];
+      const saved = LOGO_STORE[productKey] || {};
+
+      zones.forEach(zone => {
+        const src = saved[zone] || null;
+
+        // Sidebar preview
+        const prev = document.getElementById('p' + zone);
+        const img  = document.getElementById('i' + zone);
+        const lbl  = document.getElementById('l' + zone);
+        const input = document.getElementById('u' + zone);
+
+        if (src) {
+          if (img)  img.src = src;
+          if (prev) prev.style.display = 'block';
+          if (lbl)  lbl.style.display = 'flex';
+        } else {
+          if (img)  img.src = '';
+          if (prev) prev.style.display = 'none';
+          if (lbl)  lbl.style.display = 'none';
+          if (input) input.value = '';
+        }
+
+        // Logo draggable sur le canvas
+        const logoEl = document.getElementById('logo-' + zone);
+        if (logoEl) {
+          const limg = logoEl.querySelector('img');
+          if (src) {
+            if (limg) limg.src = src;
+            logoEl.style.display = 'block';
+          } else {
+            if (limg) limg.src = '';
+            logoEl.style.display = 'none';
+          }
+        }
+      });
+
+      // Recap rows
+      const savedF  = saved['f']  || null;
+      const savedB  = saved['b']  || null;
+      const savedSl = saved['sl'] || null;
+      const savedSr = saved['sr'] || null;
+
+      const rcFront   = document.getElementById('rc-front');
+      const rcBack    = document.getElementById('rc-back');
+      const rcSleeves = document.getElementById('rc-sleeves');
+      const rcImgF    = document.getElementById('rc-img-f');
+      const rcImgB    = document.getElementById('rc-img-b');
+
+      if (rcFront)   rcFront.style.display   = savedF  ? 'flex' : 'none';
+      if (rcBack)    rcBack.style.display    = savedB  ? 'flex' : 'none';
+      if (rcImgF && savedF)  rcImgF.src = savedF;
+      if (rcImgB && savedB)  rcImgB.src = savedB;
+      if (rcSleeves) rcSleeves.style.display = (savedSl || savedSr) ? 'flex' : 'none';
     }
 
     /* ── Size select ── */
@@ -1221,25 +1381,35 @@
         const ov = document.getElementById('ov-' + zone);
         if (ov) { ov.setAttribute('href', src); ov.style.display = 'block'; }
 
-        // Mirror sleeves to back view
-        if (zone === 'sl') {
-          const o2 = document.getElementById('ov-sl2');
-          if (o2) { o2.setAttribute('href', src); o2.style.display = 'block'; }
-          document.getElementById('rc-sleeves').style.display = 'flex';
-        }
-        if (zone === 'sr') {
-          const o2 = document.getElementById('ov-sr2');
-          if (o2) { o2.setAttribute('href', src); o2.style.display = 'block'; }
-          document.getElementById('rc-sleeves').style.display = 'flex';
+        // Logos manches déplaçables (vue de côté) + bascule auto vers la vue de côté
+        if (zone === 'sl' || zone === 'sr') {
+          const logo = document.getElementById('logo-' + zone);
+          if (logo) {
+            const limg = logo.querySelector('img');
+            if (limg) limg.src = src;
+            logo.style.display = 'block';
+          }
+          const rcS = document.getElementById('rc-sleeves');
+          if (rcS) rcS.style.display = 'flex';
+          // Basculer vers la vue de côté pour positionner le logo
+          const coteBtn = document.querySelector('.vt[onclick*="cote"]');
+          if (coteBtn && typeof selView === 'function') {
+            selView(coteBtn, 'cote');
+          }
         }
 
-        // Logo cœur déplaçable sur le produit (vue de face)
+        // Logo cœur déplaçable sur le produit (vue de face) + bascule auto vers la vue de face
         if (zone === 'f') {
           const logo = document.getElementById('logo-f');
           if (logo) {
             const limg = logo.querySelector('img');
             if (limg) limg.src = src;
             logo.style.display = 'block';
+          }
+          // Basculer vers la vue de face pour positionner le logo
+          const faceBtn = document.querySelector('.vt[onclick*="face"]');
+          if (faceBtn && typeof selView === 'function') {
+            selView(faceBtn, 'face');
           }
         }
 

@@ -262,21 +262,37 @@ function selectCoinSize(el) {
   if (recapSize) recapSize.textContent = mm + ' mm';
 }
 
+// Mapping finition → slug d'image
+const FINISH_IMAGE_SLUGS = {
+  'or':     'or',
+  'argent': 'argent',
+  'nickel': 'nickel',
+  'bronze': 'bronze',
+  'cuivre': 'cuivre'
+};
+
 // Finition métallique
 function selectCoinFinish(el) {
   document.querySelectorAll('.coin-finish-card').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
 
   const finish = el.getAttribute('data-finish');
+  const slug = FINISH_IMAGE_SLUGS[finish];
+
   const labels = {
     'or': 'Or brillant', 'argent': 'Argent brillant', 'nickel': 'Nickel noir',
     'bronze': 'Bronze antique', 'cuivre': 'Cuivre antique'
   };
 
-  // Appliquer la finition aux pièces du canvas
-  document.querySelectorAll('.coin-disc').forEach(d => {
-    d.classList.remove('finish-or', 'finish-argent', 'finish-nickel', 'finish-bronze', 'finish-cuivre');
-    d.classList.add('finish-' + finish);
+  // ← SUPPRIMÉ : les classes CSS filter (finish-or, finish-argent, etc.)
+  // ← AJOUT : on swipe les vraies images
+  const views = ['recto', 'verso', 'cote'];
+  views.forEach(view => {
+    const imgEl = document.getElementById('coin-base-' + view);
+    if (imgEl && window.COIN_IMAGE_URLS) {
+      const url = window.COIN_IMAGE_URLS['patch-' + view + '-' + slug];
+      if (url) imgEl.src = url;
+    }
   });
 
   const recapFinish = document.getElementById('coin-recap-finish');
@@ -343,3 +359,19 @@ function switchCoinView(view) {
   const stage = document.getElementById('coin-stage');
   if (stage) stage.classList.toggle('view-2d', view === '2d');
 }
+
+
+// ← AJOUT : initialise les images du canvas avec les neutres au chargement
+function initCoinBaseImages() {
+  const neutrals = {
+    'recto': window.ASSET_URLS?.patchRecto,
+    'verso': window.ASSET_URLS?.patchVerso,
+    'cote':  window.ASSET_URLS?.patchCote
+  };
+  ['recto', 'verso', 'cote'].forEach(view => {
+    const imgEl = document.getElementById('coin-base-' + view);
+    if (imgEl && neutrals[view]) imgEl.src = neutrals[view];
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initCoinBaseImages);
