@@ -474,11 +474,18 @@ class Configurateur {
         break;
         
       case 'zoom-in':
-        this.zoom(1.2);
+        if (window.canvasManager) window.canvasManager.zoomIn();
+        this.updateZoomDisplay();
         break;
         
       case 'zoom-out':
-        this.zoom(0.8);
+        if (window.canvasManager) window.canvasManager.zoomOut();
+        this.updateZoomDisplay();
+        break;
+
+      case 'zoom-reset':
+        if (window.canvasManager) window.canvasManager.resetZoom();
+        this.updateZoomDisplay();
         break;
         
       default:
@@ -580,9 +587,11 @@ class Configurateur {
   /**
    * Zoom
    */
-  zoom(factor) {
-    // À implémenter
-    console.log(`🔍 Zoom: ${factor}`);
+  updateZoomDisplay() {
+    const level = window.canvasManager?.zoom || 1;
+    if (this.elements.zoomLevel) {
+      this.elements.zoomLevel.textContent = Math.round(level * 100) + '%';
+    }
   }
 }
 

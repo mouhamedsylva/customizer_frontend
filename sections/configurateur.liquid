@@ -10,6 +10,9 @@
     {{ 'conf-drapeaux.css' | asset_url | stylesheet_tag }}
     {{ 'conf-patches.css' | asset_url | stylesheet_tag }}
     <script>
+      // URL de base du backend NestJS (à changer en prod par l'URL déployée)
+      window.API_BASE = "http://localhost:3000/api";
+
       window.ASSET_URLS = {
         visa: "{{ 'visa.svg' | asset_url }}",
         mastercard: "{{ 'mastercard.svg' | asset_url }}",
@@ -84,6 +87,7 @@
     <script src="{{ 'conf-drapeaux.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-patches.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-logo-drag.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-api.js' | asset_url }}" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -300,7 +304,15 @@
       display: none; margin-top: 4px;
       border: 1px solid var(--border); border-radius: 5px;
       padding: 4px 6px; position: relative;
-      background: #fafafa;
+      /* Fond en damier : rend visibles les logos blancs / transparents */
+      background-color: #e8e8e8;
+      background-image:
+        linear-gradient(45deg, #c9c9c9 25%, transparent 25%),
+        linear-gradient(-45deg, #c9c9c9 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #c9c9c9 75%),
+        linear-gradient(-45deg, transparent 75%, #c9c9c9 75%);
+      background-size: 10px 10px;
+      background-position: 0 0, 0 5px, 5px -5px, -5px 0;
     }
     .uprev img { width: 100%; height: 32px; object-fit: contain; display: block; }
     .uprev-lbl {
@@ -460,9 +472,18 @@
     }
     .ri-thumb {
       width: 40px; height: 40px; border-radius: 5px;
-      background: var(--bg-light); border: 1px solid var(--border);
+      border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; overflow: hidden;
+      /* Fond en damier : rend visibles les logos blancs / transparents */
+      background-color: #e8e8e8;
+      background-image:
+        linear-gradient(45deg, #c9c9c9 25%, transparent 25%),
+        linear-gradient(-45deg, #c9c9c9 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #c9c9c9 75%),
+        linear-gradient(-45deg, transparent 75%, #c9c9c9 75%);
+      background-size: 10px 10px;
+      background-position: 0 0, 0 5px, 5px -5px, -5px 0;
     }
     .ri-thumb img { width: 100%; height: 100%; object-fit: contain; }
     .ri-info { flex: 1; min-width: 0; }
@@ -637,6 +658,141 @@
     }
     .pt.on .pt-ck { display: flex; }
 
+    @keyframes cartBounce {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.25); }
+      70%  { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+
+    .obtn-cart {
+      position: relative;
+      border-color: #1a1a1a;
+      font-weight: 600;
+    }
+    .obtn-cart:hover {
+      background: #f0f0f0;
+    }
+
+
+    /* ══ CART DRAWER ══ */
+  .cart-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 99998;
+  }
+  .cart-overlay.open { display: block; }
+
+  .cart-drawer {
+    position: fixed;
+    top: 0; right: -420px;
+    width: 100%; max-width: 400px;
+    height: 100%;
+    background: #fff;
+    z-index: 99999;
+    display: flex; flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0,0,0,.15);
+    transition: right .3s cubic-bezier(.4,0,.2,1);
+  }
+  .cart-drawer.open { right: 0; }
+
+  .cd-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .cd-title { font-size: 16px; font-weight: 700; }
+  .cd-count { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .cd-close {
+    width: 32px; height: 32px; border: none; background: none;
+    cursor: pointer; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--muted); transition: background .13s;
+  }
+  .cd-close:hover { background: var(--bg-light); color: var(--black); }
+
+  .cd-items { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .cd-items::-webkit-scrollbar { width: 3px; }
+  .cd-items::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+  .cd-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cd-thumb {
+    width: 72px; height: 72px; border-radius: 8px;
+    background: var(--bg-light); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .cd-thumb img { width: 100%; height: 100%; object-fit: contain; }
+  .cd-info { flex: 1; min-width: 0; }
+  .cd-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .cd-meta { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .cd-price { font-size: 14px; font-weight: 700; margin-top: 8px; }
+
+  .cd-qty {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px;
+  }
+  .cd-qty-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--border); background: #fff;
+    font-size: 16px; font-weight: 400; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .13s;
+  }
+  .cd-qty-btn:hover { border-color: var(--black); }
+  .cd-qty-val { font-size: 13px; font-weight: 600; min-width: 20px; text-align: center; }
+  .cd-delete {
+    width: 28px; height: 28px; border: none; background: none;
+    cursor: pointer; color: #aaa; display: flex; align-items: center;
+    justify-content: center; border-radius: 50%; transition: color .13s, background .13s;
+    margin-left: auto; align-self: flex-start;
+  }
+  .cd-delete:hover { color: #e33; background: #fee2e2; }
+
+  .cd-empty {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; gap: 12px;
+    color: var(--muted); font-size: 13px; text-align: center; padding: 40px;
+  }
+
+  .cd-footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 20px 20px;
+    flex-shrink: 0;
+    background: #fff;
+  }
+  .cd-subtotal {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+  }
+  .cd-subtotal-lbl { font-size: 12px; color: var(--muted); }
+  .cd-subtotal-val { font-size: 18px; font-weight: 800; }
+  .cd-tax-note { font-size: 10px; color: var(--faint); margin-bottom: 14px; }
+  .cd-checkout {
+    width: 100%; padding: 14px;
+    background: var(--black); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .2s;
+  }
+  .cd-checkout:hover { background: #333; }
+  .cd-continue {
+    width: 100%; padding: 10px;
+    background: #fff; color: var(--black);
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    margin-top: 8px; transition: border-color .15s;
+  }
+  .cd-continue:hover { border-color: var(--black); }
+
 
   </style>
   </head>
@@ -675,6 +831,21 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
         Partager
       </button>
+
+      <!-- Icône panier (cachée par défaut) -->
+      <button class="obtn obtn-cart" id="hdr-cart-btn" style="display:none" onclick="openCartDrawer()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/>
+        </svg>
+        <span id="hdr-cart-count" style="
+          background:#1a1a1a; color:#fff;
+          border-radius:50%; font-size:10px; font-weight:700;
+          width:16px; height:16px;
+          display:inline-flex; align-items:center; justify-content:center;
+          margin-left:2px;
+        ">0</span>
+      </button>
+
       <button class="obtn">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
         Réinitialiser
@@ -931,6 +1102,15 @@
                 <img src="" alt="Logo manche droite" draggable="false">
                 <span class="logo-resize" data-resize="sr"></span>
               </div>
+              <!-- Logos manches vus de FACE (sur les bras avant) -->
+              <div class="design-logo for-face" id="logo-sl-face" data-zone="sl-face" style="display:none; left:30%; top:40%; width:8%;">
+                <img src="" alt="Logo manche gauche" draggable="false">
+                <span class="logo-resize" data-resize="sl-face"></span>
+              </div>
+              <div class="design-logo for-face" id="logo-sr-face" data-zone="sr-face" style="display:none; left:62%; top:40%; width:8%;">
+                <img src="" alt="Logo manche droite" draggable="false">
+                <span class="logo-resize" data-resize="sr-face"></span>
+              </div>
             </div>
 
             <div class="mlbl mlbl-r">
@@ -954,11 +1134,6 @@
             </button>
           </div>
         </div><!-- /cv-canvas-row -->
-
-        <div class="cv-info">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-          Les couleurs affichées peuvent légèrement varier selon votre écran.
-        </div>
 
       </div><!-- /cv-wrap -->
     </main>
@@ -1014,11 +1189,11 @@
 
       <div class="rp-price">
         <div class="rp-plbl">Prix Total</div>
-        <div class="rp-pval">45,00 € <span class="rp-pvat">TTC</span></div>
+        <div class="rp-pval" id="rp-price-val">45,00 € <span class="rp-pvat">TTC</span></div>
       </div>
 
       <div class="rp-acts">
-        <button class="btn-cart">
+        <button class="btn-cart" id="main-add-to-cart" onclick="addToCart()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
           Ajouter au panier
         </button>
@@ -1047,6 +1222,29 @@
     let currentColorName = 'Noir';
     let currentColorSlug = 'noir';
     let currentProductKey = 'sweatshirt';
+
+    /* ── Panier (persisté dans sessionStorage) ── */
+    let cartItems = [];
+    try {
+      cartItems = JSON.parse(sessionStorage.getItem('conf_cart')) || [];
+    } catch (e) { cartItems = []; }
+    let cartCount = cartItems.reduce((s, i) => s + (i.qty || 1), 0);
+
+    // Afficher le bouton panier du header si des articles existent déjà
+    document.addEventListener('DOMContentLoaded', () => {
+      if (cartCount > 0) {
+        const cartBtn = document.getElementById('hdr-cart-btn');
+        const cartCountEl = document.getElementById('hdr-cart-count');
+        if (cartBtn) cartBtn.style.display = 'inline-flex';
+        if (cartCountEl) cartCountEl.textContent = cartCount;
+        if (typeof renderCartDrawer === 'function') renderCartDrawer();
+      }
+
+      // Restaurer les designs uploadés (textile chargé par défaut)
+      if (typeof restoreUploads === 'function') {
+        setTimeout(restoreUploads, 200);
+      }
+    });
 
     const LOGO_STORE = {};
 
@@ -1176,6 +1374,426 @@
       }
     }
 
+
+    function addToCart() {
+      cartCount++;
+
+      // Récupère les infos du produit courant
+      const rcProdImg = document.getElementById('rc-prod-img');
+      const rcProd    = document.getElementById('rc-prod');
+      const rcColor   = document.getElementById('rc-color');
+      const rcSize    = document.getElementById('rc-size');
+      const priceEl   = document.getElementById('rp-price-val');
+
+      // Récupère le prix : extrait le premier nombre (ex: "45,00 € TTC" → 45.00)
+      let price = 0;
+      if (priceEl) {
+        const raw = priceEl.childNodes[0]?.textContent || priceEl.textContent;
+        price = parseFloat(raw.replace(/\s/g,'').replace(',','.').replace(/[^\d.]/g,'')) || 0;
+      }
+
+      // Récupère l'image du produit dans le canvas (vue de face active)
+      let imgSrc = '';
+      const canvasImg = document.getElementById('view-face');
+      if (canvasImg && canvasImg.src && !canvasImg.src.endsWith(window.location.href)) {
+        imgSrc = canvasImg.src;
+      } else if (rcProdImg) {
+        imgSrc = rcProdImg.src;
+      }
+
+      const item = {
+        id: Date.now(),
+        name:  rcProd  ? rcProd.textContent.trim()  : 'Produit personnalisé',
+        color: rcColor ? rcColor.textContent.trim() : '',
+        size:  rcSize  ? rcSize.textContent.trim()  : '',
+        price: price,
+        img:   imgSrc,
+        qty: 1
+      };
+
+      pushToCart(item, document.getElementById('main-add-to-cart'));
+    }
+
+    /* ── Ajout générique au panier (textile, drapeaux, coins, patchs) ──
+       replaceQty = true : la quantité de l'item EST le nombre d'unités (coins/patchs/drapeaux),
+       on remplace au lieu de cumuler. false (textile) : on cumule +1 à chaque ajout. */
+    function pushToCart(item, btnEl, replaceQty) {
+      // Vérifie si le même article existe déjà (même nom+détails)
+      const existing = cartItems.find(i => i.name === item.name && i.color === item.color && i.size === item.size);
+      if (existing) {
+        if (replaceQty) {
+          existing.qty = item.qty || 1;   // remplacer par la quantité choisie
+        } else {
+          existing.qty += (item.qty || 1); // cumuler
+        }
+      } else {
+        cartItems.push(item);
+      }
+      cartCount = cartItems.reduce((s, i) => s + (i.qty || 1), 0);
+
+      // Afficher le bouton panier dans le header
+      const cartBtn    = document.getElementById('hdr-cart-btn');
+      const cartCountEl = document.getElementById('hdr-cart-count');
+      if (cartBtn) {
+        cartBtn.style.display = 'inline-flex';
+        cartBtn.style.animation = 'none';
+        void cartBtn.offsetWidth;
+        cartBtn.style.animation = 'cartBounce 0.4s ease';
+      }
+      if (cartCountEl) cartCountEl.textContent = cartCount;
+
+      // Sauvegarder le panier pour la page Récapitulatif (utilisé par le drawer)
+      try {
+        sessionStorage.setItem('conf_cart', JSON.stringify(cartItems));
+      } catch (e) {}
+
+      // Feedback bouton
+      if (btnEl) {
+        const original = btnEl.innerHTML;
+        btnEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg> Ajouté !`;
+        btnEl.style.background = '#16a34a';
+        setTimeout(() => { btnEl.innerHTML = original; btnEl.style.background = ''; }, 1800);
+      }
+
+      // Ouvrir le drawer
+      renderCartDrawer();
+      openCartDrawer();
+    }
+
+    /* ── Ajout au panier depuis les récaps Drapeaux / Coins / Patchs ──
+       Lit les infos directement dans le récap courant (colonne droite). */
+    function addCustomToCart(btnEl) {
+      const recap = document.querySelector('.recap');
+      if (!recap) return;
+
+      // Nom du produit (titre du récap)
+      const titleEl = recap.querySelector('.rp-patch-title');
+      const name = titleEl ? titleEl.textContent.trim() : 'Produit personnalisé';
+
+      // Détails (type, taille, forme, finition...) concaténés
+      const details = Array.from(recap.querySelectorAll('.rp-patch-details p'))
+        .map(p => p.textContent.trim())
+        .join(' · ');
+
+      // Quantité : cibler l'input quantité du récap actif (coins/patchs/drapeaux)
+      const qtyInput = recap.querySelector(
+        '#coin-recap-qty-input, #coin-qty-input, #flag-qty-input, input[type="number"]'
+      );
+      const qty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : 1;
+
+      // Prix : on prend le prix total affiché, sinon le prix unitaire
+      let priceText = '';
+      const totalEl = recap.querySelector('.rp-total-price, .rp-unit-price-big');
+      if (totalEl) priceText = totalEl.textContent;
+      let price = parseFloat(priceText.replace(/\s/g,'').replace(',','.').replace(/[^\d.]/g,'')) || 0;
+      // Si c'est un prix unitaire, on multiplie par la quantité
+      if (totalEl && totalEl.classList.contains('rp-unit-price-big')) price = price * qty;
+
+      // Image : d'abord la miniature du récap si elle contient une <img>,
+      // sinon l'aperçu réel du produit dans le canvas (pièce, drapeau...).
+      let imgSrc = '';
+      const thumbImg = recap.querySelector('.rp-patch-thumb img');
+      if (thumbImg && thumbImg.src) {
+        imgSrc = thumbImg.src;
+      } else {
+        // Chercher l'image de base du produit dans le canvas
+        const canvasImg = document.querySelector(
+          '.flag-base-img, .coin-base-img, #coins-preview-img, .coins-canvas-circle img'
+        );
+        if (canvasImg && canvasImg.src) imgSrc = canvasImg.src;
+      }
+
+      const item = {
+        id: Date.now(),
+        name: name,
+        color: details,   // on met les détails dans le champ "color" (affiché en propriétés)
+        size: '',
+        price: qty > 0 ? (price / qty) : price,  // prix unitaire stocké
+        qty: qty,
+        img: imgSrc
+      };
+
+      // replaceQty = true : la quantité est le nombre d'unités commandé (pas un cumul d'ajouts)
+      pushToCart(item, btnEl, true);
+    }
+
+    /* ── Demande de devis (Coins) : ouvre un modal avec formulaire + design du coin ── */
+    function requestCoinQuote(btnEl) {
+      const recap = document.querySelector('.recap');
+
+      // Récupère les détails du coin depuis le récap
+      const name = 'Coin métal personnalisé';
+      const details = recap ? Array.from(recap.querySelectorAll('.rp-patch-details p'))
+        .map(p => p.textContent.trim()) : [];
+      const qtyInput = recap ? recap.querySelector('#coin-recap-qty-input, input[type="number"]') : null;
+      const qty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : 1;
+
+      // Vérifie qu'une source d'image est réelle (pas vide, pas la page elle-même)
+      const validSrc = (el) => {
+        if (!el || !el.getAttribute) return '';
+        const s = el.getAttribute('src') || '';
+        if (!s || s.trim() === '' || s === window.location.href) return '';
+        // ignorer si l'image est masquée
+        if (el.style && el.style.display === 'none') return '';
+        return el.src;
+      };
+
+      // Récupère les designs du coin (recto / verso / côté) dans le canvas
+      const previews = [];
+      [
+        { face: 'recto', id: 'coin-disc-recto' },
+        { face: 'verso', id: 'coin-disc-verso' },
+        { face: 'cote',  id: 'coin-disc-edge' }
+      ].forEach(({ face, id }) => {
+        const disc = document.getElementById(id);
+        if (!disc) return;
+        const baseImg = disc.querySelector('.coin-base-img');
+        const logoImg = disc.querySelector('.coin-logo img, .coin-cote-logo');
+        const base = validSrc(baseImg);
+        const logo = validSrc(logoImg);
+        // On garde la face seulement si la pièce de base existe
+        if (base) {
+          previews.push({ label: face.toUpperCase(), base: base, logo: logo });
+        }
+      });
+
+      openQuoteModal({ name, details, qty, previews });
+    }
+
+    function openQuoteModal(data) {
+      // Supprime un éventuel ancien modal
+      const old = document.getElementById('quote-modal');
+      if (old) old.remove();
+
+      const detailsHtml = data.details.map(d => `<li>${d}</li>`).join('');
+      const previewHtml = data.previews.map(p => `
+        <div class="qm-preview">
+          <div class="qm-preview-disc">
+            <img src="${p.base}" alt="${p.label}" class="qm-preview-base">
+            ${p.logo ? `<img src="${p.logo}" alt="" class="qm-preview-logo">` : ''}
+          </div>
+          <span>${p.label}</span>
+        </div>`).join('');
+
+      const modal = document.createElement('div');
+      modal.id = 'quote-modal';
+      modal.className = 'qm-overlay';
+      modal.innerHTML = `
+        <div class="qm-box">
+          <button class="qm-close" onclick="closeQuoteModal()">✕</button>
+          <h2 class="qm-title">Demande de devis</h2>
+          <p class="qm-sub">Recevez un devis personnalisé pour votre coin métallique.</p>
+
+          <div class="qm-content">
+            <div class="qm-design">
+              <div class="qm-design-title">Votre design</div>
+              <div class="qm-previews">${previewHtml || '<p style="font-size:12px;color:#888">Aucun aperçu</p>'}</div>
+              <div class="qm-specs">
+                <div class="qm-specs-title">${data.name}</div>
+                <ul>${detailsHtml}<li>Quantité : ${data.qty} unités</li></ul>
+              </div>
+            </div>
+
+            <form class="qm-form" id="qm-form">
+              <div class="qm-field">
+                <label>Nom complet <span>*</span></label>
+                <input type="text" name="nom" required>
+              </div>
+              <div class="qm-field">
+                <label>Email <span>*</span></label>
+                <input type="email" name="email" required>
+              </div>
+              <div class="qm-field">
+                <label>Téléphone <span>*</span></label>
+                <input type="tel" name="telephone" required>
+              </div>
+              <div class="qm-field">
+                <label>Entreprise (facultatif)</label>
+                <input type="text" name="entreprise">
+              </div>
+              <div class="qm-field">
+                <label>Message / précisions</label>
+                <textarea name="message" rows="3" placeholder="Détaillez votre besoin…"></textarea>
+              </div>
+              <button type="button" class="qm-submit" onclick="submitQuote()">Envoyer ma demande de devis</button>
+            </form>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      document.body.style.overflow = 'hidden';
+      // Stocke les données pour la soumission
+      window._quoteData = data;
+    }
+
+    function closeQuoteModal() {
+      const m = document.getElementById('quote-modal');
+      if (m) m.remove();
+      document.body.style.overflow = '';
+    }
+
+    async function submitQuote() {
+      const form = document.getElementById('qm-form');
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      const client = {};
+      new FormData(form).forEach((v, k) => client[k] = v);
+
+      const d = window._quoteData || {};
+      const payload = {
+        customer: {
+          nom: client.nom,
+          email: client.email,
+          telephone: client.telephone,
+          entreprise: client.entreprise || undefined,
+          message: client.message || undefined
+        },
+        coin: {
+          name: d.name || 'Coin métal personnalisé',
+          details: d.details || [],
+          qty: d.qty || 1,
+          previews: (d.previews || []).map(p => ({ label: p.label, base: p.base, logo: p.logo || undefined }))
+        }
+      };
+
+      // Désactiver le bouton pendant l'envoi
+      const submitBtn = form.querySelector('.qm-submit');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Envoi en cours…'; }
+
+      try {
+        await window.ConfAPI.createQuote(payload);
+        showQuoteSuccess(client);
+      } catch (err) {
+        console.error('Erreur devis :', err);
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Envoyer ma demande de devis'; }
+        alert("Une erreur est survenue lors de l'envoi de votre demande.\n" + err.message +
+              "\n\nVérifiez que le serveur est démarré.");
+      }
+    }
+
+    function showQuoteSuccess(client) {
+      const box = document.querySelector('#quote-modal .qm-box');
+      if (box) {
+        box.innerHTML = `
+          <button class="qm-close" onclick="closeQuoteModal()">✕</button>
+          <div class="qm-success">
+            <div class="qm-success-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+            </div>
+            <h2>Demande envoyée !</h2>
+            <p>Merci ${client.nom}. Nous vous enverrons votre devis à <strong>${client.email}</strong> sous peu.</p>
+            <button class="qm-submit" onclick="closeQuoteModal()">Fermer</button>
+          </div>`;
+      }
+    }
+
+    function renderCartDrawer() {
+      const container = document.getElementById('cd-items');
+      const emptyEl   = document.getElementById('cd-empty');
+      const footerEl  = document.getElementById('cd-footer');
+      const countEl   = document.getElementById('cd-count');
+      const totalEl   = document.getElementById('cd-total');
+      if (!container) return;
+
+      // Vider (sauf le bloc empty)
+      Array.from(container.children).forEach(c => { if (c.id !== 'cd-empty') c.remove(); });
+
+      if (cartItems.length === 0) {
+        emptyEl.style.display = 'flex';
+        footerEl.style.display = 'none';
+        countEl.textContent = '';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      footerEl.style.display = 'block';
+
+      let total = 0;
+      cartItems.forEach(item => {
+        total += item.price * item.qty;
+        const div = document.createElement('div');
+        div.className = 'cd-item';
+        div.innerHTML = `
+          <div class="cd-thumb">
+            <img src="${item.img}" alt="${item.name}">
+          </div>
+          <div class="cd-info">
+            <div class="cd-name">${item.name}</div>
+            <div class="cd-meta">${item.color}${item.size ? ' · ' + item.size : ''}</div>
+            <div class="cd-price">${(item.price * item.qty).toFixed(2).replace('.',',')} €</div>
+            <div class="cd-qty">
+              <button class="cd-qty-btn" onclick="changeCartQty(${item.id}, -1)">−</button>
+              <span class="cd-qty-val">${item.qty}</span>
+              <button class="cd-qty-btn" onclick="changeCartQty(${item.id}, +1)">+</button>
+            </div>
+          </div>
+          <button class="cd-delete" onclick="removeCartItem(${item.id})" title="Supprimer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+
+      const totalCount = cartItems.reduce((s, i) => s + i.qty, 0);
+      countEl.textContent = totalCount + ' article' + (totalCount > 1 ? 's' : '');
+      totalEl.textContent = total.toFixed(2).replace('.',',') + ' €';
+    }
+
+    function changeCartQty(id, delta) {
+      const item = cartItems.find(i => i.id === id);
+      if (!item) return;
+      item.qty = Math.max(1, item.qty + delta);
+      cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
+      const cartCountEl = document.getElementById('hdr-cart-count');
+      if (cartCountEl) cartCountEl.textContent = cartCount;
+      renderCartDrawer();
+    }
+
+    function removeCartItem(id) {
+      const idx = cartItems.findIndex(i => i.id === id);
+      if (idx !== -1) {
+        cartCount -= cartItems[idx].qty;
+        cartItems.splice(idx, 1);
+      }
+      if (cartCount < 1) {
+        cartCount = 0;
+        const cartBtn = document.getElementById('hdr-cart-btn');
+        if (cartBtn) cartBtn.style.display = 'none';
+      }
+      const cartCountEl = document.getElementById('hdr-cart-count');
+      if (cartCountEl) cartCountEl.textContent = cartCount;
+      renderCartDrawer();
+    }
+
+    function openCartDrawer() {
+      document.getElementById('cart-drawer').classList.add('open');
+      document.getElementById('cart-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeCartDrawer() {
+      document.getElementById('cart-drawer').classList.remove('open');
+      document.getElementById('cart-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function goToCheckout() {
+      // Redirige vers le checkout Shopify
+      window.location.href = '/checkout';
+    }
+
+    // Bouton "Continuer" du drawer -> page Récapitulatif (étape 2)
+    function goToRecap() {
+      try {
+        sessionStorage.setItem('conf_cart', JSON.stringify(cartItems));
+      } catch (e) {}
+      window.location.href = '/pages/recapitulatif';
+    }
+
+    // function scrollToCart() {
+    //   // Scroll vers le récap ou simplement un feedback visuel
+    //   const recap = document.querySelector('.recap, .rp-items');
+    //   if (recap) recap.scrollIntoView({ behavior: 'smooth' });
+    // }
+
     /* ── Color select ── */
     function selColor(el, hex, name) {
       document.querySelectorAll('.cs').forEach(s => s.classList.remove('on'));
@@ -1275,7 +1893,9 @@
       const scale = SIZE_SCALES[size] || 1.0;
       const view = document.querySelector('.cv-single-view');
       if (view) {
-        view.style.transform = `scale(${scale})`;
+        view.dataset.sizeScale = scale; // ← mémoriser l'échelle taille
+        const combined = (zl / 100) * scale;
+        view.style.transform = `scale(${combined})`;
         view.style.transformOrigin = 'center center';
         view.style.transition = 'transform 0.25s ease';
       }
@@ -1287,24 +1907,133 @@
     function zoom(d) {
       zl = Math.min(200, Math.max(50, zl + d));
       document.getElementById('zlvl').textContent = zl + '%';
+      applyZoom();
+    }
+
+    function applyZoom() {
+      // Textile : .cv-single-view (combiné avec l'échelle de taille)
+      const singleView = document.querySelector('.cv-single-view');
+      if (singleView) {
+        const currentSize = singleView.dataset.sizeScale || '1';
+        const combined = (zl / 100) * parseFloat(currentSize);
+        singleView.style.transform = `scale(${combined})`;
+        singleView.style.transformOrigin = 'center center';
+        singleView.style.transition = 'transform 0.2s ease';
+      }
+      // Autres produits
       document.querySelectorAll('.cv-view, .coins-canvas-circle, .flag-stage, .coin-stage').forEach(v => {
         v.style.transform = `scale(${zl/100})`;
         v.style.transformOrigin = 'center center';
       });
     }
+
     function resetZoom() {
       zl = 100;
       document.getElementById('zlvl').textContent = '100%';
+      applyZoom();
+      // Remettre les autres à zéro aussi
       document.querySelectorAll('.cv-view, .coins-canvas-circle, .flag-stage, .coin-stage').forEach(v => { v.style.transform = ''; });
     }
 
     /* ── File upload ── */
+    // Registre des URLs Cloudinary (une par zone) une fois l'upload backend terminé
+    window.CLOUDINARY_URLS = window.CLOUDINARY_URLS || {};
+
     function doUpload(e, zone) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => {
         const src = ev.target.result;
+
+        // Persister ce design pour le retrouver après un rechargement
+        saveUpload(zone, src);
+
+        // Applique l'image dans l'interface (affichage instantané via data URL)
+        applyUpload(zone, src);
+      };
+      reader.readAsDataURL(file);
+
+      // En arrière-plan : upload vers Cloudinary via le backend (pour la production).
+      // N'empêche jamais l'affichage local si le serveur est indisponible.
+      if (window.ConfAPI) {
+        window.ConfAPI.uploadLogo(file)
+          .then(res => {
+            if (res && res.url) {
+              window.CLOUDINARY_URLS[zone] = res.url;
+              console.log('☁️ Uploadé sur Cloudinary (' + zone + ') :', res.url);
+            }
+          })
+          .catch(err => console.warn('Upload Cloudinary échoué (' + zone + ') :', err.message));
+      }
+    }
+
+    /* ── Persistance des designs uploadés (image + taille/position) ── */
+    function getUploads() {
+      try { return JSON.parse(sessionStorage.getItem('conf_uploads')) || {}; }
+      catch (e) { return {}; }
+    }
+    // Sauvegarde l'image d'une zone (conserve la géométrie déjà enregistrée si elle existe)
+    function saveUpload(zone, src) {
+      const u = getUploads();
+      const prev = (u[zone] && typeof u[zone] === 'object') ? u[zone] : {};
+      u[zone] = { src: src, geo: prev.geo || null };
+      try { sessionStorage.setItem('conf_uploads', JSON.stringify(u)); } catch (e) {}
+    }
+    // Sauvegarde la taille/position (left/top/width) d'un logo pour une zone
+    function saveUploadGeo(zone, geo) {
+      const u = getUploads();
+      if (!u[zone]) return;                 // pas d'image pour cette zone : rien à faire
+      if (typeof u[zone] === 'string') u[zone] = { src: u[zone] };
+      u[zone].geo = geo;
+      try { sessionStorage.setItem('conf_uploads', JSON.stringify(u)); } catch (e) {}
+    }
+    function removeUpload(zone) {
+      const u = getUploads();
+      delete u[zone];
+      try { sessionStorage.setItem('conf_uploads', JSON.stringify(u)); } catch (e) {}
+    }
+
+    // Réapplique tous les designs sauvegardés après un chargement de page
+    function restoreUploads() {
+      const u = getUploads();
+      Object.keys(u).forEach(zone => {
+        const entry = u[zone];
+        const src = (typeof entry === 'string') ? entry : (entry && entry.src);
+        const geo = (entry && typeof entry === 'object') ? entry.geo : null;
+        if (src) {
+          applyUpload(zone, src);
+          if (geo) applyUploadGeo(zone, geo);
+        }
+      });
+    }
+
+    // Applique une géométrie sauvegardée au(x) logo(s) d'une zone
+    function applyUploadGeo(zone, geo) {
+      // Map zone -> id(s) du/des logo(s) déplaçable(s)
+      const ids = {
+        'f': ['logo-f'],
+        'b': ['logo-b'],
+        'sl': ['logo-sl', 'logo-sl-face'],
+        'sr': ['logo-sr', 'logo-sr-face'],
+        'c': ['patch-logo'],
+        'coin-recto': ['coin-logo-recto'],
+        'coin-verso': ['coin-logo-verso'],
+        'flag-recto': ['flag-logo-recto'],
+        'flag-verso': ['flag-logo-verso']
+      }[zone] || [];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (geo.left  != null) el.style.left  = geo.left;
+        if (geo.top   != null) el.style.top   = geo.top;
+        if (geo.width != null) el.style.width = geo.width;
+      });
+    }
+
+    /* ── Application d'un design dans l'interface (partagé upload + restauration) ── */
+    function applyUpload(zone, src) {
+      {
 
         // Si c'est un upload de coin
         if (zone === 'c') {
@@ -1315,13 +2044,17 @@
           if (prev && img) { img.src = src; prev.style.display = 'block'; }
           if (lbl) lbl.style.display = 'flex';
           
-          // Afficher dans le canvas circulaire
+          // Afficher dans le canvas circulaire (logo déplaçable/redimensionnable)
           const coinsCanvas = document.getElementById('coins-canvas');
           const coinsPreviewImg = document.getElementById('coins-preview-img');
-          if (coinsCanvas && coinsPreviewImg) {
-            coinsPreviewImg.src = src;
-            coinsPreviewImg.style.display = 'block';
+          const patchLogo = document.getElementById('patch-logo');
+          if (coinsPreviewImg) coinsPreviewImg.src = src;
+          if (patchLogo) patchLogo.style.display = 'block';
+          if (coinsCanvas) {
             coinsCanvas.classList.add('has-image');
+            // Masquer le placeholder
+            const ph = coinsCanvas.querySelector('.coins-placeholder');
+            if (ph) ph.style.display = 'none';
           }
           
           // Recap - dans la miniature ronde
@@ -1336,13 +2069,25 @@
         // Si c'est un upload de coin métallique (recto / verso)
         if (zone === 'coin-recto' || zone === 'coin-verso') {
           const face = zone === 'coin-recto' ? 'recto' : 'verso';
-          const disc = document.getElementById('coin-disc-' + face);
-          if (disc) {
-            const ph  = disc.querySelector('.coin-placeholder');
-            const img = disc.querySelector('.coin-design-img');
-            if (ph)  ph.style.display = 'none';
-            if (img) { img.src = src; img.style.display = 'block'; }
+
+          // Logo déplaçable/redimensionnable sur la pièce
+          const logo = document.getElementById('coin-logo-' + face);
+          if (logo) {
+            const limg = logo.querySelector('img');
+            if (limg) limg.src = src;
+            logo.style.display = 'block';
           }
+
+          // Afficher le logo recto aussi sur la vue de côté (aperçu)
+          if (face === 'recto') {
+            const coteLogo = document.getElementById('coin-cote-logo');
+            if (coteLogo) { coteLogo.src = src; coteLogo.style.display = 'block'; }
+          }
+
+          // Afficher le bouton Supprimer
+          const removeBtn = document.getElementById('coin-remove-' + face);
+          if (removeBtn) removeBtn.style.display = 'inline-block';
+
           // Miniatures du récap
           const thumbMain = document.getElementById('coin-recap-thumb-main');
           const thumbFace = document.getElementById('coin-recap-thumb-' + face);
@@ -1356,10 +2101,19 @@
         if (zone === 'flag-recto' || zone === 'flag-verso') {
           const wrap = document.getElementById(zone);
           if (wrap) {
-            // Mettre à jour les deux vues (3D image + 2D codé)
+            // Masquer les placeholders (3D + 2D)
             wrap.querySelectorAll('.flag-canvas-placeholder').forEach(ph => ph.style.display = 'none');
+            // Mettre l'image dans toutes les zones design (3D déplaçable + 2D codé)
             wrap.querySelectorAll('.flag-design-img').forEach(img => { img.src = src; img.style.display = 'block'; });
           }
+          // Afficher le logo déplaçable (vue 3D)
+          const face = zone === 'flag-recto' ? 'recto' : 'verso';
+          const dragLogo = document.getElementById('flag-logo-' + face);
+          if (dragLogo) dragLogo.style.display = 'block';
+
+          // Afficher le bouton Supprimer
+          const flagRemoveBtn = document.getElementById('flag-remove-' + face);
+          if (flagRemoveBtn) flagRemoveBtn.style.display = 'inline-block';
           // Miniature du récap (recto uniquement)
           if (zone === 'flag-recto') {
             const recapThumb = document.getElementById('flag-recap-thumb');
@@ -1381,20 +2135,35 @@
         const ov = document.getElementById('ov-' + zone);
         if (ov) { ov.setAttribute('href', src); ov.style.display = 'block'; }
 
-        // Logos manches déplaçables (vue de côté) + bascule auto vers la vue de côté
+        // Logos manches déplaçables.
+        // La vue de côté ne montre qu'UNE manche (la gauche) : seul le logo de la
+        // manche GAUCHE (sl) apparaît en vue de côté. La manche DROITE (sr) n'apparaît
+        // qu'en vue de face (sur le bras droit).
         if (zone === 'sl' || zone === 'sr') {
-          const logo = document.getElementById('logo-' + zone);
-          if (logo) {
-            const limg = logo.querySelector('img');
-            if (limg) limg.src = src;
-            logo.style.display = 'block';
+          // Version vue de côté : uniquement pour la manche gauche
+          if (zone === 'sl') {
+            const logo = document.getElementById('logo-sl');
+            if (logo) {
+              const limg = logo.querySelector('img');
+              if (limg) limg.src = src;
+              logo.style.display = 'block';
+            }
+          }
+          // Version vue de face (le logo sur le bras avant correspondant)
+          const logoFace = document.getElementById('logo-' + zone + '-face');
+          if (logoFace) {
+            const limg2 = logoFace.querySelector('img');
+            if (limg2) limg2.src = src;
+            logoFace.style.display = 'block';
           }
           const rcS = document.getElementById('rc-sleeves');
           if (rcS) rcS.style.display = 'flex';
-          // Basculer vers la vue de côté pour positionner le logo
-          const coteBtn = document.querySelector('.vt[onclick*="cote"]');
-          if (coteBtn && typeof selView === 'function') {
-            selView(coteBtn, 'cote');
+
+          // Bascule : manche gauche -> vue de côté ; manche droite -> vue de face
+          const targetView = (zone === 'sl') ? 'cote' : 'face';
+          const viewBtn = document.querySelector('.vt[onclick*="' + targetView + '"]');
+          if (viewBtn && typeof selView === 'function') {
+            selView(viewBtn, targetView);
           }
         }
 
@@ -1437,11 +2206,13 @@
           document.getElementById('rc-img-b').src = src;
           document.getElementById('rc-back').style.display = 'flex';
         }
-      };
-      reader.readAsDataURL(file);
+      }
     }
 
     function rmUp(zone) {
+      // Retirer de la persistance
+      removeUpload(zone);
+
       // Si c'est un coin
       if (zone === 'c') {
         const prev = document.getElementById('pc');
@@ -1454,19 +2225,33 @@
         if (lbl) lbl.style.display = 'none';
         if (input) input.value = '';
         
-        // Cacher dans le canvas
+        // Cacher dans le canvas (logo déplaçable) + réafficher le placeholder
         const coinsCanvas = document.getElementById('coins-canvas');
         const coinsPreviewImg = document.getElementById('coins-preview-img');
-        if (coinsCanvas) coinsCanvas.classList.remove('has-image');
-        if (coinsPreviewImg) {
-          coinsPreviewImg.src = '';
-          coinsPreviewImg.style.display = 'none';
+        const patchLogo = document.getElementById('patch-logo');
+        if (coinsCanvas) {
+          coinsCanvas.classList.remove('has-image');
+          const ph = coinsCanvas.querySelector('.coins-placeholder');
+          if (ph) ph.style.display = '';
         }
-        
-        // Cacher dans le récap
-        const rcCoinLogo = document.getElementById('rc-coin-logo');
-        if (rcCoinLogo) rcCoinLogo.style.display = 'none';
-        
+        if (coinsPreviewImg) coinsPreviewImg.src = '';
+        if (patchLogo) {
+          patchLogo.style.display = 'none';
+          patchLogo.style.left = '25%';
+          patchLogo.style.top = '25%';
+          patchLogo.style.width = '50%';
+        }
+
+        // Réinitialiser la miniature du récap
+        const recapThumb = document.getElementById('coins-recap-thumb');
+        if (recapThumb) {
+          recapThumb.innerHTML = `
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="#ccc">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="#ccc" stroke-width="2"/>
+              <path d="M12 8v8M8 12h8" stroke="#ccc" stroke-width="2"/>
+            </svg>`;
+        }
+
         return;
       }
       
@@ -1482,6 +2267,17 @@
       if (input) input.value = '';
       const ov = document.getElementById('ov-' + zone);
       if (ov) { ov.removeAttribute('href'); ov.style.display = 'none'; }
+
+      // Cacher le(s) logo(s) déplaçable(s) correspondant(s) sur le produit
+      ['logo-' + zone, 'logo-' + zone + '-face'].forEach(id => {
+        const logo = document.getElementById(id);
+        if (logo) {
+          const limg = logo.querySelector('img');
+          if (limg) limg.src = '';
+          logo.style.display = 'none';
+        }
+      });
+
       if (zone === 'f') document.getElementById('rc-front').style.display = 'none';
       if (zone === 'b') document.getElementById('rc-back').style.display = 'none';
       if (zone === 'sl' || zone === 'sr') {
@@ -1497,10 +2293,34 @@
       el.classList.add('active');
       const shapeName = el.querySelector('span').textContent;
       console.log('Forme sélectionnée:', el.dataset.shape);
-      
+
       // Mettre à jour le récap
       const recapShape = document.getElementById('coins-recap-shape');
       if (recapShape) recapShape.textContent = shapeName;
+    }
+
+    // Couleur de fond du patch
+    function selectPatchColor(el, hex, name) {
+      document.querySelectorAll('.patch-color-sw').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+
+      // Colorer le fond du cercle patch
+      const canvas = document.getElementById('coins-canvas');
+      if (canvas) canvas.style.backgroundColor = hex;
+
+      // Colorer aussi la miniature du récap
+      const recapThumb = document.getElementById('coins-recap-thumb');
+      if (recapThumb && !recapThumb.querySelector('img')) {
+        recapThumb.style.backgroundColor = hex;
+      }
+
+      // Ajouter/mettre à jour la ligne "Couleur" dans le récap
+      let recapColor = document.getElementById('coins-recap-color');
+      if (recapColor) {
+        recapColor.textContent = name;
+      }
+
+      console.log('🎨 Couleur du patch:', name, hex);
     }
 
     function selectCoinSize(el) {
@@ -1609,5 +2429,38 @@
     });
   </script>
   </div><!-- /conf-app-root -->
+
+  <!-- ══ CART DRAWER ══ -->
+  <div class="cart-overlay" id="cart-overlay" onclick="closeCartDrawer()"></div>
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cd-hdr">
+      <div>
+        <span class="cd-title">Panier</span>
+        <span class="cd-count" id="cd-count"></span>
+      </div>
+      <button class="cd-close" onclick="closeCartDrawer()" aria-label="Fermer">×</button>
+    </div>
+
+    <div class="cd-items" id="cd-items">
+      <div class="cd-empty" id="cd-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <p>Votre panier est vide</p>
+      </div>
+    </div>
+
+    <div class="cd-footer" id="cd-footer" style="display:none">
+      <div class="cd-subtotal">
+        <span class="cd-subtotal-lbl">Total estimé</span>
+        <span class="cd-subtotal-val" id="cd-total">0,00 €</span>
+      </div>
+      <p class="cd-tax-note">Taxes incluses. Livraison calculée à l'étape suivante.</p>
+      <button class="cd-checkout" onclick="goToRecap()">
+        Continuer
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </button>
+    </div>
+  </div>
+
+
   </body>
   </html>

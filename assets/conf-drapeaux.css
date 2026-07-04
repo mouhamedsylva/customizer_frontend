@@ -703,27 +703,50 @@
   transform: scale(0.92) rotateY(12deg);
 }
 
-/* Logo client superposé au centre de l'image (zone de la toile) */
-.flag-img-overlay {
+/* Le conteneur 3D sert de repère pour le logo déplaçable */
+.flag-img-3d { position: relative; }
+
+/* Placeholder centré sur la toile (zone à droite du mât) */
+.flag-img-3d .flag-canvas-placeholder {
   position: absolute;
   top: 50%;
-  left: 55%;            /* décalé vers la droite car le mât est à gauche de l'image */
+  left: 55%;
   transform: translate(-50%, -50%);
-  width: 52%;
-  height: 60%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: #b9c0ca;
   text-align: center;
+  pointer-events: none;
+}
+.flag-img-3d .flag-canvas-placeholder p { font-size: 11px; margin: 6px 0 0; }
+
+/* Bouton supprimer sous une zone d'upload de drapeau */
+.flag-remove-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #c0392b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.flag-remove-btn:hover {
+  background: #fdf0ee;
+  border-color: #c0392b;
 }
 
-.flag-img-overlay .flag-canvas-placeholder { color: #b9c0ca; }
-.flag-img-overlay .flag-canvas-placeholder p { font-size: 11px; margin: 6px 0 0; }
-
-.flag-img-overlay .flag-design-img {
-  max-width: 100%;
-  max-height: 100%;
+/* Logo client déplaçable / redimensionnable sur le drapeau */
+.flag-logo {
+  z-index: 4;
+}
+.flag-logo .flag-design-img {
+  width: 100%;
+  height: auto;
   object-fit: contain;
+  display: block;
+  pointer-events: none;
 }
 
 /* Affichage selon la vue : 3D = image, 2D = codé */

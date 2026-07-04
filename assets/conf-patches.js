@@ -99,6 +99,7 @@ const PATCHES_SIDEBAR_TEMPLATE = `
           <span>PNG, JPG, SVG ou PDF<br>Taille max. 10 Mo</span>
         </div>
         <input type="file" id="uc-recto" style="display:none" accept="image/*,.pdf" onchange="doUpload(event,'coin-recto')">
+        <button class="coin-remove-btn" id="coin-remove-recto" style="display:none" onclick="removeCoinLogo('recto')">🗑 Supprimer</button>
       </div>
 
       <div class="coin-upload-zone" id="coin-upload-verso">
@@ -112,6 +113,7 @@ const PATCHES_SIDEBAR_TEMPLATE = `
           <span>PNG, JPG, SVG ou PDF<br>Taille max. 10 Mo</span>
         </div>
         <input type="file" id="uc-verso" style="display:none" accept="image/*,.pdf" onchange="doUpload(event,'coin-verso')">
+        <button class="coin-remove-btn" id="coin-remove-verso" style="display:none" onclick="removeCoinLogo('verso')">🗑 Supprimer</button>
       </div>
     </div>
   </div>
@@ -277,26 +279,30 @@ function selectCoinFinish(el) {
   el.classList.add('active');
 
   const finish = el.getAttribute('data-finish');
-  const slug = FINISH_IMAGE_SLUGS[finish];
 
   const labels = {
     'or': 'Or brillant', 'argent': 'Argent brillant', 'nickel': 'Nickel noir',
     'bronze': 'Bronze antique', 'cuivre': 'Cuivre antique'
   };
 
-  // ← SUPPRIMÉ : les classes CSS filter (finish-or, finish-argent, etc.)
-  // ← AJOUT : on swipe les vraies images
-  const views = ['recto', 'verso', 'cote'];
-  views.forEach(view => {
+  // Swap des images pour les 3 vues
+  ['recto', 'verso', 'cote'].forEach(view => {
     const imgEl = document.getElementById('coin-base-' + view);
-    if (imgEl && window.COIN_IMAGE_URLS) {
-      const url = window.COIN_IMAGE_URLS['patch-' + view + '-' + slug];
-      if (url) imgEl.src = url;
+    if (!imgEl) return;
+
+    const key = 'patch-' + view + '-' + finish;
+    const url = window.COIN_IMAGE_URLS?.[key];
+
+    if (url) {
+      imgEl.src = url;
+    } else {
+      console.warn('Image introuvable pour la clé :', key);
     }
   });
 
+  // Mise à jour du récap
   const recapFinish = document.getElementById('coin-recap-finish');
-  if (recapFinish) recapFinish.textContent = labels[finish] || 'Or brillant';
+  if (recapFinish) recapFinish.textContent = labels[finish] || finish;
 }
 
 // Surface
@@ -375,3 +381,46 @@ function initCoinBaseImages() {
 }
 
 document.addEventListener('DOMContentLoaded', initCoinBaseImages);
+
+// Supprime le logo uploadé d'une face du coin (recto / verso)
+function removeCoinLogo(face) {
+  // Retirer de la persistance
+  if (typeof removeUpload === 'function') removeUpload('coin-' + face);
+
+  // Cacher le logo déplaçable sur la pièce
+  const logo = document.getElementById('coin-logo-' + face);
+  if (logo) {
+    const limg = logo.querySelector('img');
+    if (limg) limg.src = '';
+    logo.style.display = 'none';
+    // réinitialiser position/taille par défaut
+    logo.style.left = '28%';
+    logo.style.top = '28%';
+    logo.style.width = '44%';
+  }
+
+  // Si recto : retirer aussi le logo de la vue de côté
+  if (face === 'recto') {
+    const coteLogo = document.getElementById('coin-cote-logo');
+    if (coteLogo) { coteLogo.src = ''; coteLogo.style.display = 'none'; }
+  }
+
+  // Réinitialiser l'input fichier + cacher le bouton supprimer
+  const input = document.getElementById('uc-' + face);
+  if (input) input.value = '';
+  const removeBtn = document.getElementById('coin-remove-' + face);
+  if (removeBtn) removeBtn.style.display = 'none';
+
+  // Réinitialiser la miniature du récap
+  const neutralThumb = `
+    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="#9a9ea3" stroke-width="1.2">
+      <circle cx="12" cy="12" r="9"/>
+      <circle cx="12" cy="12" r="4"/>
+    </svg>`;
+  const thumbFace = document.getElementById('coin-recap-thumb-' + face);
+  if (thumbFace) thumbFace.innerHTML = neutralThumb;
+  if (face === 'recto') {
+    const thumbMain = document.getElementById('coin-recap-thumb-main');
+    if (thumbMain) thumbMain.innerHTML = neutralThumb;
+  }
+}

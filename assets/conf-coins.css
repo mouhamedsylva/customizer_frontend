@@ -1295,3 +1295,92 @@
   line-height: 1.3;
   margin: 0;
 }
+
+/* ========================================
+   Palette de couleurs du patch
+======================================== */
+.patch-color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.patch-color-sw {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  position: relative;
+}
+
+.patch-color-sw:hover {
+  transform: scale(1.08);
+}
+
+.patch-color-sw.active {
+  box-shadow: 0 0 0 2px #1a1a1a;
+}
+
+.patch-color-sw.active::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: 0 0 3px rgba(0,0,0,0.6);
+}
+
+/* Options de fabrication désactivées (PVC, Tissé) */
+.conf-fabrication-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #f5f5f5;
+  filter: grayscale(0.6);
+}
+.conf-fabrication-option.disabled:hover {
+  border-color: #e5e5e5;
+  box-shadow: none;
+}
+
+/* Logo déplaçable / redimensionnable sur le patch */
+.patch-logo {
+  z-index: 3;
+}
+.patch-logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+
+
+/* Scène du patch : le cercle + le logo déplaçable (logo NON coupé) */
+.patch-stage {
+  position: relative;
+  width: 100%;
+  max-width: 350px;
+  aspect-ratio: 1 / 1;
+  margin: 40px auto;   /* marge autour pour laisser dépasser le logo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;   /* le logo peut sortir du cercle */
+}
+
+.patch-stage .coins-canvas-circle {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.patch-stage .patch-logo {
+  z-index: 5;
+}

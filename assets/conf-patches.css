@@ -468,20 +468,79 @@
   z-index: 2;
 }
 
-/* ── Finitions métalliques : teinte appliquée sur l'image de base ──
-   L'image patch-*.png est neutre (gris/argent) ; on la colore par filtre. */
+/* Bouton supprimer sous une zone d'upload de coin */
+.coin-remove-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #c0392b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.coin-remove-btn:hover {
+  background: #fdf0ee;
+  border-color: #c0392b;
+}
+
+/* Logo déplaçable/redimensionnable sur la pièce (recto/verso) */
+.coin-logo {
+  z-index: 3;
+}
+.coin-logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+
+/* Logo affiché sur la tranche (vue de côté) - non déplaçable, vu en perspective */
+.coin-cote-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* rotateY donne l'effet "vu de profil" ; --coin-logo-scale reflète la taille du recto */
+  transform: translate(-50%, -50%) perspective(400px) rotateY(78deg) scale(var(--coin-logo-scale, 1));
+  width: 55%;
+  object-fit: contain;
+  z-index: 2;
+  opacity: 0.6;
+  transition: transform 0.2s ease;
+}
 
 /* Or brillant */
-/* .coin-disc.finish-or .coin-base-img,
+.coin-disc.finish-or .coin-base-img,
 .coin-edge.finish-or .coin-base-img {
   filter: sepia(0.75) saturate(2.2) hue-rotate(-8deg) brightness(1.08);
 }
 
-/* Argent brillant (neutre, légèrement éclairci) */
-/* .coin-disc.finish-argent .coin-base-img,
+/* Argent brillant */
+.coin-disc.finish-argent .coin-base-img,
 .coin-edge.finish-argent .coin-base-img {
   filter: grayscale(0.15) brightness(1.12) contrast(1.02);
-} */ 
+}
+
+/* Nickel noir */
+.coin-disc.finish-nickel .coin-base-img,
+.coin-edge.finish-nickel .coin-base-img {
+  filter: grayscale(1) brightness(0.45) contrast(1.2);
+}
+
+/* Bronze antique */
+.coin-disc.finish-bronze .coin-base-img,
+.coin-edge.finish-bronze .coin-base-img {
+  filter: sepia(0.85) saturate(1.8) hue-rotate(-18deg) brightness(0.92);
+}
+
+/* Cuivre antique */
+.coin-disc.finish-cuivre .coin-base-img,
+.coin-edge.finish-cuivre .coin-base-img {
+  filter: sepia(0.9) saturate(2.6) hue-rotate(-28deg) brightness(0.98);
+}
 
 /* Nickel noir */
 .coin-disc.finish-nickel .coin-base-img,
@@ -538,3 +597,95 @@
   align-items: center;
   justify-content: center;
 }
+
+/* ========================================
+   Modal Demande de devis (Coins)
+======================================== */
+.qm-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: qmFade 0.2s ease;
+}
+@keyframes qmFade { from { opacity: 0; } to { opacity: 1; } }
+
+.qm-box {
+  position: relative;
+  background: #fff; border-radius: 16px;
+  width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.qm-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 32px; height: 32px; border: none; border-radius: 50%;
+  background: #f2f2f2; cursor: pointer; font-size: 15px; color: #555;
+  display: flex; align-items: center; justify-content: center;
+}
+.qm-close:hover { background: #e5e5e5; }
+
+.qm-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.qm-sub { font-size: 13px; color: #888; margin-bottom: 22px; }
+
+.qm-content {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+@media (max-width: 640px) { .qm-content { grid-template-columns: 1fr; } }
+
+/* Design du coin */
+.qm-design-title, .qm-specs-title {
+  font-size: 12px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: 12px;
+}
+.qm-previews { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.qm-preview { text-align: center; }
+.qm-preview-disc {
+  position: relative; width: 90px; height: 90px;
+  margin: 0 auto 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+/* La pièce (image de base) remplit tout le disque */
+.qm-preview-base { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* Le logo client se superpose au centre de la pièce */
+.qm-preview-logo {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 52%; height: 52%; object-fit: contain; z-index: 2;
+}
+.qm-preview span { font-size: 10px; font-weight: 700; color: #6b7280; letter-spacing: .5px; }
+
+.qm-specs {
+  background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 14px;
+}
+.qm-specs ul { margin: 0; padding-left: 18px; }
+.qm-specs li { font-size: 12px; color: #555; line-height: 1.6; }
+
+/* Formulaire */
+.qm-form { display: flex; flex-direction: column; gap: 12px; }
+.qm-field label {
+  display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: #444;
+}
+.qm-field label span { color: #c0392b; }
+.qm-field input, .qm-field textarea {
+  width: 100%; padding: 10px 12px; border: 1.5px solid #e5e5e5;
+  border-radius: 8px; font-size: 13px; font-family: inherit; color: #1a1a1a;
+}
+.qm-field input:focus, .qm-field textarea:focus { outline: none; border-color: #1a1a1a; }
+.qm-field textarea { resize: vertical; }
+
+.qm-submit {
+  margin-top: 6px; padding: 13px; background: #1a1a1a; color: #fff;
+  border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background .2s;
+}
+.qm-submit:hover { background: #333; }
+
+/* Confirmation */
+.qm-success { text-align: center; padding: 30px 10px; }
+.qm-success-icon {
+  width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%;
+  background: #e8f7ee; color: #16a34a; display: flex; align-items: center; justify-content: center;
+}
+.qm-success h2 { font-size: 20px; margin-bottom: 8px; }
+.qm-success p { font-size: 14px; color: #666; margin-bottom: 20px; }

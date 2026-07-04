@@ -134,8 +134,9 @@ const DRAPEAUX_SIDEBAR_TEMPLATE = `
           <span>PNG, JPG, SVG ou PDF<br>Taille max. 50 Mo</span>
         </div>
         <input type="file" id="uf-recto" style="display:none" accept="image/*,.pdf" onchange="doUpload(event,'flag-recto')">
+        <button class="flag-remove-btn" id="flag-remove-recto" style="display:none" onclick="removeFlagDesign('recto')">🗑 Supprimer</button>
       </div>
-      
+
       <div class="flag-upload-zone">
         <div class="flag-upload-label">Design verso</div>
         <div class="flag-upload-box-small" onclick="document.getElementById('uf-verso').click()">
@@ -146,6 +147,7 @@ const DRAPEAUX_SIDEBAR_TEMPLATE = `
           <span>PNG, JPG, SVG ou PDF<br>Taille max. 50 Mo</span>
         </div>
         <input type="file" id="uf-verso" style="display:none" accept="image/*,.pdf" onchange="doUpload(event,'flag-verso')">
+        <button class="flag-remove-btn" id="flag-remove-verso" style="display:none" onclick="removeFlagDesign('verso')">🗑 Supprimer</button>
       </div>
     </div>
     
@@ -395,14 +397,53 @@ function changeFlagQty(delta) {
 function handleFlagQtyInput() {
   const input = document.getElementById('flag-qty-input');
   if (!input) return;
-  
+
   let qty = parseInt(input.value) || 1;
-  
+
   // Minimum 1
   if (qty < 1) {
     qty = 1;
     input.value = qty;
   }
-  
+
   console.log('📦 Quantité:', qty);
+}
+
+// Supprime le design uploadé d'une face du drapeau (recto / verso)
+function removeFlagDesign(face) {
+  // Retirer de la persistance
+  if (typeof removeUpload === 'function') removeUpload('flag-' + face);
+
+  const wrap = document.getElementById('flag-' + face);
+  if (wrap) {
+    // Vider les images design (3D + 2D) et réafficher les placeholders
+    wrap.querySelectorAll('.flag-design-img').forEach(img => { img.src = ''; img.style.display = 'none'; });
+    wrap.querySelectorAll('.flag-canvas-placeholder').forEach(ph => ph.style.display = '');
+  }
+
+  // Cacher + réinitialiser le logo déplaçable (vue 3D)
+  const dragLogo = document.getElementById('flag-logo-' + face);
+  if (dragLogo) {
+    dragLogo.style.display = 'none';
+    dragLogo.style.left = '28%';
+    dragLogo.style.top = '32%';
+    dragLogo.style.width = '44%';
+  }
+
+  // Réinitialiser l'input fichier + cacher le bouton supprimer
+  const input = document.getElementById('uf-' + face);
+  if (input) input.value = '';
+  const removeBtn = document.getElementById('flag-remove-' + face);
+  if (removeBtn) removeBtn.style.display = 'none';
+
+  // Réinitialiser la miniature du récap (recto uniquement)
+  if (face === 'recto') {
+    const recapThumb = document.getElementById('flag-recap-thumb');
+    if (recapThumb) {
+      recapThumb.innerHTML = `
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="#ccc">
+          <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+        </svg>`;
+    }
+  }
 }

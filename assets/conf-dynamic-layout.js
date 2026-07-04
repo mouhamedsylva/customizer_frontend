@@ -144,9 +144,29 @@ const COINS_SIDEBAR_TEMPLATE = `
     <p class="coins-size-note"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg> Les dimensions indiquées sont approximatives</p>
   </div>
 
-  <!-- 4. Fabrication -->
+  <!-- 4. Couleur du patch -->
   <div class="sec">
-    <div class="sec-title">4. Options de fabrication</div>
+    <div class="sec-title">4. Couleur du patch</div>
+    <div class="sec-sub">Choisissez la couleur de fond de votre patch</div>
+    <div class="patch-color-grid">
+      <div class="patch-color-sw active" style="background:#ffffff;border:1.5px solid #ddd" title="Blanc" onclick="selectPatchColor(this,'#ffffff','Blanc')"></div>
+      <div class="patch-color-sw" style="background:#1a1a1a" title="Noir" onclick="selectPatchColor(this,'#1a1a1a','Noir')"></div>
+      <div class="patch-color-sw" style="background:#9e9e9e" title="Gris" onclick="selectPatchColor(this,'#9e9e9e','Gris')"></div>
+      <div class="patch-color-sw" style="background:#1e3a5f" title="Bleu marine" onclick="selectPatchColor(this,'#1e3a5f','Bleu marine')"></div>
+      <div class="patch-color-sw" style="background:#5bb8e8" title="Bleu ciel" onclick="selectPatchColor(this,'#5bb8e8','Bleu ciel')"></div>
+      <div class="patch-color-sw" style="background:#2e6b45" title="Vert foncé" onclick="selectPatchColor(this,'#2e6b45','Vert foncé')"></div>
+      <div class="patch-color-sw" style="background:#c0392b" title="Rouge" onclick="selectPatchColor(this,'#c0392b','Rouge')"></div>
+      <div class="patch-color-sw" style="background:#e8842a" title="Orange" onclick="selectPatchColor(this,'#e8842a','Orange')"></div>
+      <div class="patch-color-sw" style="background:#f5c842" title="Jaune" onclick="selectPatchColor(this,'#f5c842','Jaune')"></div>
+      <div class="patch-color-sw" style="background:#e8729a" title="Rose" onclick="selectPatchColor(this,'#e8729a','Rose')"></div>
+      <div class="patch-color-sw" style="background:#9b6bb5" title="Violet" onclick="selectPatchColor(this,'#9b6bb5','Violet')"></div>
+      <div class="patch-color-sw" style="background:#7d4e2d" title="Marron" onclick="selectPatchColor(this,'#7d4e2d','Marron')"></div>
+    </div>
+  </div>
+
+  <!-- 5. Fabrication -->
+  <div class="sec">
+    <div class="sec-title">5. Options de fabrication</div>
     <div class="sec-sub">Choisissez le type de patch</div>
     <div class="conf-fabrication-options">
       
@@ -170,8 +190,8 @@ const COINS_SIDEBAR_TEMPLATE = `
         </label>
       </div>
       
-      <div class="conf-fabrication-option" data-fabrication="pvc" onclick="selectFabrication(this)">
-        <input type="radio" name="fabrication" id="fab-pvc">
+      <div class="conf-fabrication-option disabled" data-fabrication="pvc">
+        <input type="radio" name="fabrication" id="fab-pvc" disabled>
         <label for="fab-pvc">
           <div class="fab-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
@@ -187,8 +207,8 @@ const COINS_SIDEBAR_TEMPLATE = `
         </label>
       </div>
       
-      <div class="conf-fabrication-option" data-fabrication="tissu" onclick="selectFabrication(this)">
-        <input type="radio" name="fabrication" id="fab-tissu">
+      <div class="conf-fabrication-option disabled" data-fabrication="tissu">
+        <input type="radio" name="fabrication" id="fab-tissu" disabled>
         <label for="fab-tissu">
           <div class="fab-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
@@ -327,6 +347,11 @@ class DynamicLayoutManager {
     } else if (category === 'textile') {
       this.loadTextileSidebar(productType);
     }
+
+    // Restaurer les designs sauvegardés pour cette catégorie (après chargement du DOM)
+    if (category !== 'textile' && typeof restoreUploads === 'function') {
+      setTimeout(() => restoreUploads(), 250);
+    }
   }
   
   updateGlobalHeader(category) {
@@ -398,14 +423,20 @@ class DynamicLayoutManager {
       
       <div class="cv-wrap">
         <div class="coins-canvas-container">
-          <div class="coins-canvas-circle shape-rond size-8cm" id="coins-canvas">
-            <div class="coins-placeholder">
-              <svg width="80" height="80" viewBox="0 0 24 24" fill="#ccc">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-              </svg>
-              <p>Téléchargez votre logo<br>pour voir l'aperçu</p>
+          <div class="patch-stage" id="patch-stage">
+            <div class="coins-canvas-circle shape-rond size-8cm" id="coins-canvas">
+              <div class="coins-placeholder">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="#ccc">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+                <p>Téléchargez votre logo<br>pour voir l'aperçu</p>
+              </div>
             </div>
-            <img id="coins-preview-img" style="display:none;" alt="Aperçu">
+            <!-- Logo déplaçable/redimensionnable, HORS du cercle (non coupé) -->
+            <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:25%; top:25%; width:50%;">
+              <img id="coins-preview-img" src="" alt="Aperçu" draggable="false">
+              <span class="logo-resize" data-resize="c"></span>
+            </div>
           </div>
           
           <div class="coins-canvas-controls">
@@ -455,6 +486,7 @@ class DynamicLayoutManager {
               <p>Face : Une seule face (sublimé)</p>
               <p>Taille : <span id="coins-recap-size">8 cm</span></p>
               <p>Format : <span id="coins-recap-shape">Rond</span></p>
+              <p>Couleur : <span id="coins-recap-color">Blanc</span></p>
               <p>Type : <span id="coins-recap-type">Sublimé</span></p>
             </div>
           </div>
@@ -490,7 +522,7 @@ class DynamicLayoutManager {
       </div>
       
       <div class="rp-actions-coins">
-        <button class="rp-btn-primary">
+        <button class="rp-btn-primary" onclick="addCustomToCart(this)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
           AJOUTER AU PANIER
         </button>
@@ -584,14 +616,15 @@ class DynamicLayoutManager {
               <!-- Vue 3D : image réelle du drapeau -->
               <div class="flag-img-3d" data-face="recto">
                 <img class="flag-base-img" id="flag-base-recto" src="${(window.ASSET_URLS && window.ASSET_URLS.flagRecto) || ''}" alt="Drapeau recto">
-                <div class="flag-img-overlay">
-                  <div class="flag-canvas-placeholder">
-                    <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
-                      <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
-                    </svg>
-                    <p>Téléchargez votre design<br>pour voir l'aperçu</p>
-                  </div>
-                  <img class="flag-design-img" id="flag-recto-img" style="display:none;" alt="Design recto">
+                <div class="flag-canvas-placeholder flag-ph-recto">
+                  <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
+                    <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+                  </svg>
+                  <p>Téléchargez votre design<br>pour voir l'aperçu</p>
+                </div>
+                <div class="design-logo flag-logo" id="flag-logo-recto" data-zone="flag-recto" style="display:none; left:28%; top:32%; width:44%;">
+                  <img class="flag-design-img" id="flag-recto-img" src="" alt="Design recto" draggable="false">
+                  <span class="logo-resize" data-resize="flag-recto"></span>
                 </div>
               </div>
 
@@ -625,14 +658,15 @@ class DynamicLayoutManager {
               <!-- Vue 3D : image réelle du drapeau -->
               <div class="flag-img-3d" data-face="verso">
                 <img class="flag-base-img" id="flag-base-verso" src="${(window.ASSET_URLS && window.ASSET_URLS.flagVerso) || ''}" alt="Drapeau verso">
-                <div class="flag-img-overlay">
-                  <div class="flag-canvas-placeholder">
-                    <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
-                      <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
-                    </svg>
-                    <p>Téléchargez votre design verso<br>pour voir l'aperçu</p>
-                  </div>
-                  <img class="flag-design-img" id="flag-verso-img" style="display:none;" alt="Design verso">
+                <div class="flag-canvas-placeholder flag-ph-verso">
+                  <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
+                    <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
+                  </svg>
+                  <p>Téléchargez votre design verso<br>pour voir l'aperçu</p>
+                </div>
+                <div class="design-logo flag-logo" id="flag-logo-verso" data-zone="flag-verso" style="display:none; left:28%; top:32%; width:44%;">
+                  <img class="flag-design-img" id="flag-verso-img" src="" alt="Design verso" draggable="false">
+                  <span class="logo-resize" data-resize="flag-verso"></span>
                 </div>
               </div>
 
@@ -732,7 +766,7 @@ class DynamicLayoutManager {
       </div>
       
       <div class="rp-actions-coins">
-        <button class="rp-btn-primary">
+        <button class="rp-btn-primary" onclick="addCustomToCart(this)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
           AJOUTER AU PANIER
         </button>
@@ -803,15 +837,6 @@ class DynamicLayoutManager {
     if (!cvWrap) return;
     const canvasParent = cvWrap.parentElement;
 
-    const placeholder = (label) => `
-      <div class="coin-placeholder">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
-          <path d="M12 16V4M7 9l5-5 5 5"/>
-          <path d="M5 20h14"/>
-        </svg>
-        <p>${label}</p>
-      </div>`;
-
     const A = window.ASSET_URLS || {};
 
     canvasParent.innerHTML = `
@@ -832,9 +857,11 @@ class DynamicLayoutManager {
             <div class="coin-view" data-view="recto">
               <div class="coin-view-label">RECTO</div>
               <div class="coin-disc" id="coin-disc-recto">
-                <img class="coin-base-img" src="${A.patchRecto || ''}" alt="Pièce recto">
-                ${placeholder('Téléchargez votre logo recto')}
-                <img class="coin-design-img" id="coin-recto-img" style="display:none;" alt="Recto">
+                <img class="coin-base-img" id="coin-base-recto" src="${A.patchRecto || ''}" alt="Pièce recto">
+                <div class="design-logo coin-logo" id="coin-logo-recto" data-zone="coin-recto" style="display:none; left:28%; top:28%; width:44%;">
+                  <img src="" alt="Logo recto" draggable="false">
+                  <span class="logo-resize" data-resize="coin-recto"></span>
+                </div>
               </div>
             </div>
 
@@ -842,17 +869,20 @@ class DynamicLayoutManager {
             <div class="coin-view" data-view="verso">
               <div class="coin-view-label">VERSO</div>
               <div class="coin-disc" id="coin-disc-verso">
-                <img class="coin-base-img" src="${A.patchVerso || ''}" alt="Pièce verso">
-                ${placeholder('Téléchargez votre logo verso')}
-                <img class="coin-design-img" id="coin-verso-img" style="display:none;" alt="Verso">
+                <img class="coin-base-img" id="coin-base-verso" src="${A.patchVerso || ''}" alt="Pièce verso">
+                <div class="design-logo coin-logo" id="coin-logo-verso" data-zone="coin-verso" style="display:none; left:28%; top:28%; width:44%;">
+                  <img src="" alt="Logo verso" draggable="false">
+                  <span class="logo-resize" data-resize="coin-verso"></span>
+                </div>
               </div>
             </div>
 
-            <!-- VUE DE CÔTÉ -->
+            <!-- VUE DE CÔTÉ (affiche le logo recto en aperçu, non déplaçable) -->
             <div class="coin-view" data-view="cote">
               <div class="coin-view-label">VUE DE CÔTÉ</div>
               <div class="coin-edge" id="coin-disc-edge">
-                <img class="coin-base-img" src="${A.patchCote || ''}" alt="Pièce côté">
+                <img class="coin-base-img" id="coin-base-cote" src="${A.patchCote || ''}" alt="Pièce côté">
+                <img class="coin-cote-logo" id="coin-cote-logo" style="display:none;" alt="Logo côté">
               </div>
             </div>
 
@@ -941,7 +971,7 @@ class DynamicLayoutManager {
       </div>
 
       <div class="rp-actions-coins">
-        <button class="rp-btn-primary">
+        <button class="rp-btn-primary" onclick="requestCoinQuote(this)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
           FAIRE UNE DEMANDE DE DEVIS
         </button>
