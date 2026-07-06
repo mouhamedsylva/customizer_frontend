@@ -190,8 +190,8 @@
       </div>
       <p class="rcp-note">Taxes incluses. Livraison calculée à l'étape suivante.</p>
 
-      <button class="rcp-continue" id="rcp-continue" onclick="window.location.href='/pages/commande'">
-        Continuer
+      <button class="rcp-continue" id="rcp-continue" onclick="goToCheckout(this)">
+        Commander
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
       </button>
       <button class="rcp-return" onclick="window.location.href='/pages/configurateur'">
@@ -214,6 +214,16 @@
 </div>
 
 <script>
+  // Variants Shopify pour le panier natif (produits à prix fixe).
+  // coins n'a pas de variant : il passe par une demande de devis.
+  var CONF_VARIANTS = {
+    sweatshirt:       47843224944803,
+    tshirt:           47843225338019,
+    tshirt_polyester: 47843228319907,
+    drapeaux:         47843229270179,
+    patches:          47843295428771
+  };
+
   (function () {
     function money(val) {
       return (Number(val) || 0).toFixed(2).replace('.', ',') + ' €';
@@ -230,6 +240,86 @@
     function saveCart(items) {
       try { sessionStorage.setItem('conf_cart', JSON.stringify(items)); } catch (e) {}
     }
+
+    /* Construit les line items Shopify à partir du panier local.
+       Chaque item est rattaché à son variant via productType. Les propriétés
+       de personnalisation (détails, taille, aperçu) sont jointes à la ligne.
+       Les coins n'ont pas de variant : ils passent par une demande de devis
+       et sont ignorés ici. */
+    function buildShopifyItems(cart) {
+      var items = [], skipped = [];
+      cart.forEach(function (it) {
+        var variantId = CONF_VARIANTS[it.productType];
+        if (!variantId) { skipped.push(it); return; }
+
+        var properties = {};
+        if (it.color) properties['Détails'] = it.color;
+        if (it.size)  properties['Taille'] = it.size;
+        if (it.img)   properties['Aperçu'] = it.img;
+
+        items.push({
+          id: variantId,
+          quantity: Math.max(1, parseInt(it.qty, 10) || 1),
+          properties: Object.keys(properties).length ? properties : undefined
+        });
+      });
+      return { items: items, skipped: skipped };
+    }
+
+    /* Synchronise le panier local vers le panier natif Shopify puis redirige
+       vers le checkout Shopify (où le client saisit ses coordonnées et paie). */
+    async function goToCheckout(btnEl) {
+      var cart = getCart();
+      if (!cart.length) { alert('Votre panier est vide.'); return; }
+
+      var built = buildShopifyItems(cart);
+      var items = built.items, skipped = built.skipped;
+
+      // Panier composé uniquement d'articles sur devis (coins) : pas de checkout.
+      if (!items.length) {
+        alert("Votre panier ne contient que des articles sur devis (coins). " +
+              "Utilisez le bouton « Faire une demande de devis » depuis le configurateur.");
+        return;
+      }
+      if (skipped.length) {
+        var ok = confirm(
+          skipped.length + " article(s) sur devis (coins) ne peuvent pas être payés en ligne " +
+          "et seront retirés. Continuer avec les " + items.length + " autre(s) article(s) ?"
+        );
+        if (!ok) return;
+      }
+
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Redirection…'; }
+
+      try {
+        // 1) On repart d'un panier Shopify propre (évite les doublons au retour).
+        await fetch('/cart/clear.js', { method: 'POST' });
+
+        // 2) Ajout de tous les articles au panier natif Shopify.
+        var res = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: items })
+        });
+        if (!res.ok) {
+          var txt = await res.text().catch(function () { return ''; });
+          throw new Error('Ajout au panier Shopify échoué (' + res.status + '). ' + txt);
+        }
+
+        // 3) Redirection vers le checkout Shopify. On NE purge PAS le design ici :
+        //    tant que le paiement n'est pas confirmé, le client doit pouvoir
+        //    revenir en arrière et retrouver son panier. La réinitialisation
+        //    se fait après paiement, sur la page de remerciement Shopify.
+        window.location.href = '/checkout';
+      } catch (err) {
+        console.error('Erreur checkout :', err);
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Commander'; }
+        alert("Une erreur est survenue lors du passage au paiement.\n" + err.message);
+      }
+    }
+
+    // Exposé pour le onclick inline du bouton "Commander".
+    window.goToCheckout = goToCheckout;
 
     function render() {
       const items = getCart();
