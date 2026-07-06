@@ -239,8 +239,8 @@
 </div>
 
 <script>
-  // URL de base du backend NestJS (à changer en prod)
-  const API_BASE = "http://localhost:3000/api";
+  // URL de base du backend NestJS (déployé sur Railway)
+  const API_BASE = "https://customizer-backend-production-6ed2.up.railway.app/api";
 
   function money(val) {
     return (Number(val) || 0).toFixed(2).replace('.', ',') + ' €';
