@@ -1390,7 +1390,7 @@
     }
 
 
-    function addToCart() {
+    async function addToCart() {
       cartCount++;
 
       // Récupère les infos du produit courant
@@ -1407,14 +1407,18 @@
         price = parseFloat(raw.replace(/\s/g,'').replace(',','.').replace(/[^\d.]/g,'')) || 0;
       }
 
-      // Récupère l'image du produit dans le canvas (vue de face active)
-      let imgSrc = '';
+      // Image de base (fallback) : la vue de face du produit.
+      let fallbackSrc = '';
       const canvasImg = document.getElementById('view-face');
       if (canvasImg && canvasImg.src && !canvasImg.src.endsWith(window.location.href)) {
-        imgSrc = canvasImg.src;
+        fallbackSrc = canvasImg.src;
       } else if (rcProdImg) {
-        imgSrc = rcProdImg.src;
+        fallbackSrc = rcProdImg.src;
       }
+
+      const btnEl = document.getElementById('main-add-to-cart');
+      // Compose l'aperçu AVEC les logos (image envoyée à Shopify).
+      const imgSrc = await resolveDesignImage(fallbackSrc, btnEl);
 
       const item = {
         id: Date.now(),
@@ -1427,7 +1431,32 @@
         qty: 1
       };
 
-      pushToCart(item, document.getElementById('main-add-to-cart'));
+      pushToCart(item, btnEl);
+    }
+
+    /* Compose l'aperçu du design (fond + logos) côté serveur et renvoie l'URL
+       de l'image composée. S'il n'y a pas de logo, ou en cas d'échec, renvoie
+       l'image de base fournie. Affiche un feedback "Préparation…" sur le bouton. */
+    async function resolveDesignImage(fallbackSrc, btnEl) {
+      let design = null;
+      try { design = captureCurrentDesign(); } catch (e) { design = null; }
+
+      // Pas de logo à superposer -> l'image de base suffit.
+      if (!design || !design.logos || !design.logos.length) {
+        return fallbackSrc;
+      }
+
+      let original = null;
+      if (btnEl) { original = btnEl.innerHTML; btnEl.disabled = true; btnEl.innerHTML = 'Préparation du design…'; }
+      try {
+        const res = await window.ConfAPI.createPreviewImage(design.background || fallbackSrc, design.logos);
+        return (res && res.url) ? res.url : fallbackSrc;
+      } catch (e) {
+        console.error('Composition aperçu échouée, image de base utilisée :', e);
+        return fallbackSrc;
+      } finally {
+        if (btnEl) { btnEl.disabled = false; if (original !== null) btnEl.innerHTML = original; }
+      }
     }
 
     /* ── Ajout générique au panier (textile, drapeaux, coins, patchs) ──
