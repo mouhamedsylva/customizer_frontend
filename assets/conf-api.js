@@ -7,6 +7,7 @@ window.ConfAPI = (function () {
     return (window.API_BASE || '').replace(/\/$/, '');
   }
 
+  
   // Requête JSON générique
   async function jsonRequest(path, method, body) {
     const res = await fetch(base() + path, {
@@ -42,6 +43,16 @@ window.ConfAPI = (function () {
       const res = await fetch(base() + '/uploads/logo', { method: 'POST', body: form });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((data && data.message) || 'Échec upload');
+      return data;
+    },
+    // Upload d'un aperçu (Blob/File) -> renvoie { url, publicId, ... }
+    // Optimisé côté serveur puis stocké dans le dossier previews Cloudinary.
+    async uploadPreview(blob, filename) {
+      const form = new FormData();
+      form.append('file', blob, filename || 'preview.png');
+      const res = await fetch(base() + '/uploads/preview', { method: 'POST', body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((data && data.message) || 'Échec upload aperçu');
       return data;
     },
     // Partager un design -> { shareId, shareUrl }
