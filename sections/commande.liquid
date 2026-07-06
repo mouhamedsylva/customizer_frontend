@@ -373,8 +373,11 @@
         throw new Error('Ajout au panier Shopify échoué (' + res.status + '). ' + txt);
       }
 
-      // 3) On vide le panier local puis on redirige vers le checkout Shopify.
-      try { sessionStorage.removeItem('conf_cart'); } catch (e) {}
+      // 3) On redirige vers le checkout Shopify SANS purger le design :
+      //    tant que le paiement n'est pas confirmé, le client doit pouvoir
+      //    revenir en arrière et retrouver son panier. La réinitialisation
+      //    se fait uniquement après un paiement réussi, sur la page de
+      //    remerciement Shopify (voir snippet de purge post-paiement).
       window.location.href = '/checkout';
     } catch (err) {
       console.error('Erreur commande :', err);

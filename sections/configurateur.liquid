@@ -846,7 +846,7 @@
         ">0</span>
       </button>
 
-      <button class="obtn">
+      <button class="obtn" onclick="confirmReset()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
         Réinitialiser
       </button>
@@ -1719,18 +1719,48 @@
       }
     }
 
+    /* ── Réinitialisation complète du configurateur ──
+       Purge le panier, les uploads et les états sauvegardés, puis recharge
+       la page pour repartir d'un design vierge. Appelée après un paiement
+       ou une demande de devis. */
+    function clearConfiguratorState() {
+      try {
+        sessionStorage.removeItem('conf_cart');
+        sessionStorage.removeItem('conf_uploads');
+        sessionStorage.removeItem('conf_order');
+        sessionStorage.removeItem('pendingProduct');
+        localStorage.removeItem('last_design_id');
+      } catch (e) {}
+    }
+
+    /* Réinitialise tout et recharge le configurateur vierge. */
+    function resetConfigurator() {
+      clearConfiguratorState();
+      window.location.href = '/pages/configurateur';
+    }
+
+    /* Réinitialisation manuelle (bouton "Réinitialiser") avec confirmation. */
+    function confirmReset() {
+      if (confirm('Réinitialiser votre design ? Votre panier et vos logos seront effacés.')) {
+        resetConfigurator();
+      }
+    }
+
     function showQuoteSuccess(client) {
+      // Le design a été envoyé en devis : on nettoie l'état dès maintenant
+      // pour que la fermeture / le rechargement reparte d'un design vierge.
+      clearConfiguratorState();
       const box = document.querySelector('#quote-modal .qm-box');
       if (box) {
         box.innerHTML = `
-          <button class="qm-close" onclick="closeQuoteModal()">✕</button>
+          <button class="qm-close" onclick="resetConfigurator()">✕</button>
           <div class="qm-success">
             <div class="qm-success-icon">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
             </div>
             <h2>Demande envoyée !</h2>
             <p>Merci ${client.nom}. Nous vous enverrons votre devis à <strong>${client.email}</strong> sous peu.</p>
-            <button class="qm-submit" onclick="closeQuoteModal()">Fermer</button>
+            <button class="qm-submit" onclick="resetConfigurator()">Fermer</button>
           </div>`;
       }
     }
