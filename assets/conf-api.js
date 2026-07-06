@@ -59,6 +59,13 @@ window.ConfAPI = (function () {
     shareDesign(designData) {
       return jsonRequest('/export/share', 'POST', { designData: designData });
     },
+    // Composer une image du design (fond + logos) -> { url } Cloudinary
+    createPreviewImage(background, logos) {
+      return jsonRequest('/export/preview-image', 'POST', {
+        background: background,
+        logos: logos || []
+      });
+    },
     // Vérifier la disponibilité du backend
     health() {
       return jsonRequest('/health', 'GET');

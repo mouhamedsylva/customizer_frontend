@@ -827,7 +827,7 @@
     </div>
 
     <div class="hdr-btns">
-      <button class="obtn">
+      <button class="obtn" onclick="shareDesign(this)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
         Partager
       </button>
@@ -1744,6 +1744,134 @@
       if (confirm('Réinitialiser votre design ? Votre panier et vos logos seront effacés.')) {
         resetConfigurator();
       }
+    }
+
+    /* ── Partage du design ──
+       Compose une image (produit + logos) côté serveur, récupère une URL
+       publique, puis ouvre le partage natif (WhatsApp, mail…) ou un fallback. */
+
+    // Récupère la vue produit actuellement visible et ses logos superposés.
+    function captureCurrentDesign() {
+      // Image de fond : la vue produit affichée (face/dos/côté) ou l'aperçu coin/drapeau.
+      const bgCandidates = [
+        document.querySelector('.product-img-single.on'),
+        document.getElementById('view-face'),
+        document.querySelector('.coin-base-img'),
+        document.querySelector('.flag-base-img'),
+        document.getElementById('coins-preview-img')
+      ];
+      let bg = null;
+      for (const el of bgCandidates) {
+        if (el && el.src && el.getAttribute('src') &&
+            el.src !== window.location.href &&
+            (!el.style || el.style.display !== 'none') &&
+            (!el.closest('.product-img-single') || el.classList.contains('on') || el.id === 'view-face')) {
+          bg = el; break;
+        }
+      }
+      if (!bg) return null;
+
+      // Container de référence pour convertir les positions % en fractions.
+      const layer = document.getElementById('logo-layer');
+      const logos = [];
+      if (layer) {
+        const rect = layer.getBoundingClientRect();
+        layer.querySelectorAll('.design-logo').forEach(el => {
+          if (el.style.display === 'none') return;
+          const img = el.querySelector('img');
+          if (!img || !img.src || !img.getAttribute('src')) return;
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return;
+          logos.push({
+            src: img.src,
+            x: (r.left - rect.left) / rect.width,
+            y: (r.top - rect.top) / rect.height,
+            w: r.width / rect.width
+          });
+        });
+      }
+      return { background: bg.src, logos: logos };
+    }
+
+    async function shareDesign(btnEl) {
+      const design = captureCurrentDesign();
+      if (!design) {
+        alert("Aucun aperçu à partager pour le moment.");
+        return;
+      }
+
+      const original = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Préparation…'; }
+
+      try {
+        const res = await window.ConfAPI.createPreviewImage(design.background, design.logos);
+        const url = res && res.url;
+        if (!url) throw new Error("URL de partage manquante");
+
+        const shareText = "Découvrez mon design personnalisé :";
+
+        // Partage natif (mobile : WhatsApp, mail, etc.)
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'Mon design', text: shareText, url: url });
+            return;
+          } catch (e) {
+            // annulé par l'utilisateur ou non supporté -> on retombe sur le fallback
+            if (e && e.name === 'AbortError') return;
+          }
+        }
+
+        // Fallback desktop : petit menu (WhatsApp / Gmail / Copier).
+        openShareMenu(url, shareText);
+      } catch (err) {
+        console.error('Erreur partage :', err);
+        alert("Impossible de générer le lien de partage.\n" + err.message);
+      } finally {
+        if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; }
+      }
+    }
+
+    function openShareMenu(url, text) {
+      const old = document.getElementById('share-menu');
+      if (old) old.remove();
+
+      const enc = encodeURIComponent;
+      const waHref = 'https://wa.me/?text=' + enc(text + ' ' + url);
+      const mailHref = 'https://mail.google.com/mail/?view=cm&fs=1&su=' +
+        enc('Mon design personnalisé') + '&body=' + enc(text + '\n' + url);
+
+      const overlay = document.createElement('div');
+      overlay.id = 'share-menu';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:90%;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <strong style="font-size:16px;">Partager mon design</strong>
+            <button onclick="document.getElementById('share-menu').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">✕</button>
+          </div>
+          <a href="${waHref}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e8e8e8;border-radius:10px;text-decoration:none;color:#1a1a1a;margin-bottom:10px;font-weight:600;">
+            <span style="font-size:20px;">🟢</span> WhatsApp
+          </a>
+          <a href="${mailHref}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e8e8e8;border-radius:10px;text-decoration:none;color:#1a1a1a;margin-bottom:10px;font-weight:600;">
+            <span style="font-size:20px;">✉️</span> Gmail
+          </a>
+          <button id="share-copy-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a;font-weight:600;font-family:inherit;">
+            <span style="font-size:20px;">🔗</span> Copier le lien
+          </button>
+        </div>`;
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
+
+      const copyBtn = document.getElementById('share-copy-btn');
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          copyBtn.innerHTML = '<span style="font-size:20px;">✅</span> Lien copié !';
+        } catch (e) {
+          // fallback si clipboard indisponible
+          prompt('Copiez le lien :', url);
+        }
+      });
     }
 
     function showQuoteSuccess(client) {
