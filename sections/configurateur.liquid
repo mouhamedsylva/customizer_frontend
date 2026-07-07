@@ -1335,6 +1335,19 @@
       }
     }
 
+    /* Renvoie l'URL CDN de l'image {produit}-{couleur}-{vue} pour l'état courant,
+       avec repli sur l'image générique du produit. Source fiable et synchrone
+       pour l'aperçu envoyé au panier (indépendante du chargement DOM). */
+    function currentProductImageURL(view) {
+      const prefix = PRODUCT_SLUGS[currentProductKey];
+      if (!prefix) return '';
+      const urls = window.PRODUCT_IMAGE_URLS || {};
+      const key = prefix + '-' + currentColorSlug + '-' + view;
+      if (urls[key]) return urls[key];
+      const fallbacks = (window.PRODUCT_FALLBACK_URLS || {})[prefix] || {};
+      return fallbacks[view] || '';
+    }
+
     /* ── Applique la couleur : charge les images correspondantes ── */
     function applyColor(hex) {
       updateProductImages();
@@ -1407,13 +1420,18 @@
         price = parseFloat(raw.replace(/\s/g,'').replace(',','.').replace(/[^\d.]/g,'')) || 0;
       }
 
-      // Image de base (fallback) : la vue de face du produit.
-      let fallbackSrc = '';
-      const canvasImg = document.getElementById('view-face');
-      if (canvasImg && canvasImg.src && !canvasImg.src.endsWith(window.location.href)) {
-        fallbackSrc = canvasImg.src;
-      } else if (rcProdImg) {
-        fallbackSrc = rcProdImg.src;
+      // Image de base (fallback) : la vue de face du produit, à la COULEUR courante.
+      // On calcule l'URL directement (produit+couleur) plutôt que de lire
+      // view-face.src, qui est mis à jour de façon asynchrone (new Image().onload)
+      // et peut encore pointer sur la couleur précédente au moment du clic.
+      let fallbackSrc = currentProductImageURL('face');
+      if (!fallbackSrc) {
+        const canvasImg = document.getElementById('view-face');
+        if (canvasImg && canvasImg.src && !canvasImg.src.endsWith(window.location.href)) {
+          fallbackSrc = canvasImg.src;
+        } else if (rcProdImg) {
+          fallbackSrc = rcProdImg.src;
+        }
       }
 
       const btnEl = document.getElementById('main-add-to-cart');
@@ -1428,10 +1446,38 @@
         size:  rcSize  ? rcSize.textContent.trim()  : '',
         price: price,
         img:   imgSrc,
+        // URLs Cloudinary des logos/assets réellement utilisés (pour la commande Shopify)
+        assets: collectDesignAssets(),
         qty: 1
       };
 
       pushToCart(item, btnEl);
+    }
+
+    /* Rassemble les assets (logos uploadés) réellement utilisés pour le produit
+       courant, sous forme d'URLs Cloudinary hébergées afin qu'elles restent
+       accessibles dans la commande Shopify (une data-URL ne le serait pas).
+       Chaque entrée = { label, url }. On ne garde que les zones dont le logo est
+       affiché ET dont l'upload Cloudinary a réussi. */
+    function collectDesignAssets() {
+      const zoneLabels = {
+        f:  'Logo cœur',
+        b:  'Logo dos',
+        sl: 'Logo manche gauche',
+        sr: 'Logo manche droite'
+      };
+      const cloud = window.CLOUDINARY_URLS || {};
+      const assets = [];
+      Object.keys(zoneLabels).forEach(zone => {
+        // La zone est utilisée si son aperçu sidebar affiche bien une image.
+        const img = document.getElementById('i' + zone);
+        const shown = img && img.getAttribute('src') && img.getAttribute('src') !== '' &&
+                      img.src !== window.location.href;
+        if (!shown) return;
+        const url = cloud[zone];
+        if (url) assets.push({ label: zoneLabels[zone], url: url });
+      });
+      return assets;
     }
 
     /* Compose l'aperçu du design (fond + logos) côté serveur et renvoie l'URL
@@ -1446,10 +1492,15 @@
         return fallbackSrc;
       }
 
+      // Fond envoyé au serveur : on privilégie l'URL couleur fiable (fallbackSrc,
+      // calculée depuis produit+couleur) plutôt que design.background, qui peut
+      // encore pointer sur une image de couleur précédente ou générique.
+      const background = fallbackSrc || design.background;
+
       let original = null;
       if (btnEl) { original = btnEl.innerHTML; btnEl.disabled = true; btnEl.innerHTML = 'Préparation du design…'; }
       try {
-        const res = await window.ConfAPI.createPreviewImage(design.background || fallbackSrc, design.logos);
+        const res = await window.ConfAPI.createPreviewImage(background, design.logos);
         return (res && res.url) ? res.url : fallbackSrc;
       } catch (e) {
         console.error('Composition aperçu échouée, image de base utilisée :', e);

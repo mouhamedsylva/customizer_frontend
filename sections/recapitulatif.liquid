@@ -257,6 +257,14 @@
         if (it.size)  properties['Taille'] = it.size;
         if (it.img)   properties['Aperçu'] = it.img;
 
+        // Assets réellement utilisés (URLs Cloudinary) : une propriété visible par
+        // logo, pour que le préparateur retrouve chaque fichier dans la commande.
+        if (Array.isArray(it.assets)) {
+          it.assets.forEach(function (a) {
+            if (a && a.label && a.url) properties[a.label] = a.url;
+          });
+        }
+
         items.push({
           id: variantId,
           quantity: Math.max(1, parseInt(it.qty, 10) || 1),
