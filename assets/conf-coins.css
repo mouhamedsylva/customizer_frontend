@@ -1299,29 +1299,31 @@
 /* ========================================
    Palette de couleurs du patch
 ======================================== */
+/* Petites pastilles couleur (même style que le sweatshirt) */
 .patch-color-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .patch-color-sw {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
   cursor: pointer;
-  border: 1.5px solid transparent;
+  border: 2px solid transparent;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.13s ease, box-shadow 0.12s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .patch-color-sw:hover {
-  transform: scale(1.08);
+  transform: scale(1.12);
 }
 
 .patch-color-sw.active {
-  box-shadow: 0 0 0 2px #1a1a1a;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1a1a1a;
 }
 
 .patch-color-sw.active::after {
@@ -1332,9 +1334,9 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 12px;
-  font-weight: 900;
-  text-shadow: 0 0 3px rgba(0,0,0,0.6);
+  font-size: 9px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
 /* Options de fabrication désactivées (PVC, Tissé) */

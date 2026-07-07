@@ -149,16 +149,19 @@ const COINS_SIDEBAR_TEMPLATE = `
     <div class="sec-title">4. Couleur du patch</div>
     <div class="sec-sub">Choisissez la couleur de fond de votre patch</div>
     <div class="patch-color-grid">
-      <div class="patch-color-sw active" style="background:#ffffff;border:1.5px solid #ddd" title="Blanc" onclick="selectPatchColor(this,'#ffffff','Blanc')"></div>
-      <div class="patch-color-sw" style="background:#1a1a1a" title="Noir" onclick="selectPatchColor(this,'#1a1a1a','Noir')"></div>
+      <div class="patch-color-sw active" style="background:#1a1a1a" title="Noir" onclick="selectPatchColor(this,'#1a1a1a','Noir')"></div>
+      <div class="patch-color-sw" style="background:#f5f2ed;border:1.5px solid #ddd" title="Blanc cassé" onclick="selectPatchColor(this,'#f5f2ed','Blanc cassé')"></div>
       <div class="patch-color-sw" style="background:#9e9e9e" title="Gris" onclick="selectPatchColor(this,'#9e9e9e','Gris')"></div>
+      <div class="patch-color-sw" style="background:#555555" title="Gris foncé" onclick="selectPatchColor(this,'#555555','Gris foncé')"></div>
+      <div class="patch-color-sw" style="background:#607d8b" title="Gris ardoise" onclick="selectPatchColor(this,'#607d8b','Gris ardoise')"></div>
       <div class="patch-color-sw" style="background:#1e3a5f" title="Bleu marine" onclick="selectPatchColor(this,'#1e3a5f','Bleu marine')"></div>
       <div class="patch-color-sw" style="background:#5bb8e8" title="Bleu ciel" onclick="selectPatchColor(this,'#5bb8e8','Bleu ciel')"></div>
       <div class="patch-color-sw" style="background:#2e6b45" title="Vert foncé" onclick="selectPatchColor(this,'#2e6b45','Vert foncé')"></div>
+      <div class="patch-color-sw" style="background:#f0c8d8;border:1.5px solid #e0afc4" title="Rose clair" onclick="selectPatchColor(this,'#f0c8d8','Rose clair')"></div>
+      <div class="patch-color-sw" style="background:#e8729a" title="Rose" onclick="selectPatchColor(this,'#e8729a','Rose')"></div>
       <div class="patch-color-sw" style="background:#c0392b" title="Rouge" onclick="selectPatchColor(this,'#c0392b','Rouge')"></div>
       <div class="patch-color-sw" style="background:#e8842a" title="Orange" onclick="selectPatchColor(this,'#e8842a','Orange')"></div>
-      <div class="patch-color-sw" style="background:#f5c842" title="Jaune" onclick="selectPatchColor(this,'#f5c842','Jaune')"></div>
-      <div class="patch-color-sw" style="background:#e8729a" title="Rose" onclick="selectPatchColor(this,'#e8729a','Rose')"></div>
+      <div class="patch-color-sw" style="background:#f5c842;border:1.5px solid #d4aa20" title="Jaune" onclick="selectPatchColor(this,'#f5c842','Jaune')"></div>
       <div class="patch-color-sw" style="background:#9b6bb5" title="Violet" onclick="selectPatchColor(this,'#9b6bb5','Violet')"></div>
       <div class="patch-color-sw" style="background:#7d4e2d" title="Marron" onclick="selectPatchColor(this,'#7d4e2d','Marron')"></div>
     </div>
@@ -486,7 +489,7 @@ class DynamicLayoutManager {
               <p>Face : Une seule face (sublimé)</p>
               <p>Taille : <span id="coins-recap-size">8 cm</span></p>
               <p>Format : <span id="coins-recap-shape">Rond</span></p>
-              <p>Couleur : <span id="coins-recap-color">Blanc</span></p>
+              <p>Couleur : <span id="coins-recap-color">Noir</span></p>
               <p>Type : <span id="coins-recap-type">Sublimé</span></p>
             </div>
           </div>

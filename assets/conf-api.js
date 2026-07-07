@@ -66,6 +66,11 @@ window.ConfAPI = (function () {
         logos: logos || []
       });
     },
+    // Composer une image multi-vues (face + dos + côté) -> { url } Cloudinary
+    // views: [{ label, background, logos: [{ src, x, y, w }] }, ...]
+    createMultiViewImage(views) {
+      return jsonRequest('/export/preview-multi', 'POST', { views: views || [] });
+    },
     // Vérifier la disponibilité du backend
     health() {
       return jsonRequest('/health', 'GET');

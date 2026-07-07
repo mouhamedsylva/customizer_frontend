@@ -1847,6 +1847,33 @@
        Compose une image (produit + logos) côté serveur, récupère une URL
        publique, puis ouvre le partage natif (WhatsApp, mail…) ou un fallback. */
 
+    /* Boîte (en coordonnées écran) réellement occupée par le CONTENU d'une <img>
+       affichée en object-fit:contain. L'élément <img> peut être plus grand que
+       l'image visible ; on calcule la zone effective via le ratio naturel, pour
+       que les fractions x/y/w correspondent exactement à l'image que le backend
+       superpose. Repli sur la boîte de l'élément si dimensions naturelles absentes. */
+    function imageContentRect(img) {
+      if (!img || !img.getBoundingClientRect) return null;
+      const box = img.getBoundingClientRect();
+      const nw = img.naturalWidth, nh = img.naturalHeight;
+      if (!nw || !nh || box.width === 0 || box.height === 0) return box;
+      const boxRatio = box.width / box.height;
+      const imgRatio = nw / nh;
+      let w, h;
+      if (imgRatio > boxRatio) {
+        // Image limitée par la largeur : pleine largeur, hauteur réduite.
+        w = box.width;
+        h = box.width / imgRatio;
+      } else {
+        // Image limitée par la hauteur : pleine hauteur, largeur réduite.
+        h = box.height;
+        w = box.height * imgRatio;
+      }
+      const left = box.left + (box.width - w) / 2;
+      const top = box.top + (box.height - h) / 2;
+      return { left, top, width: w, height: h };
+    }
+
     // Récupère la vue produit actuellement visible et ses logos superposés.
     function captureCurrentDesign() {
       // Image de fond : la vue produit affichée (face/dos/côté) ou l'aperçu coin/drapeau.
@@ -1868,11 +1895,15 @@
       }
       if (!bg) return null;
 
-      // Container de référence pour convertir les positions % en fractions.
+      // Référence pour convertir les positions en fractions : l'IMAGE DU PRODUIT
+      // (bg), pas le logo-layer. Le backend superpose les logos sur cette image ;
+      // les fractions doivent donc être calculées par rapport à sa boîte réelle
+      // affichée (l'image est en object-fit:contain, souvent plus étroite que le
+      // layer). Sinon le logo est décalé et rétréci sur l'aperçu composé.
       const layer = document.getElementById('logo-layer');
+      const ref = imageContentRect(bg);
       const logos = [];
-      if (layer) {
-        const rect = layer.getBoundingClientRect();
+      if (layer && ref && ref.width > 0 && ref.height > 0) {
         layer.querySelectorAll('.design-logo').forEach(el => {
           if (el.style.display === 'none') return;
           const img = el.querySelector('img');
@@ -1881,9 +1912,9 @@
           if (r.width === 0 || r.height === 0) return;
           logos.push({
             src: img.src,
-            x: (r.left - rect.left) / rect.width,
-            y: (r.top - rect.top) / rect.height,
-            w: r.width / rect.width
+            x: (r.left - ref.left) / ref.width,
+            y: (r.top - ref.top) / ref.height,
+            w: r.width / ref.width
           });
         });
       }
@@ -1906,26 +1937,125 @@
         return m ? parseFloat(m[1]) / 100 : null;
       };
 
+      // Les % inline des logos sont relatifs au logo-layer (inset:0 = toute la
+      // zone canvas), plus large que l'image produit (object-fit:contain). On
+      // reprojette donc chaque logo sur la boîte réelle de l'image (view-face)
+      // pour que le backend le pose au bon endroit et à la bonne taille.
+      const layer = document.getElementById('logo-layer');
+      // Image de référence : view-face si visible, sinon l'image produit
+      // actuellement affichée (même conteneur/même géométrie object-fit).
+      let refImg = document.getElementById('view-face');
+      if (!refImg || refImg.getBoundingClientRect().width === 0) {
+        refImg = document.querySelector('.product-img-single.on') || refImg;
+      }
+      const layerBox = layer ? layer.getBoundingClientRect() : null;
+      const imgBox = imageContentRect(refImg);
+
       const faceZones = ['logo-f', 'logo-sl-face', 'logo-sr-face'];
       const logos = [];
       faceZones.forEach(id => {
         const el = document.getElementById(id);
-        if (!el) { console.log('[FACE]', id, 'absent'); return; }
+        if (!el) return;
         const img = el.querySelector('img');
-        const hasSrc = !!(img && img.getAttribute('src'));
-        console.log('[FACE]', id, 'display=', el.style.display, 'left=', el.style.left, 'top=', el.style.top, 'width=', el.style.width, 'hasSrc=', hasSrc);
-        if (!hasSrc) return;
-        const x = pct(el.style.left);
-        const y = pct(el.style.top);
-        const w = pct(el.style.width);
-        if (x == null || y == null || w == null) { console.warn('[FACE]', id, 'rejeté: position/taille non en %'); return; }
-        logos.push({ src: img.src, x: x, y: y, w: w });
+        if (!img || !img.getAttribute('src')) return;
+        const lx = pct(el.style.left);
+        const ly = pct(el.style.top);
+        const lw = pct(el.style.width);
+        if (lx == null || ly == null || lw == null) return;
+
+        // Si on connaît les boîtes layer + image, on reprojette. Sinon, on garde
+        // les % bruts (repli : mieux que rien).
+        if (layerBox && imgBox && imgBox.width > 0 && imgBox.height > 0) {
+          // Position/taille écran du logo (depuis les % du layer).
+          const scrLeft = layerBox.left + lx * layerBox.width;
+          const scrTop  = layerBox.top  + ly * layerBox.height;
+          const scrW    = lw * layerBox.width;
+          logos.push({
+            src: img.src,
+            x: (scrLeft - imgBox.left) / imgBox.width,
+            y: (scrTop - imgBox.top) / imgBox.height,
+            w: scrW / imgBox.width
+          });
+        } else {
+          logos.push({ src: img.src, x: lx, y: ly, w: lw });
+        }
       });
 
       return { background: background, logos: logos };
     }
 
+    /* Capture les 3 vues (face, dos, côté) du produit textile courant pour
+       composer une image de partage multi-vues. Chaque vue = { label, background,
+       logos } avec logos reprojetés sur l'image produit (mêmes règles que
+       captureFaceDesign). Les positions viennent des % inline (fiables même pour
+       les vues masquées). Renvoie null si le produit n'est pas textile. */
+    function captureAllViews() {
+      const prefix = PRODUCT_SLUGS[currentProductKey];
+      if (!prefix) return null; // non textile -> pas de vues multiples
+
+      const pct = (v) => {
+        if (typeof v !== 'string') return null;
+        const m = v.trim().match(/^([\d.]+)%$/);
+        return m ? parseFloat(m[1]) / 100 : null;
+      };
+
+      // Boîte de référence : l'image produit affichée (même géométrie pour les 3 vues).
+      const layer = document.getElementById('logo-layer');
+      let refImg = document.querySelector('.product-img-single.on') || document.getElementById('view-face');
+      const layerBox = layer ? layer.getBoundingClientRect() : null;
+      const imgBox = imageContentRect(refImg);
+      const canReproject = !!(layerBox && imgBox && imgBox.width > 0 && imgBox.height > 0);
+
+      // Reprojette un logo (par ses % de layer) en fractions de l'image produit.
+      const project = (el) => {
+        const img = el.querySelector('img');
+        if (!img || !img.getAttribute('src')) return null;
+        const lx = pct(el.style.left), ly = pct(el.style.top), lw = pct(el.style.width);
+        if (lx == null || ly == null || lw == null) return null;
+        if (!canReproject) return { src: img.src, x: lx, y: ly, w: lw };
+        const scrLeft = layerBox.left + lx * layerBox.width;
+        const scrTop  = layerBox.top  + ly * layerBox.height;
+        const scrW    = lw * layerBox.width;
+        return {
+          src: img.src,
+          x: (scrLeft - imgBox.left) / imgBox.width,
+          y: (scrTop - imgBox.top) / imgBox.height,
+          w: scrW / imgBox.width
+        };
+      };
+
+      // Mapping vue -> logos qui s'y affichent.
+      const viewZones = {
+        face: ['logo-f', 'logo-sl-face', 'logo-sr-face'],
+        dos:  ['logo-b'],
+        cote: ['logo-sl', 'logo-sr']
+      };
+      const labels = { face: 'FACE', dos: 'DOS', cote: 'CÔTÉ' };
+
+      const views = [];
+      ['face', 'dos', 'cote'].forEach(view => {
+        const background = currentProductImageURL(view);
+        if (!background) return;
+        const logos = [];
+        (viewZones[view] || []).forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const p = project(el);
+          if (p) logos.push(p);
+        });
+        views.push({ label: labels[view], background: background, logos: logos });
+      });
+
+      return views.length ? views : null;
+    }
+
     async function shareDesign(btnEl) {
+      // Textile : image multi-vues (face + dos + côté) en une seule image.
+      const views = captureAllViews();
+      if (views && views.length) {
+        return shareMultiView(views, btnEl);
+      }
+
       const design = captureCurrentDesign();
       if (!design) {
         alert("Aucun aperçu à partager pour le moment.");
@@ -1957,6 +2087,34 @@
         openShareMenu(url, shareText);
       } catch (err) {
         console.error('Erreur partage :', err);
+        alert("Impossible de générer le lien de partage.\n" + err.message);
+      } finally {
+        if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; }
+      }
+    }
+
+    /* Partage d'une image multi-vues (face + dos + côté). Compose côté serveur
+       puis partage (natif mobile ou menu desktop), comme shareDesign. */
+    async function shareMultiView(views, btnEl) {
+      const original = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Préparation…'; }
+      try {
+        const res = await window.ConfAPI.createMultiViewImage(views);
+        const url = res && res.url;
+        if (!url) throw new Error("URL de partage manquante");
+
+        const shareText = "Découvrez mon design personnalisé :";
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'Mon design', text: shareText, url: url });
+            return;
+          } catch (e) {
+            if (e && e.name === 'AbortError') return;
+          }
+        }
+        openShareMenu(url, shareText);
+      } catch (err) {
+        console.error('Erreur partage multi-vues :', err);
         alert("Impossible de générer le lien de partage.\n" + err.message);
       } finally {
         if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; }
