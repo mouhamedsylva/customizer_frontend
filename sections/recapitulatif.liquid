@@ -288,12 +288,30 @@
     return String(it.color).replace(/^\s*Couleur\s*:\s*/i, '').trim();
   }
 
-  // Choisit le variant : d'abord par couleur si dispo, sinon variant de base.
+  // Normalise un nom de couleur pour un matching robuste : minuscules, sans
+  // accents, espaces compactés. Évite les échecs dus à la casse / aux accents
+  // (ex. "Vert foncé" encodé différemment) qui feraient retomber sur le variant
+  // de base (donc la mauvaise couleur au checkout).
+  function normColor(s) {
+    return String(s == null ? '' : s)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // retire les accents
+      .toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // Choisit le variant : d'abord par couleur (matching normalisé) si dispo,
+  // sinon variant de base.
   function variantForItem(it) {
     var byColor = CONF_COLOR_VARIANTS[it.productType];
     if (byColor) {
-      var name = colorNameFromItem(it);
-      if (name && byColor[name]) return byColor[name];
+      var target = normColor(colorNameFromItem(it));
+      if (target) {
+        for (var label in byColor) {
+          if (Object.prototype.hasOwnProperty.call(byColor, label) &&
+              normColor(label) === target) {
+            return byColor[label];
+          }
+        }
+      }
     }
     return CONF_VARIANTS[it.productType];
   }
@@ -324,18 +342,24 @@
       var items = [], skipped = [];
       cart.forEach(function (it) {
         var variantId = variantForItem(it);
+        console.log('[VARIANT]', it.productType, '| color=', JSON.stringify(it.color),
+          '| name=', JSON.stringify(colorNameFromItem(it)),
+          '| variant=', variantId,
+          (CONF_COLOR_VARIANTS[it.productType] && variantId === CONF_VARIANTS[it.productType]) ? '(FALLBACK base!)' : '(couleur)');
         if (!variantId) { skipped.push(it); return; }
 
         var properties = {};
+        // Visibles au checkout (utiles au client) : couleur + taille.
         if (it.color) properties['Détails'] = it.color;
         if (it.size)  properties['Taille'] = it.size;
-        if (it.img)   properties['Aperçu'] = it.img;
 
-        // Assets réellement utilisés (URLs Cloudinary) : une propriété visible par
-        // logo, pour que le préparateur retrouve chaque fichier dans la commande.
+        // URLs techniques (aperçu + logos) : préfixe "_" -> Shopify les CACHE au
+        // checkout côté client, mais elles restent visibles dans l'admin de la
+        // commande (pour la production/préparation).
+        if (it.img)   properties['_Aperçu'] = it.img;
         if (Array.isArray(it.assets)) {
           it.assets.forEach(function (a) {
-            if (a && a.label && a.url) properties[a.label] = a.url;
+            if (a && a.label && a.url) properties['_' + a.label] = a.url;
           });
         }
 

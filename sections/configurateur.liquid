@@ -1517,10 +1517,12 @@
       let original = null;
       if (btnEl) { original = btnEl.innerHTML; btnEl.disabled = true; btnEl.innerHTML = 'Préparation du design…'; }
       try {
+        console.log('[DESIGN] envoi compo -> background=', background, '| logos=', design.logos);
         const res = await window.ConfAPI.createPreviewImage(background, design.logos);
+        console.log('[DESIGN] réponse compo =', res);
         return (res && res.url) ? res.url : fallbackSrc;
       } catch (e) {
-        console.error('Composition aperçu échouée, image de base utilisée :', e);
+        console.error('[DESIGN] Composition aperçu ÉCHOUÉE, image de base utilisée :', e);
         return fallbackSrc;
       } finally {
         if (btnEl) { btnEl.disabled = false; if (original !== null) btnEl.innerHTML = original; }
@@ -1830,9 +1832,17 @@
       } catch (e) {}
     }
 
-    /* Réinitialise tout et recharge le configurateur vierge. */
+    /* Réinitialise tout et recharge le configurateur vierge, en RESTANT sur le
+       type de produit courant (ex. Patchs, Coins…) au lieu de repartir sur le
+       sweatshirt. On mémorise le produit courant après le nettoyage : il est
+       restauré au chargement par restorePendingProduct(). */
     function resetConfigurator() {
       clearConfiguratorState();
+      try {
+        if (currentProductType && currentProductType !== 'sweatshirt') {
+          sessionStorage.setItem('pendingProduct', currentProductType);
+        }
+      } catch (e) {}
       window.location.href = '/pages/configurateur';
     }
 
