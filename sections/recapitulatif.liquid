@@ -224,6 +224,46 @@
     patches:          47843295428771
   };
 
+  // Variants par COULEUR (produits textiles avec option Couleur dans Shopify).
+  // Permet à la vignette du checkout Shopify de prendre la bonne couleur.
+  // Les produits/couleurs absents ici retombent sur CONF_VARIANTS (variant de base).
+  var CONF_COLOR_VARIANTS = {
+    sweatshirt: {
+      'Noir':         47846803407011,
+      'Blanc cassé':  47846803439779,
+      'Gris':         47846803472547,
+      'Gris foncé':   47846803505315,
+      'Gris ardoise': 47846803538083,
+      'Bleu marine':  47846803570851,
+      'Bleu ciel':    47846803603619,
+      'Vert foncé':   47846803636387,
+      'Rose clair':   47846803669155,
+      'Rose':         47846803701923,
+      'Rouge':        47846803734691,
+      'Orange':       47846803767459,
+      'Jaune':        47846803800227,
+      'Violet':       47846803832995,
+      'Marron':       47846803865763
+    }
+  };
+
+  // Extrait le nom de couleur depuis le champ "color" d'un item
+  // (ex. "Couleur : Violet" -> "Violet"). Renvoie '' si absent.
+  function colorNameFromItem(it) {
+    if (!it || !it.color) return '';
+    return String(it.color).replace(/^\s*Couleur\s*:\s*/i, '').trim();
+  }
+
+  // Choisit le variant : d'abord par couleur si dispo, sinon variant de base.
+  function variantForItem(it) {
+    var byColor = CONF_COLOR_VARIANTS[it.productType];
+    if (byColor) {
+      var name = colorNameFromItem(it);
+      if (name && byColor[name]) return byColor[name];
+    }
+    return CONF_VARIANTS[it.productType];
+  }
+
   (function () {
     function money(val) {
       return (Number(val) || 0).toFixed(2).replace('.', ',') + ' €';
@@ -249,7 +289,7 @@
     function buildShopifyItems(cart) {
       var items = [], skipped = [];
       cart.forEach(function (it) {
-        var variantId = CONF_VARIANTS[it.productType];
+        var variantId = variantForItem(it);
         if (!variantId) { skipped.push(it); return; }
 
         var properties = {};
