@@ -1484,11 +1484,28 @@
        de l'image composée. S'il n'y a pas de logo, ou en cas d'échec, renvoie
        l'image de base fournie. Affiche un feedback "Préparation…" sur le bouton. */
     async function resolveDesignImage(fallbackSrc, btnEl) {
+      // Capture le design de la VUE DE FACE (déterministe), quelle que soit la
+      // vue affichée au moment du clic : la vignette du panier est toujours la
+      // face, avec ses logos. Repli sur captureCurrentDesign pour les produits
+      // non textiles (coins/drapeaux) qui n'ont pas de vue face textile.
       let design = null;
-      try { design = captureCurrentDesign(); } catch (e) { design = null; }
+      try {
+        design = captureFaceDesign();
+        // Si la capture "face" ne trouve aucun logo, on tente la capture de la
+        // vue courante (au cas où le logo affiché n'est pas géré par les zones face).
+        if (!design || !design.logos || !design.logos.length) {
+          const fallbackDesign = captureCurrentDesign();
+          if (fallbackDesign && fallbackDesign.logos && fallbackDesign.logos.length) {
+            design = fallbackDesign;
+          }
+        }
+      } catch (e) { console.error('[DESIGN] capture error', e); design = null; }
+
+      console.log('[DESIGN] captured =', design, 'nb logos =', design && design.logos ? design.logos.length : 0);
 
       // Pas de logo à superposer -> l'image de base suffit.
       if (!design || !design.logos || !design.logos.length) {
+        console.warn('[DESIGN] Aucun logo capté -> vignette = image couleur sans design');
         return fallbackSrc;
       }
 
@@ -1873,6 +1890,41 @@
       return { background: bg.src, logos: logos };
     }
 
+    /* Capture le design de la VUE DE FACE indépendamment de la vue actuellement
+       affichée. Les logos face (cœur + manches vues de face) sont lus via leurs
+       styles inline (left/top/width en %) : fiable même quand la vue courante
+       est "dos" ou "côté" (où ces logos sont masqués par CSS et donneraient une
+       taille nulle). Sert à générer l'aperçu envoyé au panier/commande. */
+    function captureFaceDesign() {
+      const background = currentProductImageURL('face');
+      if (!background) return null;
+
+      // Convertit "38%" -> 0.38 ; renvoie null si non exprimé en %.
+      const pct = (v) => {
+        if (typeof v !== 'string') return null;
+        const m = v.trim().match(/^([\d.]+)%$/);
+        return m ? parseFloat(m[1]) / 100 : null;
+      };
+
+      const faceZones = ['logo-f', 'logo-sl-face', 'logo-sr-face'];
+      const logos = [];
+      faceZones.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) { console.log('[FACE]', id, 'absent'); return; }
+        const img = el.querySelector('img');
+        const hasSrc = !!(img && img.getAttribute('src'));
+        console.log('[FACE]', id, 'display=', el.style.display, 'left=', el.style.left, 'top=', el.style.top, 'width=', el.style.width, 'hasSrc=', hasSrc);
+        if (!hasSrc) return;
+        const x = pct(el.style.left);
+        const y = pct(el.style.top);
+        const w = pct(el.style.width);
+        if (x == null || y == null || w == null) { console.warn('[FACE]', id, 'rejeté: position/taille non en %'); return; }
+        logos.push({ src: img.src, x: x, y: y, w: w });
+      });
+
+      return { background: background, logos: logos };
+    }
+
     async function shareDesign(btnEl) {
       const design = captureCurrentDesign();
       if (!design) {
@@ -2025,6 +2077,13 @@
       totalEl.textContent = total.toFixed(2).replace('.',',') + ' €';
     }
 
+    // Persiste l'état courant du panier pour qu'il survive à un rechargement.
+    function persistCart() {
+      try {
+        sessionStorage.setItem('conf_cart', JSON.stringify(cartItems));
+      } catch (e) {}
+    }
+
     function changeCartQty(id, delta) {
       const item = cartItems.find(i => i.id === id);
       if (!item) return;
@@ -2032,6 +2091,7 @@
       cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
       const cartCountEl = document.getElementById('hdr-cart-count');
       if (cartCountEl) cartCountEl.textContent = cartCount;
+      persistCart();
       renderCartDrawer();
     }
 
@@ -2048,6 +2108,7 @@
       }
       const cartCountEl = document.getElementById('hdr-cart-count');
       if (cartCountEl) cartCountEl.textContent = cartCount;
+      persistCart();
       renderCartDrawer();
     }
 
