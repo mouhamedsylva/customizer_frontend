@@ -342,10 +342,6 @@
       var items = [], skipped = [];
       cart.forEach(function (it) {
         var variantId = variantForItem(it);
-        console.log('[VARIANT]', it.productType, '| color=', JSON.stringify(it.color),
-          '| name=', JSON.stringify(colorNameFromItem(it)),
-          '| variant=', variantId,
-          (CONF_COLOR_VARIANTS[it.productType] && variantId === CONF_VARIANTS[it.productType]) ? '(FALLBACK base!)' : '(couleur)');
         if (!variantId) { skipped.push(it); return; }
 
         var properties = {};

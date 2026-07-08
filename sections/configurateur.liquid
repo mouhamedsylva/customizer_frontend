@@ -1338,14 +1338,23 @@
     /* Renvoie l'URL CDN de l'image {produit}-{couleur}-{vue} pour l'état courant,
        avec repli sur l'image générique du produit. Source fiable et synchrone
        pour l'aperçu envoyé au panier (indépendante du chargement DOM). */
+    // Force une URL absolue https: (les asset_url Shopify sont protocole-relatifs
+    // "//cdn..." — le backend Node ne sait pas les parser).
+    function absUrl(u) {
+      if (!u) return u;
+      if (u.indexOf('//') === 0) return window.location.protocol + u;
+      if (u.charAt(0) === '/') return window.location.origin + u;
+      return u;
+    }
+
     function currentProductImageURL(view) {
       const prefix = PRODUCT_SLUGS[currentProductKey];
       if (!prefix) return '';
       const urls = window.PRODUCT_IMAGE_URLS || {};
       const key = prefix + '-' + currentColorSlug + '-' + view;
-      if (urls[key]) return urls[key];
+      if (urls[key]) return absUrl(urls[key]);
       const fallbacks = (window.PRODUCT_FALLBACK_URLS || {})[prefix] || {};
-      return fallbacks[view] || '';
+      return absUrl(fallbacks[view] || '');
     }
 
     /* ── Applique la couleur : charge les images correspondantes ── */
@@ -1499,13 +1508,10 @@
             design = fallbackDesign;
           }
         }
-      } catch (e) { console.error('[DESIGN] capture error', e); design = null; }
-
-      console.log('[DESIGN] captured =', design, 'nb logos =', design && design.logos ? design.logos.length : 0);
+      } catch (e) { design = null; }
 
       // Pas de logo à superposer -> l'image de base suffit.
       if (!design || !design.logos || !design.logos.length) {
-        console.warn('[DESIGN] Aucun logo capté -> vignette = image couleur sans design');
         return fallbackSrc;
       }
 
@@ -1517,12 +1523,10 @@
       let original = null;
       if (btnEl) { original = btnEl.innerHTML; btnEl.disabled = true; btnEl.innerHTML = 'Préparation du design…'; }
       try {
-        console.log('[DESIGN] envoi compo -> background=', background, '| logos=', design.logos);
         const res = await window.ConfAPI.createPreviewImage(background, design.logos);
-        console.log('[DESIGN] réponse compo =', res);
         return (res && res.url) ? res.url : fallbackSrc;
       } catch (e) {
-        console.error('[DESIGN] Composition aperçu ÉCHOUÉE, image de base utilisée :', e);
+        console.error('Composition aperçu échouée, image de base utilisée :', e);
         return fallbackSrc;
       } finally {
         if (btnEl) { btnEl.disabled = false; if (original !== null) btnEl.innerHTML = original; }
