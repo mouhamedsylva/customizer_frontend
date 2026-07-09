@@ -1666,6 +1666,32 @@
       return assets;
     }
 
+    /* Assets (logos Cloudinary) utilisés pour les produits NON textiles :
+       drapeaux (recto/verso), coins (recto/verso), patch (unique). On considère
+       une zone "utilisée" si son logo déplaçable est visible dans le canvas. */
+    function collectCustomAssets() {
+      var cloud = window.CLOUDINARY_URLS || {};
+      // zone (clé CLOUDINARY_URLS) -> { label, logoElId (canvas) }
+      var map = {
+        'flag-recto':  { label: 'Design recto', el: 'flag-logo-recto' },
+        'flag-verso':  { label: 'Design verso', el: 'flag-logo-verso' },
+        'coin-recto':  { label: 'Logo recto',   el: 'coin-logo-recto' },
+        'coin-verso':  { label: 'Logo verso',   el: 'coin-logo-verso' },
+        'c':           { label: 'Design patch', el: 'patch-logo' }
+      };
+      var assets = [];
+      Object.keys(map).forEach(function (zone) {
+        var conf = map[zone];
+        var logoEl = document.getElementById(conf.el);
+        var visible = logoEl && logoEl.style.display !== 'none' &&
+                      logoEl.querySelector('img') && logoEl.querySelector('img').getAttribute('src');
+        if (!visible) return;
+        var url = cloud[zone];
+        if (url) assets.push({ label: conf.label, url: url });
+      });
+      return assets;
+    }
+
     /* Compose les aperçus du design. Retourne { thumb, sheet } :
        - thumb : image VIGNETTE (vue de face + logo, carrée) pour le panier ;
        - sheet : PLANCHE multi-vues (face+dos+côté) pour l'aperçu de la commande
@@ -1797,23 +1823,36 @@
       // Si c'est un prix unitaire, on multiplie par la quantité
       if (totalEl && totalEl.classList.contains('rp-unit-price-big')) price = price * qty;
 
-      // Image de la vignette panier.
+      // Image de la vignette panier + planche d'aperçu (recto/verso).
       let imgSrc = '';
+      let sheetSrc = null;
 
-      // DRAPEAU : compose le recto (fond + logo) côté serveur -> vignette fidèle.
-      if (currentProductType === 'drapeaux') {
-        var flagViews = null;
-        try { flagViews = captureFlagDesign(); } catch (e) { flagViews = null; }
-        var recto = flagViews && flagViews[0];
-        if (recto && recto.logos && recto.logos.length) {
-          var original = btnEl ? btnEl.innerHTML : '';
-          if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Préparation…'; }
-          try {
+      // DRAPEAU / COINS : compose le design côté serveur.
+      // - img (vignette panier) = RECTO seul.
+      // - sheet (Aperçu commande) = planche recto + verso.
+      var customViews = null;
+      try {
+        if (currentProductType === 'drapeaux') customViews = captureFlagDesign();
+        else if (currentProductType === 'coins') customViews = captureCoinDesign();
+      } catch (e) { customViews = null; }
+
+      if (customViews && customViews.length) {
+        var original = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Préparation…'; }
+        try {
+          // Vignette : recto seul (image carrée lisible).
+          var recto = customViews[0];
+          if (recto && recto.logos && recto.logos.length) {
             var res = await window.ConfAPI.createPreviewImage(recto.background, recto.logos);
             if (res && res.url) imgSrc = res.url;
-          } catch (e) { console.error('Composition drapeau échouée :', e); }
-          finally { if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; } }
-        }
+          }
+          // Planche : recto + verso (si au moins 2 faces).
+          if (customViews.length >= 2) {
+            var resM = await window.ConfAPI.createMultiViewImage(customViews);
+            if (resM && resM.url) sheetSrc = resM.url;
+          }
+        } catch (e) { console.error('Composition aperçu échouée :', e); }
+        finally { if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; } }
       }
 
       // Repli : miniature du récap si <img>, sinon image de base du canvas.
@@ -1837,7 +1876,9 @@
         size: '',
         price: qty > 0 ? (price / qty) : price,  // prix unitaire stocké
         qty: qty,
-        img: imgSrc
+        img: imgSrc,
+        sheet: sheetSrc,   // planche recto/verso pour l'_Aperçu de la commande
+        assets: collectCustomAssets()   // logos utilisés -> visibles dans la commande
       };
 
       // replaceQty = true : la quantité est le nombre d'unités commandé (pas un cumul d'ajouts)
