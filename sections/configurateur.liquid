@@ -1535,6 +1535,34 @@
       thumb.style.overflow = 'hidden';
     }
 
+    /* Met à jour la vignette du récap COIN (vue RECTO uniquement) : disque
+       métallique (fond) + logo positionné, en temps réel. */
+    function updateCoinRecapThumb() {
+      var thumb = document.getElementById('coin-recap-thumb-main');
+      if (!thumb) return;
+
+      var baseImg = document.getElementById('coin-base-recto');
+      var bgSrc = baseImg ? baseImg.getAttribute('src') : '';
+      if (!bgSrc) return;
+
+      var logoEl = document.getElementById('coin-logo-recto');
+      var logoImg = logoEl ? logoEl.querySelector('img') : null;
+      var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
+      var left = logoEl ? (parseFloat(logoEl.style.left) || 28) : 28;
+      var top  = logoEl ? (parseFloat(logoEl.style.top)  || 28) : 28;
+      var width = logoEl ? (parseFloat(logoEl.style.width) || 44) : 44;
+
+      var html = '<div style="position:relative;width:100%;height:100%;">' +
+        '<img src="' + bgSrc + '" alt="Coin" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">';
+      if (logoSrc) {
+        html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
+                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;">';
+      }
+      html += '</div>';
+      thumb.innerHTML = html;
+      thumb.style.overflow = 'hidden';
+    }
+
     /* Renvoie l'URL CDN de l'image {produit}-{couleur}-{vue} pour l'état courant,
        avec repli sur l'image générique du produit. Source fiable et synchrone
        pour l'aperçu envoyé au panier (indépendante du chargement DOM). */
@@ -3116,12 +3144,8 @@
           const removeBtn = document.getElementById('coin-remove-' + face);
           if (removeBtn) removeBtn.style.display = 'inline-block';
 
-          // Miniatures du récap
-          const thumbMain = document.getElementById('coin-recap-thumb-main');
-          const thumbFace = document.getElementById('coin-recap-thumb-' + face);
-          const imgHtml = `<img src="${src}" alt="${face}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-          if (thumbFace) thumbFace.innerHTML = imgHtml;
-          if (face === 'recto' && thumbMain) thumbMain.innerHTML = imgHtml;
+          // Vignette du récap : recto composé (disque + logo), temps réel.
+          updateCoinRecapThumb();
           return;
         }
 

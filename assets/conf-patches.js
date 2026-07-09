@@ -342,6 +342,9 @@ function selectCoinFinish(el) {
   // Mise à jour du récap
   const recapFinish = document.getElementById('coin-recap-finish');
   if (recapFinish) recapFinish.textContent = labels[finish] || finish;
+
+  // Vignette du récap (disque + logo) : la finition change l'image du disque.
+  if (typeof window.updateCoinRecapThumb === 'function') window.updateCoinRecapThumb();
 }
 
 // Surface

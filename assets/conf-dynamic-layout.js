@@ -495,7 +495,6 @@ class DynamicLayoutManager {
       <div class="rp-section">
         <div class="rp-unit-title">PRIX UNITAIRE</div>
         <div class="rp-unit-price-big">2,45 € <span class="rp-unit-ht">HT</span></div>
-        <div class="rp-unit-price-ttc">2,84 € TTC</div>
       </div>
       
       <div class="rp-section rp-total-section">
@@ -505,7 +504,6 @@ class DynamicLayoutManager {
           <span class="rp-total-price" id="coins-total-price">49,00 €</span> 
           <span class="rp-total-ht" id="coins-total-ht">HT</span>
         </div>
-        <div class="rp-total-ttc" id="coins-total-ttc">58,80 € TTC</div>
       </div>
       
       <div class="rp-actions-coins">
@@ -760,7 +758,6 @@ class DynamicLayoutManager {
       <div class="rp-section">
         <div class="rp-unit-title">PRIX UNITAIRE</div>
         <div class="rp-unit-price-big">19,90 € <span class="rp-unit-ht">HT</span></div>
-        <div class="rp-unit-price-ttc">23,88 € TTC</div>
       </div>
       
       <div class="rp-actions-coins">
@@ -936,23 +933,6 @@ class DynamicLayoutManager {
               <p>Forme : <span id="coin-recap-shape">Rond</span></p>
               <p>Taille : <span id="coin-recap-size">30 mm</span></p>
               <p>Finition : <span id="coin-recap-finish">À choisir</span></p>
-            </div>
-          </div>
-        </div>
-
-        <div class="rp-coin-faces">
-          <div class="rp-coin-face">
-            <div class="rp-patch-thumb coin-thumb" id="coin-recap-thumb-recto">${coinThumb}</div>
-            <div>
-              <strong>Recto</strong>
-              <span>Personnalisé</span>
-            </div>
-          </div>
-          <div class="rp-coin-face" id="coin-recap-face-verso">
-            <div class="rp-patch-thumb coin-thumb" id="coin-recap-thumb-verso">${coinThumb}</div>
-            <div>
-              <strong>Verso</strong>
-              <span>Personnalisé</span>
             </div>
           </div>
         </div>

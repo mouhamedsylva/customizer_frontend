@@ -145,6 +145,10 @@
     if (active.id === 'patch-logo' && typeof window.updatePatchRecapThumb === 'function') {
       window.updatePatchRecapThumb();
     }
+    // Idem pour le coin recto (vignette récap coin)
+    if (active.id === 'coin-logo-recto' && typeof window.updateCoinRecapThumb === 'function') {
+      window.updateCoinRecapThumb();
+    }
 
     e.preventDefault();
   }
