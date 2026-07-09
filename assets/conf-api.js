@@ -59,6 +59,10 @@ window.ConfAPI = (function () {
     shareDesign(designData) {
       return jsonRequest('/export/share', 'POST', { designData: designData });
     },
+    // Récupère un design partagé par son id -> designData
+    getSharedDesign(shareId) {
+      return jsonRequest('/export/share/' + encodeURIComponent(shareId), 'GET');
+    },
     // Composer une image du design (fond + logos) -> { url } Cloudinary
     createPreviewImage(background, logos) {
       return jsonRequest('/export/preview-image', 'POST', {

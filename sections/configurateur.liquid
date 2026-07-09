@@ -1265,12 +1265,37 @@
           if (cartCountEl) cartCountEl.textContent = cartCount;
           if (typeof renderCartDrawer === 'function') renderCartDrawer();
         }
-        // Restaurer le PRODUIT courant puis ses uploads. Sans ça, les logos
-        // seraient réappliqués au sweatshirt (produit par défaut) au lieu du
-        // textile réellement choisi (t-shirt coton/polyester…).
-        restoreProductThenUploads();
+        // Si un design partagé est passé en URL (?design=<id>), on le charge
+        // d'abord (invitation à éditer), sinon on restaure l'état local.
+        loadSharedDesignThenRestore();
       });
     });
+
+    /* Si l'URL contient ?design=<id> (lien d'invitation), récupère le design
+       partagé, l'injecte dans sessionStorage, puis restaure. Sinon, restauration
+       locale normale. */
+    function loadSharedDesignThenRestore() {
+      var shareId = null;
+      try { shareId = new URLSearchParams(window.location.search).get('design'); } catch (e) {}
+
+      if (!shareId) { restoreProductThenUploads(); return; }
+
+      window.ConfAPI.getSharedDesign(shareId).then(function (data) {
+        // data = { product, color, patchColor, uploads } (state sérialisé).
+        try {
+          if (data && data.product) sessionStorage.setItem('conf_current_product', data.product);
+          if (data && data.color) sessionStorage.setItem('conf_current_color', JSON.stringify(data.color));
+          if (data && data.patchColor) sessionStorage.setItem('conf_patch_color', JSON.stringify(data.patchColor));
+          if (data && data.uploads) sessionStorage.setItem('conf_uploads', JSON.stringify(data.uploads));
+        } catch (e) {}
+        // Nettoie l'URL (retire ?design=) sans recharger.
+        try { history.replaceState(null, '', '/pages/configurateur'); } catch (e) {}
+        restoreProductThenUploads();
+      }).catch(function (err) {
+        console.error('Design partagé introuvable :', err);
+        restoreProductThenUploads();
+      });
+    }
 
     /* Rebascule sur le PRODUIT où était l'utilisateur avant le reload, puis
        restaure ses uploads. Priorité : conf_current_product (dernier produit
@@ -2688,9 +2713,14 @@
           <a href="${mailHref}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e8e8e8;border-radius:10px;text-decoration:none;color:#1a1a1a;margin-bottom:10px;font-weight:600;">
             <span style="font-size:20px;">✉️</span> Gmail
           </a>
-          <button id="share-copy-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a;font-weight:600;font-family:inherit;">
-            <span style="font-size:20px;">🔗</span> Copier le lien
+          <button id="share-copy-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a;font-weight:600;font-family:inherit;margin-bottom:10px;">
+            <span style="font-size:20px;">🔗</span> Copier le lien de l'image
           </button>
+          <div style="border-top:1px solid #eee;margin:6px 0 12px;"></div>
+          <button id="share-invite-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:none;border-radius:10px;background:#1a1a1a;cursor:pointer;color:#fff;font-weight:700;font-family:inherit;">
+            <span style="font-size:20px;">✉️</span> Inviter une personne à éditer
+          </button>
+          <p style="font-size:11px;color:#888;margin-top:8px;line-height:1.4;">La personne invitée ouvrira le configurateur avec votre design en cours (modifiable).</p>
         </div>`;
       overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
       document.body.appendChild(overlay);
@@ -2705,6 +2735,48 @@
           confPrompt('Copiez le lien ci-dessous :', { defaultValue: url, icon: 'info', title: 'Lien de partage', confirmText: 'Fermer' });
         }
       });
+
+      // Bouton "Inviter une personne à éditer" -> lien qui restaure le design.
+      const inviteBtn = document.getElementById('share-invite-btn');
+      inviteBtn.addEventListener('click', async () => {
+        var orig = inviteBtn.innerHTML;
+        inviteBtn.disabled = true;
+        inviteBtn.innerHTML = '<span style="font-size:20px;">⏳</span> Génération du lien…';
+        try {
+          var inviteUrl = await createInviteLink();
+          try {
+            await navigator.clipboard.writeText(inviteUrl);
+            inviteBtn.innerHTML = '<span style="font-size:20px;">✅</span> Lien d\'invitation copié !';
+          } catch (e) {
+            confPrompt('Lien d\'invitation (copiez-le) :', { defaultValue: inviteUrl, icon: 'success', title: 'Invitation', confirmText: 'Fermer' });
+            inviteBtn.innerHTML = orig;
+          }
+        } catch (err) {
+          inviteBtn.disabled = false;
+          inviteBtn.innerHTML = orig;
+          confAlert('Impossible de générer le lien d\'invitation.\n' + (err && err.message ? err.message : err), { icon: 'error', title: 'Invitation' });
+        }
+      });
+    }
+
+    /* Capture l'état complet du design courant (produit, couleur, uploads) et le
+       sauvegarde côté serveur. Renvoie l'URL d'invitation (?design=<id>) que
+       l'invité ouvrira pour retrouver et éditer ce design. */
+    async function createInviteLink() {
+      var state = {
+        product: null, color: null, patchColor: null, uploads: null
+      };
+      try { state.product = sessionStorage.getItem('conf_current_product') || currentProductType; } catch (e) {}
+      try { state.color = JSON.parse(sessionStorage.getItem('conf_current_color') || 'null'); } catch (e) {}
+      try { state.patchColor = JSON.parse(sessionStorage.getItem('conf_patch_color') || 'null'); } catch (e) {}
+      try { state.uploads = JSON.parse(sessionStorage.getItem('conf_uploads') || 'null'); } catch (e) {}
+
+      var res = await window.ConfAPI.shareDesign(state);
+      var shareId = res && res.shareId;
+      if (!shareId) throw new Error('Identifiant de partage manquant');
+
+      // Lien vers le configurateur avec le design à restaurer.
+      return window.location.origin + '/pages/configurateur?design=' + encodeURIComponent(shareId);
     }
 
     function showQuoteSuccess(client) {
