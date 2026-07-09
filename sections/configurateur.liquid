@@ -82,6 +82,7 @@
         }
       };
     </script>
+    <script src="{{ 'conf-alert.js' | asset_url }}"></script>
     <script src="{{ 'conf-product-images.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-dynamic-layout.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-drapeaux.js' | asset_url }}" defer></script>
@@ -1147,8 +1148,10 @@
       <div class="rp-items">
         <!-- Product row (always visible) -->
         <div class="ri">
-          <div class="ri-thumb">
+          <div class="ri-thumb" style="position:relative;">
             <img id="rc-prod-img" src="{{ 'sweatshirt-face.png' | asset_url }}" alt="Produit" style="width:38px;height:38px;object-fit:contain;display:block;">
+            <!-- Overlay logo cœur (aperçu temps réel dans la vignette récap) -->
+            <img id="rc-prod-logo" src="" alt="" style="display:none;position:absolute;object-fit:contain;pointer-events:none;">
           </div>
           <div class="ri-info">
             <div class="ri-name" id="rc-prod">Sweatshirt</div>
@@ -1245,19 +1248,60 @@
 
     // Afficher le bouton panier du header si des articles existent déjà
     document.addEventListener('DOMContentLoaded', () => {
-      if (cartCount > 0) {
-        const cartBtn = document.getElementById('hdr-cart-btn');
-        const cartCountEl = document.getElementById('hdr-cart-count');
-        if (cartBtn) cartBtn.style.display = 'inline-flex';
-        if (cartCountEl) cartCountEl.textContent = cartCount;
-        if (typeof renderCartDrawer === 'function') renderCartDrawer();
+      // Détecte un retour APRÈS PAIEMENT : si un checkout était en cours et que le
+      // panier Shopify natif est désormais vide, la commande a été finalisée
+      // -> on réinitialise le design (panier local + logos), puis on recharge.
+      maybeResetAfterPurchase().then((didReset) => {
+        if (didReset) return; // la page va se recharger vierge
+        if (cartCount > 0) {
+          const cartBtn = document.getElementById('hdr-cart-btn');
+          const cartCountEl = document.getElementById('hdr-cart-count');
+          if (cartBtn) cartBtn.style.display = 'inline-flex';
+          if (cartCountEl) cartCountEl.textContent = cartCount;
+          if (typeof renderCartDrawer === 'function') renderCartDrawer();
+        }
+        // Restaurer les designs uploadés (textile chargé par défaut)
+        if (typeof restoreUploads === 'function') {
+          setTimeout(restoreUploads, 200);
+        }
+      });
+    });
+
+    /* Réinitialise le configurateur si le client revient après un paiement réussi.
+       Condition : un checkout était marqué en cours (conf_checkout_pending) ET le
+       panier Shopify natif est vide (commande passée -> Shopify a vidé le panier).
+       Renvoie true si un reset a eu lieu (la page est rechargée). */
+    async function maybeResetAfterPurchase() {
+      let pending = null;
+      try { pending = localStorage.getItem('conf_checkout_pending'); } catch (e) {}
+      if (!pending) return false;
+
+      // Garde-fou : ignore un flag trop ancien (> 2h) pour éviter tout reset tardif.
+      const age = Date.now() - parseInt(pending, 10);
+      if (isNaN(age) || age > 2 * 60 * 60 * 1000) {
+        try { localStorage.removeItem('conf_checkout_pending'); } catch (e) {}
+        return false;
       }
 
-      // Restaurer les designs uploadés (textile chargé par défaut)
-      if (typeof restoreUploads === 'function') {
-        setTimeout(restoreUploads, 200);
+      // Vérifie le panier Shopify natif.
+      let itemCount = null;
+      try {
+        const res = await fetch('/cart.js', { headers: { 'Accept': 'application/json' } });
+        if (res.ok) { const cart = await res.json(); itemCount = cart.item_count; }
+      } catch (e) { itemCount = null; }
+
+      // Panier natif vide => commande finalisée => on nettoie.
+      if (itemCount === 0) {
+        try { localStorage.removeItem('conf_checkout_pending'); } catch (e) {}
+        if (typeof clearConfiguratorState === 'function') clearConfiguratorState();
+        // Recharge vierge (retire aussi un éventuel ?design=... de partage).
+        window.location.replace('/pages/configurateur');
+        return true;
       }
-    });
+
+      // Panier non vide (le client est juste revenu en arrière) : on garde tout.
+      return false;
+    }
 
     const LOGO_STORE = {};
 
@@ -1333,6 +1377,38 @@
           rcProdImg.src = fallbackUrl;
         }
       }
+
+      // Réaligne l'overlay logo de la vignette récap sur la nouvelle image.
+      if (typeof updateRecapThumbLogo === 'function') updateRecapThumbLogo();
+    }
+
+    /* Synchronise l'overlay logo de la vignette récap (colonne droite) avec le
+       logo cœur du canvas (logo-f), pour un aperçu temps réel AVANT ajout au
+       panier. Position/taille en % du logo (relatifs au layer) reprojetés sur la
+       petite vignette carrée (approx : on reprend les mêmes % — suffisant à cette
+       échelle pour donner un aperçu fidèle). */
+    function updateRecapThumbLogo() {
+      const ov = document.getElementById('rc-prod-logo');
+      if (!ov) return;
+      const logoEl = document.getElementById('logo-f');
+      const img = logoEl ? logoEl.querySelector('img') : null;
+      const src = img ? img.getAttribute('src') : null;
+      const visible = logoEl && logoEl.style.display !== 'none' && src;
+      if (!visible) { ov.style.display = 'none'; ov.src = ''; return; }
+
+      // % inline du logo (relatifs au layer). La vignette produit est en
+      // object-fit:contain dans un carré 38px : on applique les mêmes % en
+      // laissant un léger facteur pour compenser le contain (le vêtement occupe
+      // ~80% de la vignette en hauteur).
+      const left = parseFloat(logoEl.style.left) || 38;
+      const top  = parseFloat(logoEl.style.top)  || 34;
+      const width = parseFloat(logoEl.style.width) || 18;
+      ov.src = src;
+      ov.style.display = 'block';
+      ov.style.left = left + '%';
+      ov.style.top = top + '%';
+      ov.style.width = width + '%';
+      ov.style.height = 'auto';
     }
 
     /* Renvoie l'URL CDN de l'image {produit}-{couleur}-{vue} pour l'état courant,
@@ -1444,8 +1520,9 @@
       }
 
       const btnEl = document.getElementById('main-add-to-cart');
-      // Compose l'aperçu AVEC les logos (image envoyée à Shopify).
-      const imgSrc = await resolveDesignImage(fallbackSrc, btnEl);
+      // Compose 2 aperçus : une VIGNETTE (face seule + logo, carrée, pour le
+      // panier) et une PLANCHE multi-vues (face+dos+côté, pour la commande).
+      const design = await resolveDesignImage(fallbackSrc, btnEl);
 
       const item = {
         id: Date.now(),
@@ -1454,7 +1531,8 @@
         color: rcColor ? rcColor.textContent.trim() : '',
         size:  rcSize  ? rcSize.textContent.trim()  : '',
         price: price,
-        img:   imgSrc,
+        img:   design.thumb,   // vignette panier (face + logo)
+        sheet: design.sheet,   // planche multi-vues (aperçu commande) — peut être null
         // URLs Cloudinary des logos/assets réellement utilisés (pour la commande Shopify)
         assets: collectDesignAssets(),
         qty: 1
@@ -1489,48 +1567,55 @@
       return assets;
     }
 
-    /* Compose l'aperçu du design (fond + logos) côté serveur et renvoie l'URL
-       de l'image composée. S'il n'y a pas de logo, ou en cas d'échec, renvoie
-       l'image de base fournie. Affiche un feedback "Préparation…" sur le bouton. */
+    /* Compose les aperçus du design. Retourne { thumb, sheet } :
+       - thumb : image VIGNETTE (vue de face + logo, carrée) pour le panier ;
+       - sheet : PLANCHE multi-vues (face+dos+côté) pour l'aperçu de la commande
+                 (null si non textile ou si aucun logo/échec).
+       Si aucun logo, thumb = fallbackSrc (image couleur simple). */
     async function resolveDesignImage(fallbackSrc, btnEl) {
-      // Capture le design de la VUE DE FACE (déterministe), quelle que soit la
-      // vue affichée au moment du clic : la vignette du panier est toujours la
-      // face, avec ses logos. Repli sur captureCurrentDesign pour les produits
-      // non textiles (coins/drapeaux) qui n'ont pas de vue face textile.
-      let design = null;
+      let original = null;
+      const busy = () => { if (btnEl && original === null) { original = btnEl.innerHTML; btnEl.disabled = true; btnEl.innerHTML = 'Préparation du design…'; } };
+      const done = () => { if (btnEl && original !== null) { btnEl.disabled = false; btnEl.innerHTML = original; original = null; } };
+
+      // --- 1) VIGNETTE : vue de face + logo (image carrée lisible) ---
+      let thumb = fallbackSrc;
+      let faceDesign = null;
       try {
-        design = captureFaceDesign();
-        // Si la capture "face" ne trouve aucun logo, on tente la capture de la
-        // vue courante (au cas où le logo affiché n'est pas géré par les zones face).
-        if (!design || !design.logos || !design.logos.length) {
-          const fallbackDesign = captureCurrentDesign();
-          if (fallbackDesign && fallbackDesign.logos && fallbackDesign.logos.length) {
-            design = fallbackDesign;
+        faceDesign = captureFaceDesign();
+        if (!faceDesign || !faceDesign.logos || !faceDesign.logos.length) {
+          const fb = captureCurrentDesign();
+          if (fb && fb.logos && fb.logos.length) faceDesign = fb;
+        }
+      } catch (e) { faceDesign = null; }
+
+      if (faceDesign && faceDesign.logos && faceDesign.logos.length) {
+        busy();
+        try {
+          const bg = fallbackSrc || faceDesign.background;
+          const res = await window.ConfAPI.createPreviewImage(bg, faceDesign.logos);
+          if (res && res.url) thumb = res.url;
+        } catch (e) {
+          console.error('Composition vignette échouée :', e);
+        }
+      }
+
+      // --- 2) PLANCHE multi-vues (textile uniquement, si au moins un logo) ---
+      let sheet = null;
+      try {
+        const views = captureAllViews();
+        if (views && views.length && views.some(v => v.logos && v.logos.length)) {
+          busy();
+          try {
+            const res = await window.ConfAPI.createMultiViewImage(views);
+            if (res && res.url) sheet = res.url;
+          } catch (e) {
+            console.error('Composition multi-vues échouée :', e);
           }
         }
-      } catch (e) { design = null; }
+      } catch (e) { /* non textile : pas de planche */ }
 
-      // Pas de logo à superposer -> l'image de base suffit.
-      if (!design || !design.logos || !design.logos.length) {
-        return fallbackSrc;
-      }
-
-      // Fond envoyé au serveur : on privilégie l'URL couleur fiable (fallbackSrc,
-      // calculée depuis produit+couleur) plutôt que design.background, qui peut
-      // encore pointer sur une image de couleur précédente ou générique.
-      const background = fallbackSrc || design.background;
-
-      let original = null;
-      if (btnEl) { original = btnEl.innerHTML; btnEl.disabled = true; btnEl.innerHTML = 'Préparation du design…'; }
-      try {
-        const res = await window.ConfAPI.createPreviewImage(background, design.logos);
-        return (res && res.url) ? res.url : fallbackSrc;
-      } catch (e) {
-        console.error('Composition aperçu échouée, image de base utilisée :', e);
-        return fallbackSrc;
-      } finally {
-        if (btnEl) { btnEl.disabled = false; if (original !== null) btnEl.innerHTML = original; }
-      }
+      done();
+      return { thumb: thumb, sheet: sheet };
     }
 
     /* ── Ajout générique au panier (textile, drapeaux, coins, patchs) ──
@@ -1545,6 +1630,11 @@
         } else {
           existing.qty += (item.qty || 1); // cumuler
         }
+        // Met à jour le design (image/planche/assets) : le client a pu modifier
+        // son logo avant de ré-ajouter le même produit/couleur/taille.
+        existing.img = item.img;
+        existing.sheet = item.sheet;
+        existing.assets = item.assets;
       } else {
         cartItems.push(item);
       }
@@ -1817,8 +1907,8 @@
       } catch (err) {
         console.error('Erreur devis :', err);
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Envoyer ma demande de devis'; }
-        alert("Une erreur est survenue lors de l'envoi de votre demande.\n" + err.message +
-              "\n\nVérifiez que le serveur est démarré.");
+        confAlert("Une erreur est survenue lors de l'envoi de votre demande.\n" + err.message,
+                  { icon: 'error', title: 'Envoi échoué' });
       }
     }
 
@@ -1852,9 +1942,13 @@
 
     /* Réinitialisation manuelle (bouton "Réinitialiser") avec confirmation. */
     function confirmReset() {
-      if (confirm('Réinitialiser votre design ? Votre panier et vos logos seront effacés.')) {
-        resetConfigurator();
-      }
+      confConfirm('Votre panier et vos logos seront effacés.', {
+        icon: 'warning',
+        title: 'Réinitialiser votre design ?',
+        confirmText: 'Réinitialiser'
+      }).then(function (ok) {
+        if (ok) resetConfigurator();
+      });
     }
 
     /* ── Partage du design ──
@@ -1956,14 +2050,19 @@
       // reprojette donc chaque logo sur la boîte réelle de l'image (view-face)
       // pour que le backend le pose au bon endroit et à la bonne taille.
       const layer = document.getElementById('logo-layer');
-      // Image de référence : view-face si visible, sinon l'image produit
-      // actuellement affichée (même conteneur/même géométrie object-fit).
-      let refImg = document.getElementById('view-face');
-      if (!refImg || refImg.getBoundingClientRect().width === 0) {
-        refImg = document.querySelector('.product-img-single.on') || refImg;
-      }
       const layerBox = layer ? layer.getBoundingClientRect() : null;
-      const imgBox = imageContentRect(refImg);
+
+      // Boîte réelle de l'image produit. On privilégie la MESURE directe de
+      // l'image affichée (getBoundingClientRect via imageContentRect, précise) ;
+      // à défaut (image masquée), on approxime avec imgBoxWithinLayer.
+      let refImg = document.querySelector('.product-img-single.on') || document.getElementById('view-face');
+      let imgBox = null;
+      if (refImg && refImg.getBoundingClientRect().width > 0) {
+        imgBox = imageContentRect(refImg);
+      }
+      if (!imgBox || imgBox.width === 0) {
+        imgBox = imgBoxWithinLayer(refImg, layerBox);
+      }
 
       const faceZones = ['logo-f', 'logo-sl-face', 'logo-sr-face'];
       const logos = [];
@@ -1972,15 +2071,28 @@
         if (!el) return;
         const img = el.querySelector('img');
         if (!img || !img.getAttribute('src')) return;
+
+        // Mesure DIRECTE de la boîte du logo à l'écran si visible (précis),
+        // sinon reprojection depuis les % du layer.
+        const r = el.getBoundingClientRect();
+        const measurable = r.width > 0 && r.height > 0;
+
+        if (imgBox && imgBox.width > 0 && imgBox.height > 0 && measurable) {
+          logos.push({
+            src: img.src,
+            x: (r.left - imgBox.left) / imgBox.width,
+            y: (r.top - imgBox.top) / imgBox.height,
+            w: r.width / imgBox.width
+          });
+          return;
+        }
+
+        // Repli : reprojection depuis les % inline (vue masquée).
         const lx = pct(el.style.left);
         const ly = pct(el.style.top);
         const lw = pct(el.style.width);
         if (lx == null || ly == null || lw == null) return;
-
-        // Si on connaît les boîtes layer + image, on reprojette. Sinon, on garde
-        // les % bruts (repli : mieux que rien).
         if (layerBox && imgBox && imgBox.width > 0 && imgBox.height > 0) {
-          // Position/taille écran du logo (depuis les % du layer).
           const scrLeft = layerBox.left + lx * layerBox.width;
           const scrTop  = layerBox.top  + ly * layerBox.height;
           const scrW    = lw * layerBox.width;
@@ -2003,7 +2115,35 @@
        logos } avec logos reprojetés sur l'image produit (mêmes règles que
        captureFaceDesign). Les positions viennent des % inline (fiables même pour
        les vues masquées). Renvoie null si le produit n'est pas textile. */
+    /* Boîte occupée par l'image produit À L'INTÉRIEUR du layer (object-fit:contain),
+       robuste même quand l'image est masquée : on applique son ratio naturel à la
+       boîte du layer. Renvoie {left, top, width, height} en coordonnées écran. */
+    function imgBoxWithinLayer(img, layerBox) {
+      if (!layerBox || layerBox.width === 0 || layerBox.height === 0) return null;
+      const nw = img && img.naturalWidth, nh = img && img.naturalHeight;
+      // .cv-single-view a un padding (20px) -> l'image ne remplit pas tout le layer.
+      // On approxime la zone image par le layer moins ce padding.
+      const PAD = 20;
+      const availW = Math.max(1, layerBox.width - PAD * 2);
+      const availH = Math.max(1, layerBox.height - PAD * 2);
+      let w = availW, h = availH;
+      if (nw && nh) {
+        const imgRatio = nw / nh;
+        const availRatio = availW / availH;
+        if (imgRatio > availRatio) { w = availW; h = availW / imgRatio; }
+        else { h = availH; w = availH * imgRatio; }
+      }
+      const left = layerBox.left + PAD + (availW - w) / 2;
+      const top = layerBox.top + PAD + (availH - h) / 2;
+      return { left, top, width: w, height: h };
+    }
+
     function captureAllViews() {
+      // Uniquement pour les produits TEXTILES. Pour coins/drapeaux/patches,
+      // currentProductKey peut rester sur un ancien textile -> on vérifie le
+      // type de produit COURANT réel avant de capturer les vues face/dos/côté.
+      var textileTypes = ['sweatshirt', 'tshirt', 'tshirt_polyester'];
+      if (textileTypes.indexOf(currentProductType) === -1) return null;
       const prefix = PRODUCT_SLUGS[currentProductKey];
       if (!prefix) return null; // non textile -> pas de vues multiples
 
@@ -2017,13 +2157,28 @@
       const layer = document.getElementById('logo-layer');
       let refImg = document.querySelector('.product-img-single.on') || document.getElementById('view-face');
       const layerBox = layer ? layer.getBoundingClientRect() : null;
-      const imgBox = imageContentRect(refImg);
+      // Mesure directe de la boîte image si affichée (précis), sinon approximation.
+      let imgBox = null;
+      if (refImg && refImg.getBoundingClientRect().width > 0) imgBox = imageContentRect(refImg);
+      if (!imgBox || imgBox.width === 0) imgBox = imgBoxWithinLayer(refImg, layerBox);
       const canReproject = !!(layerBox && imgBox && imgBox.width > 0 && imgBox.height > 0);
 
-      // Reprojette un logo (par ses % de layer) en fractions de l'image produit.
+      // Convertit un logo en fractions de l'image produit. Mesure DIRECTE si le
+      // logo est visible à l'écran (précis) ; sinon reprojection depuis ses %.
       const project = (el) => {
         const img = el.querySelector('img');
         if (!img || !img.getAttribute('src')) return null;
+        if (canReproject) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            return {
+              src: img.src,
+              x: (r.left - imgBox.left) / imgBox.width,
+              y: (r.top - imgBox.top) / imgBox.height,
+              w: r.width / imgBox.width
+            };
+          }
+        }
         const lx = pct(el.style.left), ly = pct(el.style.top), lw = pct(el.style.width);
         if (lx == null || ly == null || lw == null) return null;
         if (!canReproject) return { src: img.src, x: lx, y: ly, w: lw };
@@ -2072,7 +2227,7 @@
 
       const design = captureCurrentDesign();
       if (!design) {
-        alert("Aucun aperçu à partager pour le moment.");
+        await confAlert("Aucun aperçu à partager pour le moment.", { icon: 'info', title: 'Partage' });
         return;
       }
 
@@ -2101,7 +2256,7 @@
         openShareMenu(url, shareText);
       } catch (err) {
         console.error('Erreur partage :', err);
-        alert("Impossible de générer le lien de partage.\n" + err.message);
+        confAlert("Impossible de générer le lien de partage.\n" + err.message, { icon: 'error', title: 'Partage' });
       } finally {
         if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; }
       }
@@ -2129,7 +2284,7 @@
         openShareMenu(url, shareText);
       } catch (err) {
         console.error('Erreur partage multi-vues :', err);
-        alert("Impossible de générer le lien de partage.\n" + err.message);
+        confAlert("Impossible de générer le lien de partage.\n" + err.message, { icon: 'error', title: 'Partage' });
       } finally {
         if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; }
       }
@@ -2172,8 +2327,8 @@
           await navigator.clipboard.writeText(url);
           copyBtn.innerHTML = '<span style="font-size:20px;">✅</span> Lien copié !';
         } catch (e) {
-          // fallback si clipboard indisponible
-          prompt('Copiez le lien :', url);
+          // fallback si clipboard indisponible : modale avec le lien pré-sélectionné
+          confPrompt('Copiez le lien ci-dessous :', { defaultValue: url, icon: 'info', title: 'Lien de partage', confirmText: 'Fermer' });
         }
       });
     }
@@ -2393,6 +2548,9 @@
       if (rcImgF && savedF)  rcImgF.src = savedF;
       if (rcImgB && savedB)  rcImgB.src = savedB;
       if (rcSleeves) rcSleeves.style.display = (savedSl || savedSr) ? 'flex' : 'none';
+
+      // Réaligne l'aperçu logo de la vignette récap pour ce produit.
+      if (typeof updateRecapThumbLogo === 'function') updateRecapThumbLogo();
     }
 
     /* ── Size select ── */
@@ -2696,6 +2854,8 @@
             if (limg) limg.src = src;
             logo.style.display = 'block';
           }
+          // Aperçu temps réel dans la vignette récap
+          updateRecapThumbLogo();
           // Basculer vers la vue de face pour positionner le logo
           const faceBtn = document.querySelector('.vt[onclick*="face"]');
           if (faceBtn && typeof selView === 'function') {
@@ -2806,6 +2966,8 @@
         const srSrc = document.getElementById('isr')?.src;
         if (!slSrc && !srSrc) document.getElementById('rc-sleeves').style.display = 'none';
       }
+      // Mettre à jour l'aperçu temps réel de la vignette récap (logo cœur)
+      updateRecapThumbLogo();
     }
 
     /* ── Coins functions ── */
@@ -2845,14 +3007,47 @@
     }
 
     function selectCoinSize(el) {
-      document.querySelectorAll('.coins-size-card').forEach(s => s.classList.remove('active'));
+      // Gère les DEUX types de boutons taille : .coin-size-card (mm, texte direct)
+      // et .coins-size-card (cm, avec <p>). On retire l'active des deux familles.
+      document.querySelectorAll('.coin-size-card, .coins-size-card').forEach(s => s.classList.remove('active'));
       el.classList.add('active');
-      const sizeName = el.querySelector('p').textContent;
-      console.log('Taille sélectionnée:', el.dataset.size);
-      
-      // Mettre à jour le récap
-      const recapSize = document.getElementById('coins-recap-size');
+
+      // Libellé : <p> si présent (cartes cm), sinon le texte du bouton (cartes mm).
+      var pEl = el.querySelector('p');
+      var sizeName = (pEl ? pEl.textContent : el.textContent).trim();
+      var sizeData = el.getAttribute('data-size') || sizeName;
+
+      // Mettre à jour le récap (les deux ids possibles selon le layout).
+      var recapSize = document.getElementById('coins-recap-size') || document.getElementById('coin-recap-size');
       if (recapSize) recapSize.textContent = sizeName;
+
+      // Redimensionne le canvas 2D si des classes de taille existent (layout cm).
+      var canvas = document.getElementById('coins-canvas');
+      if (canvas && /cm$/.test(sizeData)) {
+        canvas.classList.remove('size-6cm','size-7cm','size-8cm','size-9cm','size-10cm','size-8x6cm','size-10x7-5cm');
+        canvas.classList.add('size-' + sizeData.replace(/\./g, '-'));
+      }
+      // Ajuste l'échelle visuelle du rendu (2D/3D) pour les tailles en mm.
+      applyCoinSizeScale(sizeData);
+
+      console.log('📏 Taille coin :', sizeName, '(' + sizeData + ')');
+    }
+
+    /* Échelle visuelle du coin selon le diamètre en mm (aperçu 2D et 3D).
+       25mm = référence (1.0) ; augmente proportionnellement jusqu'à 50mm. */
+    function applyCoinSizeScale(sizeData) {
+      var mm = parseInt(String(sizeData), 10);
+      if (isNaN(mm)) return;
+      // Échelle douce : 25->0.85, 30->0.9, 38->1.0, 50->1.15 (bornée).
+      var scale = Math.max(0.78, Math.min(1.2, 0.5 + mm / 42));
+      // Cible chaque disque/aperçu de coin individuellement (recto, verso, côté)
+      // + le canvas 2D circulaire, pour un rendu proportionnel à la taille.
+      var sel = '.coin-disc, .coin-edge, #coins-canvas, .coins-canvas-circle';
+      document.querySelectorAll(sel).forEach(function (elm) {
+        elm.style.transform = 'scale(' + scale.toFixed(3) + ')';
+        elm.style.transformOrigin = 'center center';
+        elm.style.transition = 'transform .2s ease';
+      });
     }
 
     function selectFabrication(el) {
@@ -2939,9 +3134,8 @@
 
     /* ── Contact for custom (PVC/Tissé) ── */
     function contactForCustom() {
-      // Ouvrir un modal ou rediriger vers la page de contact
-      alert('Contactez-nous pour une commande PVC ou Tissé personnalisée !\n\nEmail: contact@customtextile.com\nTél: +33 1 23 45 67 89');
-      // TODO: Implémenter un vrai formulaire de contact ou modal
+      confAlert('Email : contact@customtextile.com\nTél : +33 1 23 45 67 89',
+                { icon: 'info', title: 'Commande PVC ou Tissé' });
     }
 
     /* ── Init : charge les images de la couleur par défaut au démarrage ── */

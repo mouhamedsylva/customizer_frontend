@@ -304,7 +304,9 @@ function changeFlagSize(size) {
 
 // Bouton contact taille personnalisée
 function contactForCustomSize() {
-  alert('Contactez-nous pour une taille personnalisée.\nEmail: contact@exemple.com\nTél: 01 XX XX XX XX');
+  var msg = 'Email : contact@exemple.com\nTél : 01 XX XX XX XX';
+  if (window.confAlert) window.confAlert(msg, { icon: 'info', title: 'Taille personnalisée' });
+  else alert('Contactez-nous pour une taille personnalisée.\n' + msg);
 }
 
 // Sélection des anneaux

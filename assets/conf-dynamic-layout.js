@@ -1142,7 +1142,9 @@ function selectFabrication(element) {
 
 // Bouton contact
 function contactForCustom() {
-  alert('Contactez-nous pour les options PVC et Tissé.\nEmail: contact@exemple.com\nTél: 01 XX XX XX XX');
+  var msg = 'Email : contact@exemple.com\nTél : 01 XX XX XX XX';
+  if (window.confAlert) window.confAlert(msg, { icon: 'info', title: 'Options PVC et Tissé' });
+  else alert('Contactez-nous pour les options PVC et Tissé.\n' + msg);
 }
 
 // Changement de quantité

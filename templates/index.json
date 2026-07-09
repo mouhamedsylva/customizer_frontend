@@ -8,6 +8,10 @@
  * ------------------------------------------------------------
  */
 {
-  "sections": {},
-  "order": []
+  "sections": {
+    "home-redirect": {
+      "type": "home-redirect"
+    }
+  },
+  "order": ["home-redirect"]
 }

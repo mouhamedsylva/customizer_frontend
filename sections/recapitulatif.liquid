@@ -213,6 +213,7 @@
   </div>
 </div>
 
+<script src="{{ 'conf-alert.js' | asset_url }}"></script>
 <script>
   // Variants Shopify pour le panier natif (produits à prix fixe).
   // coins n'a pas de variant : il passe par une demande de devis.
@@ -352,7 +353,9 @@
         // URLs techniques (aperçu + logos) : préfixe "_" -> Shopify les CACHE au
         // checkout côté client, mais elles restent visibles dans l'admin de la
         // commande (pour la production/préparation).
-        if (it.img)   properties['_Aperçu'] = it.img;
+        // Aperçu commande = planche multi-vues (sheet) si dispo, sinon vignette.
+        var apercu = it.sheet || it.img;
+        if (apercu) properties['_Aperçu'] = apercu;
         if (Array.isArray(it.assets)) {
           it.assets.forEach(function (a) {
             if (a && a.label && a.url) properties['_' + a.label] = a.url;
@@ -372,21 +375,25 @@
        vers le checkout Shopify (où le client saisit ses coordonnées et paie). */
     async function goToCheckout(btnEl) {
       var cart = getCart();
-      if (!cart.length) { alert('Votre panier est vide.'); return; }
+      if (!cart.length) { await confAlert('Votre panier est vide.', { icon: 'info', title: 'Panier vide' }); return; }
 
       var built = buildShopifyItems(cart);
       var items = built.items, skipped = built.skipped;
 
       // Panier composé uniquement d'articles sur devis (coins) : pas de checkout.
       if (!items.length) {
-        alert("Votre panier ne contient que des articles sur devis (coins). " +
-              "Utilisez le bouton « Faire une demande de devis » depuis le configurateur.");
+        await confAlert(
+          "Votre panier ne contient que des articles sur devis (coins). " +
+          "Utilisez le bouton « Faire une demande de devis » depuis le configurateur.",
+          { icon: 'info', title: 'Articles sur devis' }
+        );
         return;
       }
       if (skipped.length) {
-        var ok = confirm(
+        var ok = await confConfirm(
           skipped.length + " article(s) sur devis (coins) ne peuvent pas être payés en ligne " +
-          "et seront retirés. Continuer avec les " + items.length + " autre(s) article(s) ?"
+          "et seront retirés. Continuer avec les " + items.length + " autre(s) article(s) ?",
+          { icon: 'warning', title: 'Articles retirés', confirmText: 'Continuer' }
         );
         if (!ok) return;
       }
@@ -408,15 +415,16 @@
           throw new Error('Ajout au panier Shopify échoué (' + res.status + '). ' + txt);
         }
 
-        // 3) Redirection vers le checkout Shopify. On NE purge PAS le design ici :
-        //    tant que le paiement n'est pas confirmé, le client doit pouvoir
-        //    revenir en arrière et retrouver son panier. La réinitialisation
-        //    se fait après paiement, sur la page de remerciement Shopify.
+        // 3) Marque qu'un checkout est en cours. Au retour sur le configurateur,
+        //    si le panier Shopify natif est vide (commande finalisée), on purge le
+        //    design. On NE purge PAS ici : le client peut revenir en arrière et
+        //    doit retrouver son panier tant que le paiement n'est pas confirmé.
+        try { localStorage.setItem('conf_checkout_pending', String(Date.now())); } catch (e) {}
         window.location.href = '/checkout';
       } catch (err) {
         console.error('Erreur checkout :', err);
         if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Commander'; }
-        alert("Une erreur est survenue lors du passage au paiement.\n" + err.message);
+        confAlert("Une erreur est survenue lors du passage au paiement.\n" + err.message, { icon: 'error', title: 'Erreur' });
       }
     }
 

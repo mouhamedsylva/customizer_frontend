@@ -1,0 +1,28 @@
+{% comment %}
+  Redirige la page d'accueil vers le configurateur.
+  La boutique n'a pas de vitrine "classique" : l'app EST le configurateur.
+  Ainsi le bouton "Continue shopping" du checkout (qui mène à la home)
+  ramène l'utilisateur sur le configurateur.
+{% endcomment %}
+<script>
+  (function () {
+    // Évite toute boucle : on ne redirige que si on est bien sur la home.
+    var p = window.location.pathname.replace(/\/+$/, '');
+    if (p === '' || p === '/') {
+      window.location.replace('/pages/configurateur');
+    }
+  })();
+</script>
+<noscript>
+  <meta http-equiv="refresh" content="0; url=/pages/configurateur">
+</noscript>
+<div style="display:flex;align-items:center;justify-content:center;min-height:60vh;font-family:-apple-system,sans-serif;color:#666;">
+  <p>Redirection vers le configurateur… <a href="/pages/configurateur">Cliquez ici</a> si rien ne se passe.</p>
+</div>
+
+{% schema %}
+{
+  "name": "Redirection accueil",
+  "settings": []
+}
+{% endschema %}

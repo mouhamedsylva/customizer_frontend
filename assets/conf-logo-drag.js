@@ -133,6 +133,10 @@
     mirrorSleeve(active);
     // Synchronise le logo de la vue de côté avec la taille du recto (coins)
     syncCoinCote(active);
+    // Aperçu temps réel de la vignette récap (logo cœur déplacé/redimensionné)
+    if (active.id === 'logo-f' && typeof window.updateRecapThumbLogo === 'function') {
+      window.updateRecapThumbLogo();
+    }
 
     e.preventDefault();
   }
