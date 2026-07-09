@@ -705,10 +705,19 @@ class DynamicLayoutManager {
         </div>
       </div>
     `;
-    
+
+    // Initialise l'état par défaut + applique les images/taille au chargement.
+    window.__flagOrientation = window.__flagOrientation || 'paysage';
+    window.__flagAnneaux = window.__flagAnneaux || '2';
+    window.__flagSize = window.__flagSize || '90x150';
+    setTimeout(function () {
+      if (typeof refreshFlagImages === 'function') refreshFlagImages();
+      if (typeof applyFlagSizeToImages === 'function') applyFlagSizeToImages();
+    }, 80);
+
     console.log('✅ Canvas Drapeaux chargé');
   }
-  
+
   loadDrapeauxRecap() {
     const recap = document.querySelector('.recap');
     if (!recap) return;

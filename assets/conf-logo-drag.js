@@ -137,6 +137,10 @@
     if (active.id === 'logo-f' && typeof window.updateRecapThumbLogo === 'function') {
       window.updateRecapThumbLogo();
     }
+    // Idem pour le drapeau recto (vignette récap drapeau)
+    if (active.id === 'flag-logo-recto' && typeof window.updateFlagRecapThumb === 'function') {
+      window.updateFlagRecapThumb();
+    }
 
     e.preventDefault();
   }

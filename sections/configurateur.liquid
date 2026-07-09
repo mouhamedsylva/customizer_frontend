@@ -1476,6 +1476,37 @@
       ov.style.height = 'auto';
     }
 
+    /* Met à jour la vignette du récap DRAPEAU (colonne droite) : affiche le
+       drapeau recto (fond) + le logo uploadé positionné dessus, en temps réel.
+       Reflète la vue recto du canvas. */
+    function updateFlagRecapThumb() {
+      var thumb = document.getElementById('flag-recap-thumb');
+      if (!thumb) return;
+
+      var baseRecto = document.getElementById('flag-base-recto');
+      var bgSrc = baseRecto ? baseRecto.getAttribute('src') : '';
+
+      // Logo recto + sa position (% inline relatifs au drapeau).
+      var logoEl = document.getElementById('flag-logo-recto');
+      var logoImg = logoEl ? logoEl.querySelector('img') : null;
+      var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
+      var left = logoEl ? (parseFloat(logoEl.style.left) || 28) : 28;
+      var top  = logoEl ? (parseFloat(logoEl.style.top)  || 32) : 32;
+      var width = logoEl ? (parseFloat(logoEl.style.width) || 44) : 44;
+
+      if (!bgSrc) return;
+
+      var html = '<div style="position:relative;width:100%;height:100%;">' +
+        '<img src="' + bgSrc + '" alt="Drapeau" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:4px;">';
+      if (logoSrc) {
+        html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
+                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;">';
+      }
+      html += '</div>';
+      thumb.innerHTML = html;
+      thumb.style.overflow = 'hidden';
+    }
+
     /* Renvoie l'URL CDN de l'image {produit}-{couleur}-{vue} pour l'état courant,
        avec repli sur l'image générique du produit. Source fiable et synchrone
        pour l'aperçu envoyé au panier (indépendante du chargement DOM). */
@@ -2926,12 +2957,9 @@
           // Afficher le bouton Supprimer
           const flagRemoveBtn = document.getElementById('flag-remove-' + face);
           if (flagRemoveBtn) flagRemoveBtn.style.display = 'inline-block';
-          // Miniature du récap (recto uniquement)
+          // Miniature du récap (recto uniquement) : drapeau + logo positionné.
           if (zone === 'flag-recto') {
-            const recapThumb = document.getElementById('flag-recap-thumb');
-            if (recapThumb) {
-              recapThumb.innerHTML = `<img src="${src}" alt="Drapeau" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`;
-            }
+            updateFlagRecapThumb();
           }
           return;
         }

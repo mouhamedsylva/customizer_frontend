@@ -290,6 +290,15 @@ function refreshFlagImages() {
   var baseVerso = document.getElementById('flag-base-verso');
   if (baseRecto && recto) swapFlagImage(baseRecto, recto);
   if (baseVerso && verso) swapFlagImage(baseVerso, verso);
+
+  // Réapplique le format (proportions) après un éventuel changement d'image.
+  if (typeof applyFlagSizeToImages === 'function') {
+    setTimeout(applyFlagSizeToImages, 60);
+  }
+  // Met à jour la vignette du récap (fond recto + logo).
+  if (typeof window.updateFlagRecapThumb === 'function') {
+    setTimeout(window.updateFlagRecapThumb, 80);
+  }
 }
 
 // Changer l'orientation des drapeaux du canvas
@@ -333,9 +342,28 @@ function selectFlagSize(element) {
 
 // Changer le format/ratio des drapeaux du canvas
 function changeFlagSize(size) {
+  window.__flagSize = size;
   document.querySelectorAll('.flag-wave').forEach(wave => {
     wave.classList.remove('size-90x150', 'size-100x100', 'size-custom');
     wave.classList.add('size-' + size);
+  });
+  // Applique aussi le format à l'image 3D (change ses proportions).
+  applyFlagSizeToImages();
+}
+
+/* Ajuste la TAILLE (échelle uniforme) de l'image du drapeau selon le format
+   choisi. Scale uniforme -> pas de déformation de l'image réelle. Chaque format
+   a son facteur : 1x1m plus compact, 90x150 standard, custom plus grand. */
+function applyFlagSizeToImages() {
+  var size = window.__flagSize || '90x150';
+  // Facteur d'échelle par format (uniforme, sans déformer).
+  var scales = { '90x150': 1.0, '100x100': 0.88, 'custom': 1.12 };
+  var scale = scales[size] || 1.0;
+
+  document.querySelectorAll('.flag-base-img').forEach(function (img) {
+    img.style.transform = 'scale(' + scale.toFixed(3) + ')';
+    img.style.transformOrigin = 'top left';
+    img.style.transition = 'transform .25s ease';
   });
 }
 

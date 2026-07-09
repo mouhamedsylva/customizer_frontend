@@ -763,25 +763,16 @@
   pointer-events: none;
 }
 
-/* Affichage selon la vue : 3D = image, 2D = codé */
+/* Affichage : on utilise TOUJOURS l'image réelle (flag-recto.png…), en 3D comme
+   en 2D. Le drapeau codé CSS (flag-mock-inner) n'est plus utilisé. */
 .flag-img-3d { display: flex; }
-.flag-mock-inner { display: none; }
+.flag-mock-inner { display: none !important; }
 
-.flag-stage.view-2d .flag-img-3d { display: none; }
-.flag-stage.view-2d .flag-mock-inner { display: flex; align-items: flex-start; }
-
-/* Vue 2D : drapeau à plat (mât conservé), sans relief 3D ni drapé */
-.flag-stage.view-2d .flag-wave {
-  transform: none;
-  animation: none;
-  clip-path: none;
-  filter: none;
-  background: #fff;
-  border-radius: 6px;
-  border: 2px solid #e5e5e5;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+/* La vue 2D garde l'image mais SANS effet 3D (pas de perspective/drapé). */
+.flag-stage.view-2d .flag-img-3d { display: flex; }
+.flag-stage.view-2d .flag-base-img {
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.12));
 }
-.flag-stage.view-2d .flag-wave::after { display: none; }
 
 /* ========================================
    Récap : Paiement sécurisé
