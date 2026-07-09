@@ -1770,7 +1770,7 @@
 
     /* ── Ajout au panier depuis les récaps Drapeaux / Coins / Patchs ──
        Lit les infos directement dans le récap courant (colonne droite). */
-    function addCustomToCart(btnEl) {
+    async function addCustomToCart(btnEl) {
       const recap = document.querySelector('.recap');
       if (!recap) return;
 
@@ -1797,18 +1797,36 @@
       // Si c'est un prix unitaire, on multiplie par la quantité
       if (totalEl && totalEl.classList.contains('rp-unit-price-big')) price = price * qty;
 
-      // Image : d'abord la miniature du récap si elle contient une <img>,
-      // sinon l'aperçu réel du produit dans le canvas (pièce, drapeau...).
+      // Image de la vignette panier.
       let imgSrc = '';
-      const thumbImg = recap.querySelector('.rp-patch-thumb img');
-      if (thumbImg && thumbImg.src) {
-        imgSrc = thumbImg.src;
-      } else {
-        // Chercher l'image de base du produit dans le canvas
-        const canvasImg = document.querySelector(
-          '.flag-base-img, .coin-base-img, #coins-preview-img, .coins-canvas-circle img'
-        );
-        if (canvasImg && canvasImg.src) imgSrc = canvasImg.src;
+
+      // DRAPEAU : compose le recto (fond + logo) côté serveur -> vignette fidèle.
+      if (currentProductType === 'drapeaux') {
+        var flagViews = null;
+        try { flagViews = captureFlagDesign(); } catch (e) { flagViews = null; }
+        var recto = flagViews && flagViews[0];
+        if (recto && recto.logos && recto.logos.length) {
+          var original = btnEl ? btnEl.innerHTML : '';
+          if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Préparation…'; }
+          try {
+            var res = await window.ConfAPI.createPreviewImage(recto.background, recto.logos);
+            if (res && res.url) imgSrc = res.url;
+          } catch (e) { console.error('Composition drapeau échouée :', e); }
+          finally { if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; } }
+        }
+      }
+
+      // Repli : miniature du récap si <img>, sinon image de base du canvas.
+      if (!imgSrc) {
+        const thumbImg = recap.querySelector('.rp-patch-thumb img');
+        if (thumbImg && thumbImg.src) {
+          imgSrc = thumbImg.src;
+        } else {
+          const canvasImg = document.querySelector(
+            '.flag-base-img, .coin-base-img, #coins-preview-img, .coins-canvas-circle img'
+          );
+          if (canvasImg && canvasImg.src) imgSrc = canvasImg.src;
+        }
       }
 
       const item = {
@@ -2370,7 +2388,58 @@
       return views.length ? views : null;
     }
 
+    /* Capture le design d'un DRAPEAU (recto + verso s'il y a un logo) : fond +
+       logo positionné, pour composer une image d'aperçu. Renvoie un tableau de
+       "views" (comme captureCoinDesign) ou null si le produit n'est pas drapeau. */
+    function captureFlagDesign() {
+      if (currentProductType !== 'drapeaux') return null;
+
+      var faces = [
+        { label: 'RECTO', base: 'flag-base-recto', logo: 'flag-logo-recto' },
+        { label: 'VERSO', base: 'flag-base-verso', logo: 'flag-logo-verso' }
+      ];
+
+      var views = [];
+      faces.forEach(function (f) {
+        var baseImg = document.getElementById(f.base);
+        if (!baseImg || !baseImg.getAttribute('src')) return;
+
+        var box = imageContentRect(baseImg);
+        if (!box || box.width === 0) {
+          var b = baseImg.getBoundingClientRect();
+          box = { left: b.left, top: b.top, width: b.width, height: b.height };
+        }
+
+        var logos = [];
+        var logoEl = document.getElementById(f.logo);
+        if (logoEl && logoEl.style.display !== 'none') {
+          var limg = logoEl.querySelector('img');
+          if (limg && limg.getAttribute('src') && box.width > 0) {
+            var r = logoEl.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+              logos.push({
+                src: limg.src,
+                x: (r.left - box.left) / box.width,
+                y: (r.top - box.top) / box.height,
+                w: r.width / box.width
+              });
+            }
+          }
+        }
+        // On ne garde que les faces AVEC un logo (évite un verso vide).
+        if (logos.length) views.push({ label: f.label, background: baseImg.src, logos: logos });
+      });
+
+      return views.length ? views : null;
+    }
+
     async function shareDesign(btnEl) {
+      // Drapeaux : planche recto (+ verso) avec logo.
+      const flagViews = captureFlagDesign();
+      if (flagViews && flagViews.length) {
+        return shareMultiView(flagViews, btnEl);
+      }
+
       // Coins : planche recto + verso (fond métal + logo).
       const coinViews = captureCoinDesign();
       if (coinViews && coinViews.length) {
