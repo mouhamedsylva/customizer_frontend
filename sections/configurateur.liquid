@@ -1260,12 +1260,72 @@
           if (cartCountEl) cartCountEl.textContent = cartCount;
           if (typeof renderCartDrawer === 'function') renderCartDrawer();
         }
-        // Restaurer les designs uploadés (textile chargé par défaut)
-        if (typeof restoreUploads === 'function') {
-          setTimeout(restoreUploads, 200);
-        }
+        // Restaurer le PRODUIT courant puis ses uploads. Sans ça, les logos
+        // seraient réappliqués au sweatshirt (produit par défaut) au lieu du
+        // textile réellement choisi (t-shirt coton/polyester…).
+        restoreProductThenUploads();
       });
     });
+
+    /* Rebascule sur le PRODUIT où était l'utilisateur avant le reload, puis
+       restaure ses uploads. Priorité : conf_current_product (dernier produit
+       sélectionné), repli sur conf_uploads._product. */
+    function restoreProductThenUploads() {
+      var saved = null;
+      try { saved = sessionStorage.getItem('conf_current_product'); } catch (e) {}
+      if (!saved) {
+        try { saved = (JSON.parse(sessionStorage.getItem('conf_uploads')) || {})._product; } catch (e) {}
+      }
+
+      var doRestore = function () {
+        restoreColor();
+        if (typeof restoreUploads === 'function') restoreUploads();
+      };
+
+      // Produit non-sweatshirt : on le sélectionne d'abord (textile OU coins/
+      // drapeaux/patches), puis on restaure couleur + uploads une fois prêt.
+      if (saved && saved !== 'sweatshirt') {
+        var card = document.querySelector('.pt[data-product="' + saved + '"]');
+        if (card && typeof selProd === 'function') {
+          selProd(card);
+          setTimeout(doRestore, 300);
+          return;
+        }
+      }
+      // Sweatshirt (ou produit inconnu) : restauration directe.
+      setTimeout(doRestore, 200);
+    }
+
+    /* Restaure la couleur mémorisée : reclique la pastille correspondante pour
+       rétablir l'état visuel + l'image/fond coloré. Gère TEXTILE (.cs) et
+       PATCH/COINS (.patch-color-sw) selon le produit courant. */
+    function restoreColor() {
+      // Textile : conf_current_color -> pastilles .cs
+      var savedTx = null;
+      try { savedTx = JSON.parse(sessionStorage.getItem('conf_current_color')); } catch (e) {}
+      if (savedTx && savedTx.name) {
+        var cs = document.querySelectorAll('.cs');
+        for (var i = 0; i < cs.length; i++) {
+          if (cs[i].getAttribute('title') === savedTx.name && typeof selColor === 'function') {
+            selColor(cs[i], savedTx.hex || cs[i].style.backgroundColor, savedTx.name);
+            break;
+          }
+        }
+      }
+
+      // Patch / Coins : conf_patch_color -> pastilles .patch-color-sw
+      var savedPatch = null;
+      try { savedPatch = JSON.parse(sessionStorage.getItem('conf_patch_color')); } catch (e) {}
+      if (savedPatch && savedPatch.name) {
+        var pw = document.querySelectorAll('.patch-color-sw');
+        for (var j = 0; j < pw.length; j++) {
+          if (pw[j].getAttribute('title') === savedPatch.name && typeof selectPatchColor === 'function') {
+            selectPatchColor(pw[j], savedPatch.hex || pw[j].style.backgroundColor, savedPatch.name);
+            break;
+          }
+        }
+      }
+    }
 
     /* Réinitialise le configurateur si le client revient après un paiement réussi.
        Condition : un checkout était marqué en cours (conf_checkout_pending) ET le
@@ -1454,6 +1514,9 @@
       const productType = el.dataset.product;
       // Mémorise le type courant pour TOUS les produits (utilisé au checkout).
       if (productType) currentProductType = productType;
+      // Persiste le produit choisi : au reload (F5), on revient sur CE produit
+      // au lieu de repartir sur le sweatshirt par défaut.
+      try { if (productType) sessionStorage.setItem('conf_current_product', productType); } catch (e) {}
 
       const rcProdImg = document.getElementById('rc-prod-img');
       if (rcProdImg) {
@@ -1922,6 +1985,9 @@
         sessionStorage.removeItem('conf_uploads');
         sessionStorage.removeItem('conf_order');
         sessionStorage.removeItem('pendingProduct');
+        sessionStorage.removeItem('conf_current_product');
+        sessionStorage.removeItem('conf_current_color');
+        sessionStorage.removeItem('conf_patch_color');
         localStorage.removeItem('last_design_id');
       } catch (e) {}
     }
@@ -1931,10 +1997,13 @@
        sweatshirt. On mémorise le produit courant après le nettoyage : il est
        restauré au chargement par restorePendingProduct(). */
     function resetConfigurator() {
+      var keepProduct = currentProductType;
       clearConfiguratorState();
       try {
-        if (currentProductType && currentProductType !== 'sweatshirt') {
-          sessionStorage.setItem('pendingProduct', currentProductType);
+        // Après reset : conf_uploads est vidé (design effacé) mais on RESTE sur le
+        // même type de produit. restoreProductThenUploads() lit conf_current_product.
+        if (keepProduct && keepProduct !== 'sweatshirt') {
+          sessionStorage.setItem('conf_current_product', keepProduct);
         }
       } catch (e) {}
       window.location.href = '/pages/configurateur';
@@ -2218,7 +2287,60 @@
       return views.length ? views : null;
     }
 
+    /* Capture les vues d'un COIN (recto + verso, + côté si présent) avec leurs
+       logos, sous forme de "views" pour la planche multi-vues. Chaque disque
+       (fond métallique) est le background ; le logo posé dessus est superposé.
+       Renvoie null si le produit courant n'est pas un coin. */
+    function captureCoinDesign() {
+      if (currentProductType !== 'coins') return null;
+
+      // (label, id du disque conteneur, id du logo déplaçable)
+      var faces = [
+        { label: 'RECTO', disc: 'coin-disc-recto', logo: 'coin-logo-recto', base: 'coin-base-recto' },
+        { label: 'VERSO', disc: 'coin-disc-verso', logo: 'coin-logo-verso', base: 'coin-base-verso' }
+      ];
+
+      var views = [];
+      faces.forEach(function (f) {
+        var baseImg = document.getElementById(f.base);
+        if (!baseImg || !baseImg.getAttribute('src')) return;
+
+        // Boîte réelle du disque (le fond métallique).
+        var discBox = imageContentRect(baseImg);
+        if (!discBox || discBox.width === 0) {
+          var db = baseImg.getBoundingClientRect();
+          discBox = { left: db.left, top: db.top, width: db.width, height: db.height };
+        }
+
+        var logos = [];
+        var logoEl = document.getElementById(f.logo);
+        if (logoEl && logoEl.style.display !== 'none') {
+          var limg = logoEl.querySelector('img');
+          if (limg && limg.getAttribute('src') && discBox.width > 0) {
+            var r = logoEl.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+              logos.push({
+                src: limg.src,
+                x: (r.left - discBox.left) / discBox.width,
+                y: (r.top - discBox.top) / discBox.height,
+                w: r.width / discBox.width
+              });
+            }
+          }
+        }
+        views.push({ label: f.label, background: baseImg.src, logos: logos });
+      });
+
+      return views.length ? views : null;
+    }
+
     async function shareDesign(btnEl) {
+      // Coins : planche recto + verso (fond métal + logo).
+      const coinViews = captureCoinDesign();
+      if (coinViews && coinViews.length) {
+        return shareMultiView(coinViews, btnEl);
+      }
+
       // Textile : image multi-vues (face + dos + côté) en une seule image.
       const views = captureAllViews();
       if (views && views.length) {
@@ -2479,6 +2601,8 @@
       currentColorSlug = COLOR_SLUGS[name] || 'noir';
       applyColor(hex);
       document.getElementById('rc-color').textContent = 'Couleur : ' + name;
+      // Persiste la couleur : au reload, on la restaure au lieu de repartir sur Noir.
+      try { sessionStorage.setItem('conf_current_color', JSON.stringify({ hex: hex, name: name })); } catch (e) {}
     }
 
     function saveLogosForProduct(productKey) {
@@ -2657,6 +2781,9 @@
       const u = getUploads();
       const prev = (u[zone] && typeof u[zone] === 'object') ? u[zone] : {};
       u[zone] = { src: src, geo: prev.geo || null };
+      // Mémorise le produit courant : au reload, on doit restaurer ces uploads
+      // sur le BON produit (ex. t-shirt polyester), pas sur le sweatshirt par défaut.
+      u._product = currentProductType;
       try { sessionStorage.setItem('conf_uploads', JSON.stringify(u)); } catch (e) {}
     }
     // Sauvegarde la taille/position (left/top/width) d'un logo pour une zone
@@ -2677,6 +2804,7 @@
     function restoreUploads() {
       const u = getUploads();
       Object.keys(u).forEach(zone => {
+        if (zone === '_product') return; // clé technique, pas une zone de logo
         const entry = u[zone];
         const src = (typeof entry === 'string') ? entry : (entry && entry.src);
         const geo = (entry && typeof entry === 'object') ? entry.geo : null;
@@ -3002,6 +3130,9 @@
       if (recapColor) {
         recapColor.textContent = name;
       }
+
+      // Persiste la couleur du patch : restaurée au reload.
+      try { sessionStorage.setItem('conf_patch_color', JSON.stringify({ hex: hex, name: name })); } catch (e) {}
 
       console.log('🎨 Couleur du patch:', name, hex);
     }

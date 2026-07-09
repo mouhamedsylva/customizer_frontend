@@ -270,28 +270,12 @@ class DynamicLayoutManager {
     this.restorePendingProduct();
   }
 
-  // Après un rechargement (retour vers un textile), resélectionne le produit choisi
+  // La resélection du produit au rechargement est désormais gérée par
+  // restoreProductThenUploads() (dans configurateur.liquid), via la clé
+  // conf_current_product. On se contente ici de consommer l'ancienne clé
+  // pendingProduct pour éviter tout double basculement de produit.
   restorePendingProduct() {
-    let pending = null;
-    try {
-      pending = sessionStorage.getItem('pendingProduct');
-      sessionStorage.removeItem('pendingProduct');
-    } catch (e) {}
-
-    if (!pending || pending === 'sweatshirt') return;
-
-    // Clique sur la carte produit correspondante une fois le DOM prêt
-    const apply = () => {
-      const card = document.querySelector('.pt[data-product="' + pending + '"]');
-      if (card && typeof selProd === 'function') {
-        selProd(card);
-      }
-    };
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', apply);
-    } else {
-      apply();
-    }
+    try { sessionStorage.removeItem('pendingProduct'); } catch (e) {}
   }
   
   handleProductChange(productType) {
@@ -577,7 +561,9 @@ class DynamicLayoutManager {
     // le markup d'origine de la page. On recharge en mémorisant le produit choisi
     // pour ne pas retomber par défaut sur le sweatshirt.
     try {
-      sessionStorage.setItem('pendingProduct', productType || 'sweatshirt');
+      var p = productType || 'sweatshirt';
+      sessionStorage.setItem('pendingProduct', p);
+      sessionStorage.setItem('conf_current_product', p);
     } catch (e) {}
     location.reload();
   }
@@ -877,6 +863,8 @@ class DynamicLayoutManager {
                   <img src="" alt="Logo verso" draggable="false">
                   <span class="logo-resize" data-resize="coin-verso"></span>
                 </div>
+                <!-- Numéro (type "recto verso numéroté") -->
+                <div class="coin-verso-number" id="coin-verso-number" style="display:none;"></div>
               </div>
             </div>
 

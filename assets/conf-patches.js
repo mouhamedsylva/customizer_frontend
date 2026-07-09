@@ -213,6 +213,7 @@ function selectCoinType(el) {
   el.classList.add('active');
 
   const type = el.getAttribute('data-type');
+  window.__coinType = type;
 
   // Numérotation visible uniquement pour "recto verso numéroté"
   const numSec = document.getElementById('coin-numbering-sec');
@@ -226,6 +227,9 @@ function selectCoinType(el) {
   const versoView = document.querySelector('.coin-view[data-view="verso"]');
   if (versoView) versoView.style.display = (type === 'recto-simple') ? 'none' : 'flex';
 
+  // Numéro sur le verso : visible uniquement en "recto verso numéroté"
+  updateCoinNumber();
+
   // Récap
   const recapType = document.getElementById('coin-recap-type');
   if (recapType) {
@@ -237,6 +241,27 @@ function selectCoinType(el) {
     recapType.textContent = labels[type] || 'Recto verso';
   }
 }
+
+// Affiche/masque et met à jour le numéro gravé sur le VERSO du coin.
+function updateCoinNumber() {
+  const numEl = document.getElementById('coin-verso-number');
+  if (!numEl) return;
+  const type = window.__coinType || 'recto-verso';
+  const input = document.getElementById('coin-num-start');
+  const val = input ? String(input.value || '').trim() : '';
+
+  if (type === 'recto-verso-num' && val) {
+    numEl.textContent = val;
+    numEl.style.display = 'block';
+  } else {
+    numEl.style.display = 'none';
+  }
+}
+
+// Met à jour le numéro en temps réel quand on modifie le champ "Numéro de départ".
+document.addEventListener('input', function (e) {
+  if (e.target && e.target.id === 'coin-num-start') updateCoinNumber();
+});
 
 // Forme
 function selectCoinShape(el) {
@@ -258,10 +283,24 @@ function selectCoinSize(el) {
   el.classList.add('active');
 
   const size = el.getAttribute('data-size');
-  const mm = size.replace('mm', '');
+  const mm = parseInt(String(size).replace('mm', ''), 10) || 30;
 
   const recapSize = document.getElementById('coin-recap-size');
   if (recapSize) recapSize.textContent = mm + ' mm';
+
+  // Redimensionne visuellement les disques (recto/verso/côté) selon le diamètre.
+  applyCoinDiameterScale(mm);
+}
+
+/* Échelle visuelle des coins selon le diamètre en mm.
+   Référence 38mm = 1.0 ; 25mm ~0.78, 30mm ~0.86, 50mm ~1.18 (bornée). */
+function applyCoinDiameterScale(mm) {
+  var scale = Math.max(0.72, Math.min(1.25, mm / 38));
+  document.querySelectorAll('.coin-disc, .coin-edge').forEach(function (elm) {
+    elm.style.transform = 'scale(' + scale.toFixed(3) + ')';
+    elm.style.transformOrigin = 'center center';
+    elm.style.transition = 'transform .2s ease';
+  });
 }
 
 // Mapping finition → slug d'image
