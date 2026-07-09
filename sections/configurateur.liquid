@@ -1286,6 +1286,7 @@
           if (data && data.product) sessionStorage.setItem('conf_current_product', data.product);
           if (data && data.color) sessionStorage.setItem('conf_current_color', JSON.stringify(data.color));
           if (data && data.patchColor) sessionStorage.setItem('conf_patch_color', JSON.stringify(data.patchColor));
+          if (data && data.coinFinish) sessionStorage.setItem('conf_coin_finish', data.coinFinish);
           if (data && data.uploads) sessionStorage.setItem('conf_uploads', JSON.stringify(data.uploads));
         } catch (e) {}
         // Nettoie l'URL (retire ?design=) sans recharger.
@@ -1354,6 +1355,14 @@
             break;
           }
         }
+      }
+
+      // Coins : conf_coin_finish -> carte .coin-finish-card[data-finish]
+      var savedFinish = null;
+      try { savedFinish = sessionStorage.getItem('conf_coin_finish'); } catch (e) {}
+      if (savedFinish) {
+        var fc = document.querySelector('.coin-finish-card[data-finish="' + savedFinish + '"]');
+        if (fc && typeof selectCoinFinish === 'function') selectCoinFinish(fc);
       }
     }
 
@@ -2179,6 +2188,7 @@
         sessionStorage.removeItem('conf_current_product');
         sessionStorage.removeItem('conf_current_color');
         sessionStorage.removeItem('conf_patch_color');
+        sessionStorage.removeItem('conf_coin_finish');
         localStorage.removeItem('last_design_id');
       } catch (e) {}
     }
@@ -2757,11 +2767,12 @@
        l'invité ouvrira pour retrouver et éditer ce design. */
     async function createInviteLink() {
       var state = {
-        product: null, color: null, patchColor: null, uploads: null
+        product: null, color: null, patchColor: null, coinFinish: null, uploads: null
       };
       try { state.product = sessionStorage.getItem('conf_current_product') || currentProductType; } catch (e) {}
       try { state.color = JSON.parse(sessionStorage.getItem('conf_current_color') || 'null'); } catch (e) {}
       try { state.patchColor = JSON.parse(sessionStorage.getItem('conf_patch_color') || 'null'); } catch (e) {}
+      try { state.coinFinish = sessionStorage.getItem('conf_coin_finish') || null; } catch (e) {}
       try { state.uploads = JSON.parse(sessionStorage.getItem('conf_uploads') || 'null'); } catch (e) {}
 
       var res = await window.ConfAPI.shareDesign(state);
