@@ -2639,19 +2639,7 @@
         if (!url) throw new Error("URL de partage manquante");
 
         const shareText = "Découvrez mon design personnalisé :";
-
-        // Partage natif (mobile : WhatsApp, mail, etc.)
-        if (navigator.share) {
-          try {
-            await navigator.share({ title: 'Mon design', text: shareText, url: url });
-            return;
-          } catch (e) {
-            // annulé par l'utilisateur ou non supporté -> on retombe sur le fallback
-            if (e && e.name === 'AbortError') return;
-          }
-        }
-
-        // Fallback desktop : petit menu (WhatsApp / Gmail / Copier).
+        // Toujours notre menu (contient WhatsApp/Gmail/Copier + Inviter à éditer).
         openShareMenu(url, shareText);
       } catch (err) {
         console.error('Erreur partage :', err);
@@ -2672,14 +2660,7 @@
         if (!url) throw new Error("URL de partage manquante");
 
         const shareText = "Découvrez mon design personnalisé :";
-        if (navigator.share) {
-          try {
-            await navigator.share({ title: 'Mon design', text: shareText, url: url });
-            return;
-          } catch (e) {
-            if (e && e.name === 'AbortError') return;
-          }
-        }
+        // Toujours notre menu (contient WhatsApp/Gmail/Copier + Inviter à éditer).
         openShareMenu(url, shareText);
       } catch (err) {
         console.error('Erreur partage multi-vues :', err);
