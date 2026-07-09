@@ -1855,6 +1855,21 @@
       let imgSrc = '';
       let sheetSrc = null;
 
+      // PATCH : fond couleur (généré en canvas) + logo -> composition serveur.
+      if (currentProductType === 'patches') {
+        var patch = null;
+        try { patch = capturePatchDesign(); } catch (e) { patch = null; }
+        if (patch && patch.logos && patch.logos.length) {
+          var origP = btnEl ? btnEl.innerHTML : '';
+          if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Préparation…'; }
+          try {
+            var resP = await window.ConfAPI.createPreviewImage(patch.background, patch.logos);
+            if (resP && resP.url) imgSrc = resP.url;
+          } catch (e) { console.error('Composition patch échouée :', e); }
+          finally { if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = origP; } }
+        }
+      }
+
       // DRAPEAU / COINS : compose le design côté serveur.
       // - img (vignette panier) = RECTO seul.
       // - sheet (Aperçu commande) = planche recto + verso.
@@ -2500,6 +2515,41 @@
       });
 
       return views.length ? views : null;
+    }
+
+    /* Capture le design d'un PATCH : le fond est une COULEUR (pas une image), donc
+       on génère un cercle coloré en canvas -> data-URL, qui sert de background.
+       Le logo est superposé à sa position. Renvoie { background, logos } ou null. */
+    function capturePatchDesign() {
+      if (currentProductType !== 'patches') return null;
+
+      var logoEl = document.getElementById('patch-logo');
+      var logoImg = logoEl ? logoEl.querySelector('img') : null;
+      var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
+      if (!logoSrc) return null;
+
+      // Couleur de fond du patch.
+      var canvasEl = document.getElementById('coins-canvas');
+      var bgColor = (canvasEl && canvasEl.style.backgroundColor) ? canvasEl.style.backgroundColor : '#ffffff';
+
+      // Génère un cercle plein de la couleur (fond transparent autour).
+      var size = 1000;
+      var c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      var ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, size, size);
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.fillStyle = bgColor;
+      ctx.fill();
+      var bgDataUrl = c.toDataURL('image/png');
+
+      // Position du logo (% inline du logo patch).
+      var lx = logoEl ? (parseFloat(logoEl.style.left) || 25) / 100 : 0.25;
+      var ly = logoEl ? (parseFloat(logoEl.style.top)  || 25) / 100 : 0.25;
+      var lw = logoEl ? (parseFloat(logoEl.style.width) || 50) / 100 : 0.5;
+
+      return { background: bgDataUrl, logos: [{ src: logoSrc, x: lx, y: ly, w: lw }] };
     }
 
     async function shareDesign(btnEl) {
