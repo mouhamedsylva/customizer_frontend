@@ -639,11 +639,11 @@
   font-size: 12px; font-weight: 800; text-transform: uppercase;
   letter-spacing: .5px; margin-bottom: 12px;
 }
-.qm-previews { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.qm-previews { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
 .qm-preview { text-align: center; }
 .qm-preview-disc {
-  position: relative; width: 90px; height: 90px;
-  margin: 0 auto 6px;
+  position: relative; width: 130px; height: 130px;
+  margin: 0 auto 8px;
   display: flex; align-items: center; justify-content: center;
 }
 /* La pièce (image de base) remplit tout le disque */

@@ -1977,12 +1977,12 @@
         return el.src;
       };
 
-      // Récupère les designs du coin (recto / verso / côté) dans le canvas
+      // Récupère les designs du coin (recto / verso) dans le canvas.
+      // La vue de côté n'est pas incluse dans le devis (peu utile pour la prod).
       const previews = [];
       [
         { face: 'recto', id: 'coin-disc-recto' },
-        { face: 'verso', id: 'coin-disc-verso' },
-        { face: 'cote',  id: 'coin-disc-edge' }
+        { face: 'verso', id: 'coin-disc-verso' }
       ].forEach(({ face, id }) => {
         const disc = document.getElementById(id);
         if (!disc) return;
