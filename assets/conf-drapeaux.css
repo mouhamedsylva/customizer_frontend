@@ -697,6 +697,20 @@
   transition: opacity 0.28s ease, transform 0.28s ease;
 }
 
+/* PORTRAIT : l'image du drapeau est verticale (plus haute que large). On la
+   contraint par la HAUTEUR pour qu'elle rentre entièrement dans la scène, au
+   lieu de déborder/être coupée en bas. */
+.flag-stage.orientation-portrait .flag-img-3d {
+  display: flex;
+  justify-content: center;
+  max-height: clamp(340px, 62vh, 620px);
+}
+.flag-stage.orientation-portrait .flag-base-img {
+  width: auto;
+  height: 100%;
+  max-height: clamp(340px, 62vh, 620px);
+}
+
 /* Animation lors du changement 2 ↔ 4 anneaux */
 .flag-base-img.swapping {
   opacity: 0;

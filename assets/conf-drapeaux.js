@@ -251,7 +251,11 @@ function selectFlagOrientation(element) {
   element.classList.add('active');
 
   const orientation = element.getAttribute('data-orientation');
+  window.__flagOrientation = orientation;
   changeFlagOrientation(orientation);
+
+  // Échange les images du drapeau (paysage <-> portrait).
+  refreshFlagImages();
 
   // Mettre à jour le récap
   const recapOri = document.getElementById('flag-recap-orientation');
@@ -262,12 +266,45 @@ function selectFlagOrientation(element) {
   console.log('🔄 Orientation:', orientation);
 }
 
+/* Choisit et applique les images recto/verso du drapeau selon l'état courant :
+   orientation (paysage/portrait) + nombre d'anneaux (2/4). Repli sur paysage si
+   une image portrait manque. */
+function refreshFlagImages() {
+  const A = window.ASSET_URLS || {};
+  const isPortrait = (window.__flagOrientation === 'portrait');
+  const is4 = (window.__flagAnneaux === '4');
+
+  var recto, verso;
+  if (isPortrait) {
+    recto = is4 ? (A.flag4anRectoPortrait || A.flagRectoPortrait) : A.flagRectoPortrait;
+    verso = is4 ? (A.flag4anVersoPortrait || A.flagVersoPortrait) : A.flagVersoPortrait;
+    // Repli paysage si portrait indisponible.
+    recto = recto || (is4 ? (A.flag4anRecto || A.flagRecto) : A.flagRecto);
+    verso = verso || (is4 ? (A.flag4anVerso || A.flagVerso) : A.flagVerso);
+  } else {
+    recto = is4 ? (A.flag4anRecto || A.flagRecto) : A.flagRecto;
+    verso = is4 ? (A.flag4anVerso || A.flagVerso) : A.flagVerso;
+  }
+
+  var baseRecto = document.getElementById('flag-base-recto');
+  var baseVerso = document.getElementById('flag-base-verso');
+  if (baseRecto && recto) swapFlagImage(baseRecto, recto);
+  if (baseVerso && verso) swapFlagImage(baseVerso, verso);
+}
+
 // Changer l'orientation des drapeaux du canvas
 function changeFlagOrientation(orientation) {
   document.querySelectorAll('.flag-wave').forEach(wave => {
     wave.classList.remove('orientation-paysage', 'orientation-portrait');
     wave.classList.add('orientation-' + orientation);
   });
+  // Marque aussi la SCÈNE 3D pour contraindre l'image réelle (portrait = hauteur
+  // limitée, sinon l'image verticale déborde et se coupe en bas).
+  var stage = document.querySelector('.flag-stage');
+  if (stage) {
+    stage.classList.remove('orientation-paysage', 'orientation-portrait');
+    stage.classList.add('orientation-' + orientation);
+  }
 }
 
 // Sélection de la taille
@@ -317,6 +354,7 @@ function selectAnneaux(element) {
   element.classList.add('active');
 
   const anneaux = element.getAttribute('data-anneaux');
+  window.__flagAnneaux = anneaux;
   console.log('⭕ Anneaux:', anneaux);
 
   // Afficher 2 ou 4 anneaux sur les drapeaux codés (vue 2D)
@@ -324,15 +362,8 @@ function selectAnneaux(element) {
     wave.classList.toggle('grommets-4', anneaux === '4');
   });
 
-  // Échanger les images réelles (vue 3D) avec une animation de transition
-  const A = window.ASSET_URLS || {};
-  const baseRecto = document.getElementById('flag-base-recto');
-  const baseVerso = document.getElementById('flag-base-verso');
-  const newRecto = anneaux === '4' ? (A.flag4anRecto || A.flagRecto || '') : (A.flagRecto || '');
-  const newVerso = anneaux === '4' ? (A.flag4anVerso || A.flagVerso || '') : (A.flagVerso || '');
-
-  swapFlagImage(baseRecto, newRecto);
-  swapFlagImage(baseVerso, newVerso);
+  // Échanger les images réelles selon anneaux + orientation courante.
+  refreshFlagImages();
 
   // Mettre à jour le récap
   const recapAnneaux = document.getElementById('flag-recap-anneaux');
