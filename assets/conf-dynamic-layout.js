@@ -336,8 +336,11 @@ class DynamicLayoutManager {
     }
 
     // Restaurer les designs sauvegardés pour cette catégorie (après chargement du DOM)
-    if (category !== 'textile' && typeof restoreUploads === 'function') {
-      setTimeout(() => restoreUploads(), 250);
+    if (category !== 'textile') {
+      setTimeout(function () {
+        if (typeof restoreColor === 'function') restoreColor();       // couleur patch / finition coin
+        if (typeof restoreUploads === 'function') restoreUploads();   // logos + positions
+      }, 250);
     }
   }
   
