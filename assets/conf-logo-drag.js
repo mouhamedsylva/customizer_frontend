@@ -141,6 +141,10 @@
     if (active.id === 'flag-logo-recto' && typeof window.updateFlagRecapThumb === 'function') {
       window.updateFlagRecapThumb();
     }
+    // Idem pour le patch (vignette récap patch)
+    if (active.id === 'patch-logo' && typeof window.updatePatchRecapThumb === 'function') {
+      window.updatePatchRecapThumb();
+    }
 
     e.preventDefault();
   }

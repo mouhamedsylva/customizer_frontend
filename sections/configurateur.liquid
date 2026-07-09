@@ -1507,6 +1507,34 @@
       thumb.style.overflow = 'hidden';
     }
 
+    /* Met à jour la vignette du récap PATCH (colonne droite) : cercle à la couleur
+       de fond choisie + le logo uploadé positionné dessus, en temps réel. */
+    function updatePatchRecapThumb() {
+      var thumb = document.getElementById('coins-recap-thumb');
+      if (!thumb) return;
+
+      // Couleur de fond du patch = fond du cercle canvas.
+      var canvas = document.getElementById('coins-canvas');
+      var bg = (canvas && canvas.style.backgroundColor) ? canvas.style.backgroundColor : '#ffffff';
+
+      // Logo patch + sa position (% inline).
+      var logoEl = document.getElementById('patch-logo');
+      var logoImg = logoEl ? logoEl.querySelector('img') : null;
+      var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
+      var left = logoEl ? (parseFloat(logoEl.style.left) || 25) : 25;
+      var top  = logoEl ? (parseFloat(logoEl.style.top)  || 25) : 25;
+      var width = logoEl ? (parseFloat(logoEl.style.width) || 50) : 50;
+
+      var html = '<div style="position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:' + bg + ';">';
+      if (logoSrc) {
+        html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
+                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;">';
+      }
+      html += '</div>';
+      thumb.innerHTML = html;
+      thumb.style.overflow = 'hidden';
+    }
+
     /* Renvoie l'URL CDN de l'image {produit}-{couleur}-{vue} pour l'état courant,
        avec repli sur l'image générique du produit. Source fiable et synchrone
        pour l'aperçu envoyé au panier (indépendante du chargement DOM). */
@@ -3010,12 +3038,9 @@
             if (ph) ph.style.display = 'none';
           }
           
-          // Recap - dans la miniature ronde
-          const recapThumb = document.getElementById('coins-recap-thumb');
-          if (recapThumb) {
-            recapThumb.innerHTML = `<img src="${src}" alt="Patch" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-          }
-          
+          // Recap - miniature ronde : patch (fond couleur) + logo positionné.
+          updatePatchRecapThumb();
+
           return;
         }
 
@@ -3262,11 +3287,8 @@
       const canvas = document.getElementById('coins-canvas');
       if (canvas) canvas.style.backgroundColor = hex;
 
-      // Colorer aussi la miniature du récap
-      const recapThumb = document.getElementById('coins-recap-thumb');
-      if (recapThumb && !recapThumb.querySelector('img')) {
-        recapThumb.style.backgroundColor = hex;
-      }
+      // Met à jour la vignette du récap (cercle coloré + logo positionné).
+      if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
 
       // Ajouter/mettre à jour la ligne "Couleur" dans le récap
       let recapColor = document.getElementById('coins-recap-color');
