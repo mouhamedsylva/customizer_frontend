@@ -2670,24 +2670,39 @@
       }
     }
 
-    function openShareMenu(url, text) {
+    /* Menu de partage. mode = 'image' (partage l'aperçu) ou 'invite' (partage le
+       lien d'invitation à éditer). Les boutons WhatsApp/Gmail/Copier pointent tous
+       vers l'URL fournie. */
+    function openShareMenu(url, text, mode) {
       const old = document.getElementById('share-menu');
       if (old) old.remove();
 
+      var isInvite = (mode === 'invite');
       const enc = encodeURIComponent;
+      var subject = isInvite ? 'Personnalisez ce design avec moi' : 'Mon design personnalisé';
       const waHref = 'https://wa.me/?text=' + enc(text + ' ' + url);
       const mailHref = 'https://mail.google.com/mail/?view=cm&fs=1&su=' +
-        enc('Mon design personnalisé') + '&body=' + enc(text + '\n' + url);
+        enc(subject) + '&body=' + enc(text + '\n' + url);
+
+      var title = isInvite ? 'Inviter à éditer' : 'Partager mon design';
+      var copyLabel = isInvite ? 'Copier le lien d\'invitation' : 'Copier le lien de l\'image';
+      // Bloc "Inviter" (uniquement en mode image) OU bouton "retour" (en mode invite).
+      var extraBlock = isInvite
+        ? '<button id="share-back-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:10px;border:none;border-radius:10px;background:#f0f0f0;cursor:pointer;color:#333;font-weight:600;font-family:inherit;margin-top:4px;"><span style="font-size:18px;">←</span> Retour au partage d\'image</button>'
+        : '<div style="border-top:1px solid #eee;margin:6px 0 12px;"></div>' +
+          '<button id="share-invite-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:none;border-radius:10px;background:#1a1a1a;cursor:pointer;color:#fff;font-weight:700;font-family:inherit;"><span style="font-size:20px;">✉️</span> Inviter une personne à éditer</button>' +
+          '<p style="font-size:11px;color:#888;margin-top:8px;line-height:1.4;">La personne invitée ouvrira le configurateur avec votre design en cours (modifiable).</p>';
 
       const overlay = document.createElement('div');
       overlay.id = 'share-menu';
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
       overlay.innerHTML = `
         <div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:90%;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <strong style="font-size:16px;">Partager mon design</strong>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <strong style="font-size:16px;">${title}</strong>
             <button onclick="document.getElementById('share-menu').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">✕</button>
           </div>
+          ${isInvite ? '<p style="font-size:12px;color:#16a34a;margin:0 0 14px;font-weight:600;">✓ Lien d\'invitation prêt à envoyer</p>' : '<div style="margin-bottom:10px;"></div>'}
           <a href="${waHref}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e8e8e8;border-radius:10px;text-decoration:none;color:#1a1a1a;margin-bottom:10px;font-weight:600;">
             <span style="font-size:20px;">🟢</span> WhatsApp
           </a>
@@ -2695,13 +2710,9 @@
             <span style="font-size:20px;">✉️</span> Gmail
           </a>
           <button id="share-copy-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a;font-weight:600;font-family:inherit;margin-bottom:10px;">
-            <span style="font-size:20px;">🔗</span> Copier le lien de l'image
+            <span style="font-size:20px;">🔗</span> ${copyLabel}
           </button>
-          <div style="border-top:1px solid #eee;margin:6px 0 12px;"></div>
-          <button id="share-invite-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:none;border-radius:10px;background:#1a1a1a;cursor:pointer;color:#fff;font-weight:700;font-family:inherit;">
-            <span style="font-size:20px;">✉️</span> Inviter une personne à éditer
-          </button>
-          <p style="font-size:11px;color:#888;margin-top:8px;line-height:1.4;">La personne invitée ouvrira le configurateur avec votre design en cours (modifiable).</p>
+          ${extraBlock}
         </div>`;
       overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
       document.body.appendChild(overlay);
@@ -2712,32 +2723,33 @@
           await navigator.clipboard.writeText(url);
           copyBtn.innerHTML = '<span style="font-size:20px;">✅</span> Lien copié !';
         } catch (e) {
-          // fallback si clipboard indisponible : modale avec le lien pré-sélectionné
-          confPrompt('Copiez le lien ci-dessous :', { defaultValue: url, icon: 'info', title: 'Lien de partage', confirmText: 'Fermer' });
+          confPrompt('Copiez le lien ci-dessous :', { defaultValue: url, icon: 'info', title: 'Lien', confirmText: 'Fermer' });
         }
       });
 
-      // Bouton "Inviter une personne à éditer" -> lien qui restaure le design.
-      const inviteBtn = document.getElementById('share-invite-btn');
-      inviteBtn.addEventListener('click', async () => {
-        var orig = inviteBtn.innerHTML;
-        inviteBtn.disabled = true;
-        inviteBtn.innerHTML = '<span style="font-size:20px;">⏳</span> Génération du lien…';
-        try {
-          var inviteUrl = await createInviteLink();
+      if (isInvite) {
+        // Retour au menu image.
+        var backBtn = document.getElementById('share-back-btn');
+        if (backBtn) backBtn.addEventListener('click', function () { openShareMenu(window.__lastImageUrl || url, "Découvrez mon design personnalisé :", 'image'); });
+      } else {
+        // Mémorise l'URL image pour le retour, et branche le bouton Inviter.
+        window.__lastImageUrl = url;
+        var inviteBtn = document.getElementById('share-invite-btn');
+        inviteBtn.addEventListener('click', async () => {
+          var orig = inviteBtn.innerHTML;
+          inviteBtn.disabled = true;
+          inviteBtn.innerHTML = '<span style="font-size:20px;">⏳</span> Génération du lien…';
           try {
-            await navigator.clipboard.writeText(inviteUrl);
-            inviteBtn.innerHTML = '<span style="font-size:20px;">✅</span> Lien d\'invitation copié !';
-          } catch (e) {
-            confPrompt('Lien d\'invitation (copiez-le) :', { defaultValue: inviteUrl, icon: 'success', title: 'Invitation', confirmText: 'Fermer' });
+            var inviteUrl = await createInviteLink();
+            // Rouvre le menu en mode INVITE : WhatsApp/Gmail/Copier -> lien d'invitation.
+            openShareMenu(inviteUrl, "Personnalisez ce design avec moi :", 'invite');
+          } catch (err) {
+            inviteBtn.disabled = false;
             inviteBtn.innerHTML = orig;
+            confAlert('Impossible de générer le lien d\'invitation.\n' + (err && err.message ? err.message : err), { icon: 'error', title: 'Invitation' });
           }
-        } catch (err) {
-          inviteBtn.disabled = false;
-          inviteBtn.innerHTML = orig;
-          confAlert('Impossible de générer le lien d\'invitation.\n' + (err && err.message ? err.message : err), { icon: 'error', title: 'Invitation' });
-        }
-      });
+        });
+      }
     }
 
     /* Capture l'état complet du design courant (produit, couleur, uploads) et le
