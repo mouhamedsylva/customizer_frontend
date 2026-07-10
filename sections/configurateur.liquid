@@ -1205,7 +1205,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
           Ajouter au panier
         </button>
-        <button class="btn-save">
+        <button class="btn-save" onclick="saveDesign(this)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
           Sauvegarder le design
         </button>
@@ -2765,18 +2765,19 @@
       const old = document.getElementById('share-menu');
       if (old) old.remove();
 
-      var isInvite = (mode === 'invite');
+      var isSave = (mode === 'save');
+      var isInvite = (mode === 'invite') || isSave; // save = même flux (lien de reprise)
       const enc = encodeURIComponent;
-      var subject = isInvite ? 'Personnalisez ce design avec moi' : 'Mon design personnalisé';
+      var subject = isSave ? 'Mon design sauvegardé' : (isInvite ? 'Personnalisez ce design avec moi' : 'Mon design personnalisé');
       const waHref = 'https://wa.me/?text=' + enc(text + ' ' + url);
       const mailHref = 'https://mail.google.com/mail/?view=cm&fs=1&su=' +
         enc(subject) + '&body=' + enc(text + '\n' + url);
 
-      var title = isInvite ? 'Inviter à éditer' : 'Partager mon design';
-      var copyLabel = isInvite ? 'Copier le lien d\'invitation' : 'Copier le lien de l\'image';
-      // Bloc "Inviter" (uniquement en mode image) OU bouton "retour" (en mode invite).
+      var title = isSave ? 'Design sauvegardé' : (isInvite ? 'Inviter à éditer' : 'Partager mon design');
+      var copyLabel = isInvite ? 'Copier le lien' : 'Copier le lien de l\'image';
+      // Bloc "Inviter" (mode image) OU bouton "retour" (mode invite, pas save).
       var extraBlock = isInvite
-        ? '<button id="share-back-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:10px;border:none;border-radius:10px;background:#f0f0f0;cursor:pointer;color:#333;font-weight:600;font-family:inherit;margin-top:4px;"><span style="font-size:18px;">←</span> Retour au partage d\'image</button>'
+        ? (isSave ? '' : '<button id="share-back-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:10px;border:none;border-radius:10px;background:#f0f0f0;cursor:pointer;color:#333;font-weight:600;font-family:inherit;margin-top:4px;"><span style="font-size:18px;">←</span> Retour au partage d\'image</button>')
         : '<div style="border-top:1px solid #eee;margin:6px 0 12px;"></div>' +
           '<button id="share-invite-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:none;border-radius:10px;background:#1a1a1a;cursor:pointer;color:#fff;font-weight:700;font-family:inherit;"><span style="font-size:20px;">✉️</span> Inviter une personne à éditer</button>' +
           '<p style="font-size:11px;color:#888;margin-top:8px;line-height:1.4;">La personne invitée ouvrira le configurateur avec votre design en cours (modifiable).</p>';
@@ -2790,7 +2791,7 @@
             <strong style="font-size:16px;">${title}</strong>
             <button onclick="document.getElementById('share-menu').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">✕</button>
           </div>
-          ${isInvite ? '<p style="font-size:12px;color:#16a34a;margin:0 0 14px;font-weight:600;">✓ Lien d\'invitation prêt à envoyer</p>' : '<div style="margin-bottom:10px;"></div>'}
+          ${isInvite ? ('<p style="font-size:12px;color:#16a34a;margin:0 0 14px;font-weight:600;">✓ ' + (isSave ? 'Lien de reprise prêt (envoyez-le-vous)' : 'Lien d\'invitation prêt à envoyer') + '</p>') : '<div style="margin-bottom:10px;"></div>'}
           <a href="${waHref}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e8e8e8;border-radius:10px;text-decoration:none;color:#1a1a1a;margin-bottom:10px;font-weight:600;">
             <span style="font-size:20px;">🟢</span> WhatsApp
           </a>
@@ -2859,6 +2860,32 @@
 
       // Lien vers le configurateur avec le design à restaurer.
       return window.location.origin + '/pages/configurateur?design=' + encodeURIComponent(shareId);
+    }
+
+    /* Bouton "Sauvegarder le design" (tous produits) : génère un lien de reprise
+       et l'affiche pour que le client puisse retrouver son design plus tard. */
+    async function saveDesign(btnEl) {
+      var original = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Sauvegarde…'; }
+      try {
+        var link = await createInviteLink();
+        var copied = false;
+        try { await navigator.clipboard.writeText(link); copied = true; } catch (e) {}
+        // Menu de partage en mode "invite" : WhatsApp/Gmail/Copier pointent vers
+        // le lien de reprise (le client peut se l'envoyer à lui-même).
+        if (typeof openShareMenu === 'function') {
+          openShareMenu(link, "Reprenez mon design personnalisé :", 'save');
+        } else {
+          await confAlert((copied ? '✓ Lien copié !\n\n' : '') + 'Conservez ce lien pour retrouver votre design :\n' + link,
+                          { icon: 'success', title: 'Design sauvegardé' });
+        }
+      } catch (err) {
+        console.error('Sauvegarde échouée :', err);
+        await confAlert('Impossible de sauvegarder le design.\n' + (err && err.message ? err.message : err),
+                        { icon: 'error', title: 'Sauvegarde' });
+      } finally {
+        if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = original; }
+      }
     }
 
     function showQuoteSuccess(client) {
