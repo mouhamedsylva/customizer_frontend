@@ -1331,9 +1331,8 @@
        rétablir l'état visuel + l'image/fond coloré. Gère TEXTILE (.cs) et
        PATCH/COINS (.patch-color-sw) selon le produit courant. */
     function restoreColor() {
-      // Textile : conf_current_color -> pastilles .cs
-      var savedTx = null;
-      try { savedTx = JSON.parse(sessionStorage.getItem('conf_current_color')); } catch (e) {}
+      // Textile : couleur mémorisée POUR LE PRODUIT COURANT -> pastilles .cs
+      var savedTx = savedColorFor(currentProductType);
       if (savedTx && savedTx.name) {
         var cs = document.querySelectorAll('.cs');
         for (var i = 0; i < cs.length; i++) {
@@ -1669,11 +1668,38 @@
 
       if (productType && (productType === 'sweatshirt' || productType === 'tshirt' || productType === 'tshirt_polyester')) {
         currentProductKey = productType;
+
+        // Restaure la couleur PROPRE à ce produit (chaque textile garde la sienne).
+        // Si aucune couleur mémorisée, on revient au Noir par défaut.
+        applyColorForProduct(productType);
+
         updateProductImages();
 
         // ← AJOUT : restaurer les logos sauvegardés pour ce produit
         restoreLogosForProduct(productType);
       }
+    }
+
+    /* Applique la couleur mémorisée d'un produit textile (ou Noir par défaut) :
+       met à jour l'état + l'état visuel de la pastille, SANS re-sauvegarder (on
+       lit ce qui a été enregistré pour CE produit). */
+    function applyColorForProduct(productType) {
+      var saved = savedColorFor(productType);
+      var name = (saved && saved.name) ? saved.name : 'Noir';
+      var hex = (saved && saved.hex) ? saved.hex : '#1a1a1a';
+
+      currentColor = hex;
+      currentColorName = name;
+      currentColorSlug = COLOR_SLUGS[name] || 'noir';
+
+      // État visuel de la pastille correspondante.
+      document.querySelectorAll('.cs').forEach(function (s) { s.classList.remove('on'); });
+      var cs = document.querySelectorAll('.cs');
+      for (var i = 0; i < cs.length; i++) {
+        if (cs[i].getAttribute('title') === name) { cs[i].classList.add('on'); break; }
+      }
+      var rc = document.getElementById('rc-color');
+      if (rc) rc.textContent = 'Couleur : ' + name;
     }
 
 
@@ -2033,6 +2059,58 @@
       openQuoteModal({ name, details, qty, previews });
     }
 
+    /* Demande de devis pour un PATCH en PVC ou Tissé. Collecte les specs du patch
+       (taille, forme, couleur) + le style demandé, et un aperçu (cercle + logo).
+       Réutilise le même modal/flux que le devis coins. */
+    function requestPatchQuote(style) {
+      var recap = document.querySelector('.recap');
+      var name = 'Patch personnalisé (' + style + ')';
+
+      // Détails depuis le récap patch (Face, Taille, Format, Couleur, Type…).
+      var details = recap ? Array.from(recap.querySelectorAll('.rp-patch-details p'))
+        .map(function (p) { return p.textContent.trim(); }) : [];
+      // On force le style demandé dans les détails.
+      details = details.filter(function (d) { return !/^Type\s*:/i.test(d); });
+      details.push('Finition souhaitée : ' + style);
+
+      // Quantité (input du récap patch).
+      var qtyInput = recap ? recap.querySelector('#coins-recap-qty-input, #coin-recap-qty-input, input[type="number"]') : null;
+      var qty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : 20;
+
+      // Aperçu : le patch composé (cercle couleur + logo) si un logo est présent.
+      var previews = [];
+      var logoEl = document.getElementById('patch-logo');
+      var logoImg = logoEl ? logoEl.querySelector('img') : null;
+      var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
+      var canvasEl = document.getElementById('coins-canvas');
+      var bgColor = (canvasEl && canvasEl.style.backgroundColor) ? canvasEl.style.backgroundColor : '#ffffff';
+      if (logoSrc) {
+        // Génère un cercle coloré (fond) en data-URL pour l'aperçu.
+        try {
+          var c = document.createElement('canvas'); c.width = 400; c.height = 400;
+          var ctx = c.getContext('2d');
+          ctx.beginPath(); ctx.arc(200, 200, 200, 0, Math.PI * 2); ctx.fillStyle = bgColor; ctx.fill();
+          previews.push({ label: 'PATCH', base: c.toDataURL('image/png'), logo: logoSrc });
+        } catch (e) {}
+      }
+
+      openQuoteModal({ name: name, details: details, qty: qty, previews: previews,
+                       subtitle: 'Recevez un devis pour votre patch en ' + style + '.' });
+    }
+
+    // Ouvre le formulaire de devis PVC / Tissé pour le patch (bouton contact).
+    function contactPatchStyle() {
+      confConfirm('Souhaitez-vous un patch en PVC ou en Tissé ? Choisissez une option pour recevoir un devis.', {
+        icon: 'question',
+        title: 'Patch PVC ou Tissé',
+        confirmText: 'PVC',
+        cancelText: 'Tissé'
+      }).then(function (isPvc) {
+        // confConfirm renvoie true (Confirmer=PVC) ou false (Annuler=Tissé).
+        requestPatchQuote(isPvc ? 'PVC' : 'Tissé');
+      });
+    }
+
     function openQuoteModal(data) {
       // Supprime un éventuel ancien modal
       const old = document.getElementById('quote-modal');
@@ -2055,7 +2133,7 @@
         <div class="qm-box">
           <button class="qm-close" onclick="closeQuoteModal()">✕</button>
           <h2 class="qm-title">Demande de devis</h2>
-          <p class="qm-sub">Recevez un devis personnalisé pour votre coin métallique.</p>
+          <p class="qm-sub">${data.subtitle || 'Recevez un devis personnalisé pour votre coin métallique.'}</p>
 
           <div class="qm-content">
             <div class="qm-design">
@@ -2929,8 +3007,24 @@
       currentColorSlug = COLOR_SLUGS[name] || 'noir';
       applyColor(hex);
       document.getElementById('rc-color').textContent = 'Couleur : ' + name;
-      // Persiste la couleur : au reload, on la restaure au lieu de repartir sur Noir.
-      try { sessionStorage.setItem('conf_current_color', JSON.stringify({ hex: hex, name: name })); } catch (e) {}
+      // Persiste la couleur PAR PRODUIT : chaque textile garde sa propre couleur.
+      // conf_current_color = { sweatshirt:{hex,name}, tshirt:{...}, ... }
+      try {
+        var all = JSON.parse(sessionStorage.getItem('conf_current_color') || '{}');
+        // Compat : ancien format {hex,name} -> on repart d'un objet vide.
+        if (all && (all.hex || all.name)) all = {};
+        all[currentProductType] = { hex: hex, name: name };
+        sessionStorage.setItem('conf_current_color', JSON.stringify(all));
+      } catch (e) {}
+    }
+
+    // Couleur mémorisée pour un produit donné (ou null).
+    function savedColorFor(productType) {
+      try {
+        var all = JSON.parse(sessionStorage.getItem('conf_current_color') || '{}');
+        if (all && (all.hex || all.name)) return null; // ancien format global : ignoré
+        return all[productType] || null;
+      } catch (e) { return null; }
     }
 
     function saveLogosForProduct(productKey) {

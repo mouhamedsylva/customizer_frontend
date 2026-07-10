@@ -277,18 +277,35 @@ function selectCoinShape(el) {
   if (recapShape) recapShape.textContent = (shape === 'decoupe') ? 'Découpé à la forme' : 'Rond';
 }
 
-// Taille
+// Taille — gère COINS (.coin-size-card, mm) ET PATCHS (.coins-size-card, cm).
 function selectCoinSize(el) {
-  document.querySelectorAll('.coin-size-card').forEach(c => c.classList.remove('active'));
+  // Retire l'active des DEUX familles de cartes.
+  document.querySelectorAll('.coin-size-card, .coins-size-card').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
 
-  const size = el.getAttribute('data-size');
-  const mm = parseInt(String(size).replace('mm', ''), 10) || 30;
+  const size = el.getAttribute('data-size') || '';
 
+  // PATCH : taille en cm (ex. "6cm", "8x6cm").
+  if (/cm$/.test(size)) {
+    // Libellé lisible pour le récap.
+    var pEl = el.querySelector('p');
+    var label = pEl ? pEl.textContent.trim() : size.replace('cm', ' cm');
+    var recapPatch = document.getElementById('coins-recap-size');
+    if (recapPatch) recapPatch.textContent = label;
+
+    // Applique la classe de taille au cercle patch (change son diamètre visuel).
+    var canvas = document.getElementById('coins-canvas');
+    if (canvas) {
+      canvas.classList.remove('size-6cm','size-7cm','size-8cm','size-9cm','size-10cm','size-8x6cm','size-10x7-5cm');
+      canvas.classList.add('size-' + size.replace(/\./g, '-'));
+    }
+    return;
+  }
+
+  // COIN : taille en mm.
+  const mm = parseInt(String(size).replace('mm', ''), 10) || 30;
   const recapSize = document.getElementById('coin-recap-size');
   if (recapSize) recapSize.textContent = mm + ' mm';
-
-  // Redimensionne visuellement les disques (recto/verso/côté) selon le diamètre.
   applyCoinDiameterScale(mm);
 }
 
@@ -380,6 +397,24 @@ function syncCoinRecapQty(qty) {
   const recapQty = document.getElementById('coin-recap-qty-input');
   if (recapQty) recapQty.value = qty;
 }
+
+/* Synchronisation TEMPS RÉEL des deux champs quantité (numérotation <-> récap).
+   Écouteur délégué (survit au rechargement dynamique de la sidebar/récap) : dès
+   qu'on tape dans l'un, l'autre se met à jour immédiatement. */
+document.addEventListener('input', function (e) {
+  if (!e.target) return;
+  var id = e.target.id;
+  if (id !== 'coin-num-qty-input' && id !== 'coin-recap-qty-input') return;
+
+  var val = parseInt(e.target.value, 10);
+  if (isNaN(val)) return;               // laisse l'utilisateur effacer avant de retaper
+  if (val < 50) val = 50;
+
+  var side = document.getElementById('coin-num-qty-input');
+  var recap = document.getElementById('coin-recap-qty-input');
+  if (side && side !== e.target) side.value = val;
+  if (recap && recap !== e.target) recap.value = val;
+});
 
 // Quantité côté récap
 function changeCoinRecapQty(delta) {
