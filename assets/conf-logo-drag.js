@@ -140,7 +140,7 @@
     // Contrainte : le logo textile reste DANS sa zone pointillée.
     var TEXTILE_ZONE = {
       'logo-f': 'f', 'logo-b': 'b',
-      'logo-sl': 'sl', 'logo-sl-face': 'sl-face', 'logo-sr-face': 'sr-face'
+      'logo-sl': 'sl'
     };
     if (TEXTILE_ZONE[active.id] && typeof window.clampLogoToZone === 'function') {
       window.clampLogoToZone(TEXTILE_ZONE[active.id]);

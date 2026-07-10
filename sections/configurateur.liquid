@@ -36,7 +36,7 @@
       // Généré côté Liquid pour avoir les URLs CDN exactes (avec ?v=...).
       window.PRODUCT_IMAGE_URLS = {
         {%- assign tx_products = "sweatshirt,tshirt,tshirt-polyester" | split: "," -%}
-        {%- assign tx_colors = "noir,blanc-casse,gris,gris-fonce,gris-ardoise,bleu-marine,bleu-ciel,vert-fonce,rose-clair,rose,rouge,orange,jaune,violet,marron" | split: "," -%}
+        {%- assign tx_colors = "apricot,ash,atoll,black,bottle-green,brown,burgundy,chocolate,cobalt-blue,dark-grey,diva-blue,fire-red,gold,kelly-green,millennial-lilac,millennial-mint,natural,navy,navy-blue,orange,orchid-green,orchid-pink,pacific-grey,pixel-lime,radiant-purple,red,royal-blue,sand,sky,solar-yellow,sorbet,sport-grey,stone-blue,sunset-orange,swimming-pool,urban-khaki,urban-orange,urban-purple,used-black,white" | split: "," -%}
         {%- assign tx_views = "face,dos,cote" | split: "," -%}
         {%- for p in tx_products -%}
           {%- for c in tx_colors -%}
@@ -935,27 +935,46 @@
           <div class="sec-title">2. Couleur</div>
           <div class="sec-sub">Choisissez la couleur de votre article</div>
           <div class="cg">
-            <div class="cg-row">
-              <div class="cs on" style="background:#1a1a1a" title="Noir" onclick="selColor(this,'#1a1a1a','Noir')"></div>
-              <div class="cs" style="background:#f5f2ed;border:1.5px solid #ddd" title="Blanc cassé" onclick="selColor(this,'#f5f2ed','Blanc cassé')"></div>
-              <div class="cs" style="background:#9e9e9e" title="Gris" onclick="selColor(this,'#9e9e9e','Gris')"></div>
-              <div class="cs" style="background:#555555" title="Gris foncé" onclick="selColor(this,'#555555','Gris foncé')"></div>
-              <div class="cs" style="background:#607d8b" title="Gris ardoise" onclick="selColor(this,'#607d8b','Gris ardoise')"></div>
-            </div>
-            <div class="cg-row">
-              <div class="cs" style="background:#1e3a5f" title="Bleu marine" onclick="selColor(this,'#1e3a5f','Bleu marine')"></div>
-              <div class="cs" style="background:#5bb8e8" title="Bleu ciel" onclick="selColor(this,'#5bb8e8','Bleu ciel')"></div>
-              <div class="cs" style="background:#2e6b45" title="Vert foncé" onclick="selColor(this,'#2e6b45','Vert foncé')"></div>
-              <div class="cs" style="background:#f0c8d8;border:1.5px solid #e0afc4" title="Rose clair" onclick="selColor(this,'#f0c8d8','Rose clair')"></div>
-              <div class="cs" style="background:#e8729a" title="Rose" onclick="selColor(this,'#e8729a','Rose')"></div>
-            </div>
-            <div class="cg-row">
-              <div class="cs" style="background:#c0392b" title="Rouge" onclick="selColor(this,'#c0392b','Rouge')"></div>
-              <div class="cs" style="background:#e8842a" title="Orange" onclick="selColor(this,'#e8842a','Orange')"></div>
-              <div class="cs" style="background:#f5c842;border:1.5px solid #d4aa20" title="Jaune" onclick="selColor(this,'#f5c842','Jaune')"></div>
-              <div class="cs" style="background:#9b6bb5" title="Violet" onclick="selColor(this,'#9b6bb5','Violet')"></div>
-              <div class="cs" style="background:#7d4e2d" title="Marron" onclick="selColor(this,'#7d4e2d','Marron')"></div>
-            </div>
+            <div class="cs" style="background:#f5a623" title="Apricot" onclick="selColor(this,'#f5a623','Apricot')"></div>
+            <div class="cs" style="background:#eff1f0;border:1.5px solid #ddd" title="Ash" onclick="selColor(this,'#eff1f0','Ash')"></div>
+            <div class="cs" style="background:#3bb9e0" title="Atoll" onclick="selColor(this,'#3bb9e0','Atoll')"></div>
+            <div class="cs on" style="background:#0a0a0a" title="Black" onclick="selColor(this,'#0a0a0a','Black')"></div>
+            <div class="cs" style="background:#143f2e" title="Bottle Green" onclick="selColor(this,'#143f2e','Bottle Green')"></div>
+            <div class="cs" style="background:#3a3130" title="Brown" onclick="selColor(this,'#3a3130','Brown')"></div>
+            <div class="cs" style="background:#3d1f35" title="Burgundy" onclick="selColor(this,'#3d1f35','Burgundy')"></div>
+            <div class="cs" style="background:#4a3830" title="Chocolate" onclick="selColor(this,'#4a3830','Chocolate')"></div>
+            <div class="cs" style="background:#1e32e6" title="Cobalt Blue" onclick="selColor(this,'#1e32e6','Cobalt Blue')"></div>
+            <div class="cs" style="background:#2e3944" title="Dark Grey" onclick="selColor(this,'#2e3944','Dark Grey')"></div>
+            <div class="cs" style="background:#1e6b78" title="Diva Blue" onclick="selColor(this,'#1e6b78','Diva Blue')"></div>
+            <div class="cs" style="background:#e01e1e" title="Fire Red" onclick="selColor(this,'#e01e1e','Fire Red')"></div>
+            <div class="cs" style="background:#f5c518" title="Gold" onclick="selColor(this,'#f5c518','Gold')"></div>
+            <div class="cs" style="background:#2fa84f" title="Kelly Green" onclick="selColor(this,'#2fa84f','Kelly Green')"></div>
+            <div class="cs" style="background:#6e7bd8" title="Millennial Lilac" onclick="selColor(this,'#6e7bd8','Millennial Lilac')"></div>
+            <div class="cs" style="background:#9ee5c4" title="Millennial Mint" onclick="selColor(this,'#9ee5c4','Millennial Mint')"></div>
+            <div class="cs" style="background:#e8e2d0;border:1.5px solid #ddd" title="Natural" onclick="selColor(this,'#e8e2d0','Natural')"></div>
+            <div class="cs" style="background:#1a2438" title="Navy" onclick="selColor(this,'#1a2438','Navy')"></div>
+            <div class="cs" style="background:#1b2a5b" title="Navy Blue" onclick="selColor(this,'#1b2a5b','Navy Blue')"></div>
+            <div class="cs" style="background:#f0500a" title="Orange" onclick="selColor(this,'#f0500a','Orange')"></div>
+            <div class="cs" style="background:#7de01e" title="Orchid Green" onclick="selColor(this,'#7de01e','Orchid Green')"></div>
+            <div class="cs" style="background:#f5c8dc;border:1.5px solid #e0afc4" title="Orchid Pink" onclick="selColor(this,'#f5c8dc','Orchid Pink')"></div>
+            <div class="cs" style="background:#8a8d91" title="Pacific Grey" onclick="selColor(this,'#8a8d91','Pacific Grey')"></div>
+            <div class="cs" style="background:#a8e020" title="Pixel Lime" onclick="selColor(this,'#a8e020','Pixel Lime')"></div>
+            <div class="cs" style="background:#3a1e9e" title="Radiant Purple" onclick="selColor(this,'#3a1e9e','Radiant Purple')"></div>
+            <div class="cs" style="background:#a81e32" title="Red" onclick="selColor(this,'#a81e32','Red')"></div>
+            <div class="cs" style="background:#1e4be0" title="Royal Blue" onclick="selColor(this,'#1e4be0','Royal Blue')"></div>
+            <div class="cs" style="background:#c4b49a" title="Sand" onclick="selColor(this,'#c4b49a','Sand')"></div>
+            <div class="cs" style="background:#9ed8f0" title="Sky" onclick="selColor(this,'#9ed8f0','Sky')"></div>
+            <div class="cs" style="background:#f5e518;border:1.5px solid #d4c518" title="Solar Yellow" onclick="selColor(this,'#f5e518','Solar Yellow')"></div>
+            <div class="cs" style="background:#b01e78" title="Sorbet" onclick="selColor(this,'#b01e78','Sorbet')"></div>
+            <div class="cs" style="background:#8a9499" title="Sport Grey" onclick="selColor(this,'#8a9499','Sport Grey')"></div>
+            <div class="cs" style="background:#3e6b85" title="Stone Blue" onclick="selColor(this,'#3e6b85','Stone Blue')"></div>
+            <div class="cs" style="background:#f5455e" title="Sunset Orange" onclick="selColor(this,'#f5455e','Sunset Orange')"></div>
+            <div class="cs" style="background:#5ed0c4" title="Swimming Pool" onclick="selColor(this,'#5ed0c4','Swimming Pool')"></div>
+            <div class="cs" style="background:#3a4130" title="Urban Khaki" onclick="selColor(this,'#3a4130','Urban Khaki')"></div>
+            <div class="cs" style="background:#c43418" title="Urban Orange" onclick="selColor(this,'#c43418','Urban Orange')"></div>
+            <div class="cs" style="background:#1e1e6e" title="Urban Purple" onclick="selColor(this,'#1e1e6e','Urban Purple')"></div>
+            <div class="cs" style="background:#2e3438" title="Used Black" onclick="selColor(this,'#2e3438','Used Black')"></div>
+            <div class="cs" style="background:#ffffff;border:1.5px solid #ddd" title="White" onclick="selColor(this,'#ffffff','White')"></div>
           </div>
         </div>
 
@@ -1090,12 +1109,12 @@
             <!-- Couche des logos déplaçables (par-dessus le vêtement) -->
             <div class="logo-layer" id="logo-layer" data-view="face">
               <!-- ZONES GUIDES (pointillés rouges) : délimitent où poser l'asset.
-                   Visibles tant que la zone est vide. left/top/width/height en %. -->
-              <div class="logo-zone for-face" id="zone-f"  data-zone="f"  style="left:30%; top:26%; width:26%; height:22%;"><span>Logo cœur</span></div>
+                   Visibles tant que la zone est vide. left/top/width/height en %.
+                   VUE FACE : uniquement le LOGO CŒUR (poitrine, côté cœur = droite
+                   de l'image). VUE CÔTÉ : la manche. VUE DOS : le grand logo. -->
+              <div class="logo-zone for-face" id="zone-f"  data-zone="f"  style="left:56%; top:22%; width:18%; height:16%;"><span>Logo cœur</span></div>
               <div class="logo-zone for-dos"  id="zone-b"  data-zone="b"  style="left:30%; top:20%; width:40%; height:52%;"><span>Logo dos</span></div>
               <div class="logo-zone for-cote" id="zone-sl" data-zone="sl" style="left:40%; top:24%; width:20%; height:16%;"><span>Manche</span></div>
-              <div class="logo-zone for-face" id="zone-sl-face" data-zone="sl-face" style="left:24%; top:36%; width:14%; height:12%;"><span>Manche G</span></div>
-              <div class="logo-zone for-face" id="zone-sr-face" data-zone="sr-face" style="left:62%; top:36%; width:14%; height:12%;"><span>Manche D</span></div>
 
               <!-- Logo cœur : visible sur la vue de face -->
               <div class="design-logo for-face" id="logo-f" data-zone="f" style="display:none; left:38%; top:34%; width:18%;">
@@ -1116,12 +1135,13 @@
                 <img src="" alt="Logo manche droite" draggable="false">
                 <span class="logo-resize" data-resize="sr"></span>
               </div>
-              <!-- Logos manches vus de FACE (sur les bras avant) -->
-              <div class="design-logo for-face" id="logo-sl-face" data-zone="sl-face" style="display:none; left:30%; top:40%; width:8%;">
+              <!-- Logos manches : affichés en VUE CÔTÉ uniquement (retirés de la
+                   vue face à la demande). Conservés pour compat mais en for-cote. -->
+              <div class="design-logo for-cote" id="logo-sl-face" data-zone="sl-face" style="display:none; left:42%; top:30%; width:12%;">
                 <img src="" alt="Logo manche gauche" draggable="false">
                 <span class="logo-resize" data-resize="sl-face"></span>
               </div>
-              <div class="design-logo for-face" id="logo-sr-face" data-zone="sr-face" style="display:none; left:62%; top:40%; width:8%;">
+              <div class="design-logo for-cote" id="logo-sr-face" data-zone="sr-face" style="display:none; left:42%; top:46%; width:12%;">
                 <img src="" alt="Logo manche droite" draggable="false">
                 <span class="logo-resize" data-resize="sr-face"></span>
               </div>
@@ -1168,7 +1188,7 @@
           </div>
           <div class="ri-info">
             <div class="ri-name" id="rc-prod">Sweatshirt</div>
-            <div class="ri-det" id="rc-color">Couleur : Noir</div>
+            <div class="ri-det" id="rc-color">Couleur : Black</div>
             <div class="ri-det" id="rc-size">Taille : M</div>
           </div>
         </div>
@@ -1234,9 +1254,9 @@
   <script>
     /* ── State ── */
     let zl = 100;
-    let currentColor = '#1a1a1a';
-    let currentColorName = 'Noir';
-    let currentColorSlug = 'noir';
+    let currentColor = '#0a0a0a';
+    let currentColorName = 'Black';
+    let currentColorSlug = 'black';
     let currentProductKey = 'sweatshirt';
     // Type de produit courant (tous types : textile, drapeaux, coins, patches).
     let currentProductType = 'sweatshirt';
@@ -1415,21 +1435,46 @@
 
     /* ── Couleurs : nom affiché -> slug de fichier ── */
     const COLOR_SLUGS = {
-      'Noir': 'noir',
-      'Blanc cassé': 'blanc-casse',
-      'Gris': 'gris',
-      'Gris foncé': 'gris-fonce',
-      'Gris ardoise': 'gris-ardoise',
-      'Bleu marine': 'bleu-marine',
-      'Bleu ciel': 'bleu-ciel',
-      'Vert foncé': 'vert-fonce',
-      'Rose clair': 'rose-clair',
-      'Rose': 'rose',
-      'Rouge': 'rouge',
+      'Apricot': 'apricot',
+      'Ash': 'ash',
+      'Atoll': 'atoll',
+      'Black': 'black',
+      'Bottle Green': 'bottle-green',
+      'Brown': 'brown',
+      'Burgundy': 'burgundy',
+      'Chocolate': 'chocolate',
+      'Cobalt Blue': 'cobalt-blue',
+      'Dark Grey': 'dark-grey',
+      'Diva Blue': 'diva-blue',
+      'Fire Red': 'fire-red',
+      'Gold': 'gold',
+      'Kelly Green': 'kelly-green',
+      'Millennial Lilac': 'millennial-lilac',
+      'Millennial Mint': 'millennial-mint',
+      'Natural': 'natural',
+      'Navy': 'navy',
+      'Navy Blue': 'navy-blue',
       'Orange': 'orange',
-      'Jaune': 'jaune',
-      'Violet': 'violet',
-      'Marron': 'marron'
+      'Orchid Green': 'orchid-green',
+      'Orchid Pink': 'orchid-pink',
+      'Pacific Grey': 'pacific-grey',
+      'Pixel Lime': 'pixel-lime',
+      'Radiant Purple': 'radiant-purple',
+      'Red': 'red',
+      'Royal Blue': 'royal-blue',
+      'Sand': 'sand',
+      'Sky': 'sky',
+      'Solar Yellow': 'solar-yellow',
+      'Sorbet': 'sorbet',
+      'Sport Grey': 'sport-grey',
+      'Stone Blue': 'stone-blue',
+      'Sunset Orange': 'sunset-orange',
+      'Swimming Pool': 'swimming-pool',
+      'Urban Khaki': 'urban-khaki',
+      'Urban Orange': 'urban-orange',
+      'Urban Purple': 'urban-purple',
+      'Used Black': 'used-black',
+      'White': 'white'
     };
 
     /* ── Produits : data-product -> préfixe de fichier ── */
@@ -1524,15 +1569,12 @@
        maxW = largeur max du logo dans cette zone (contraintes cm converties en %).
        logoId = le logo déplaçable ; zoneId = le rectangle guide. */
     const LOGO_ZONES = {
-      // Logo cœur : petite zone poitrine gauche. Pseudo (large) autorisé jusqu'à maxW.
-      'f':       { zoneId: 'zone-f',       logoId: 'logo-f',       left: 30, top: 26, width: 26, height: 22, maxW: 26 },
+      // Logo cœur : petite zone poitrine, côté cœur (droite de l'image, vue face).
+      'f':       { zoneId: 'zone-f',       logoId: 'logo-f',       left: 56, top: 22, width: 18, height: 16, maxW: 18 },
       // Logo dos : grande zone centrale (H39xL30 -> plus haute que large).
       'b':       { zoneId: 'zone-b',       logoId: 'logo-b',       left: 30, top: 20, width: 40, height: 52, maxW: 40 },
-      // Manches vue de côté (gauche).
-      'sl':      { zoneId: 'zone-sl',      logoId: 'logo-sl',      left: 40, top: 24, width: 20, height: 16, maxW: 18 },
-      // Manches vue de face.
-      'sl-face': { zoneId: 'zone-sl-face', logoId: 'logo-sl-face', left: 24, top: 36, width: 14, height: 12, maxW: 12 },
-      'sr-face': { zoneId: 'zone-sr-face', logoId: 'logo-sr-face', left: 62, top: 36, width: 14, height: 12, maxW: 12 }
+      // Manches : vue de côté uniquement.
+      'sl':      { zoneId: 'zone-sl',      logoId: 'logo-sl',      left: 40, top: 24, width: 20, height: 16, maxW: 18 }
     };
 
     /* Place un logo AU CENTRE de sa zone, à une largeur adaptée (bornée à maxW),
@@ -1785,8 +1827,8 @@
        lit ce qui a été enregistré pour CE produit). */
     function applyColorForProduct(productType) {
       var saved = savedColorFor(productType);
-      var name = (saved && saved.name) ? saved.name : 'Noir';
-      var hex = (saved && saved.hex) ? saved.hex : '#1a1a1a';
+      var name = (saved && saved.name) ? saved.name : 'Black';
+      var hex = (saved && saved.hex) ? saved.hex : '#0a0a0a';
 
       currentColor = hex;
       currentColorName = name;
@@ -3495,25 +3537,24 @@
               logo.style.display = 'block';
             }
           }
-          // Version vue de face (le logo sur le bras avant correspondant)
+          // Les manches ne s'affichent plus en vue de face. Le logo "-face"
+          // conserve l'asset (compat récap/export) mais reste masqué.
           const logoFace = document.getElementById('logo-' + zone + '-face');
           if (logoFace) {
             const limg2 = logoFace.querySelector('img');
             if (limg2) limg2.src = src;
-            logoFace.style.display = 'block';
+            logoFace.style.display = 'none';
           }
           const rcS = document.getElementById('rc-sleeves');
           if (rcS) rcS.style.display = 'flex';
 
-          // Placement auto dans les zones manches.
+          // Placement auto dans la zone manche (vue de côté).
           if (zone === 'sl') placeLogoInZone('sl');
-          placeLogoInZone(zone + '-face');
 
-          // Bascule : manche gauche -> vue de côté ; manche droite -> vue de face
-          const targetView = (zone === 'sl') ? 'cote' : 'face';
-          const viewBtn = document.querySelector('.vt[onclick*="' + targetView + '"]');
+          // Les manches se visualisent toujours en vue de côté.
+          const viewBtn = document.querySelector('.vt[onclick*="cote"]');
           if (viewBtn && typeof selView === 'function') {
-            selView(viewBtn, targetView);
+            selView(viewBtn, 'cote');
           }
         }
 
