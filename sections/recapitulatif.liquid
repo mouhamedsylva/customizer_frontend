@@ -350,15 +350,20 @@
         if (it.color) properties['Détails'] = it.color;
         if (it.size)  properties['Taille'] = it.size;
 
-        // URLs techniques (aperçu + logos) : préfixe "_" -> Shopify les CACHE au
-        // checkout côté client, mais elles restent visibles dans l'admin de la
-        // commande (pour la production/préparation).
-        // Aperçu commande = planche multi-vues (sheet) si dispo, sinon vignette.
-        var apercu = it.sheet || it.img;
+        // N'accepte QUE des URLs http(s) hébergées comme valeur de propriété.
+        // Une data-URL (base64) ferait des milliers de caractères -> Shopify
+        // REJETTE /cart/add.js (propriété trop longue) et le checkout échoue.
+        var httpUrl = function (u) {
+          return (typeof u === 'string' && /^https?:\/\//i.test(u)) ? u : null;
+        };
+
+        // URLs techniques (aperçu + logos) : préfixe "_" -> cachées au checkout,
+        // visibles dans l'admin. Aperçu = planche (sheet) si dispo, sinon vignette.
+        var apercu = httpUrl(it.sheet) || httpUrl(it.img);
         if (apercu) properties['_Aperçu'] = apercu;
         if (Array.isArray(it.assets)) {
           it.assets.forEach(function (a) {
-            if (a && a.label && a.url) properties['_' + a.label] = a.url;
+            if (a && a.label && httpUrl(a.url)) properties['_' + a.label] = a.url;
           });
         }
 

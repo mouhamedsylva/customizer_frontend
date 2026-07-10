@@ -50,6 +50,42 @@
   border-color: #1a1a1a;
 }
 
+/* ── Zones guides (pointillés rouges) : où poser l'asset ── */
+.logo-zone {
+  position: absolute;
+  border: 2px dashed #e02424;
+  border-radius: 6px;
+  background: rgba(224, 36, 36, 0.04);
+  pointer-events: none;      /* n'interfère pas avec le drag du logo */
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+.logo-zone span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #e02424;
+  background: rgba(255,255,255,0.75);
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+/* Zone masquée quand son logo est présent (classe posée en JS). */
+.logo-zone.filled { opacity: 0; }
+
+/* Les zones suivent l'affichage par vue (comme les logos). */
+.logo-layer[data-view="face"] .logo-zone.for-dos,
+.logo-layer[data-view="face"] .logo-zone.for-cote,
+.logo-layer[data-view="dos"]  .logo-zone.for-face,
+.logo-layer[data-view="dos"]  .logo-zone.for-cote,
+.logo-layer[data-view="cote"] .logo-zone.for-face,
+.logo-layer[data-view="cote"] .logo-zone.for-dos {
+  display: none !important;
+}
+
 .design-logo.dragging { cursor: grabbing; }
 
 .design-logo img {

@@ -173,13 +173,17 @@ class ProductSwitcher {
     
     // Vérification taille (10MB max)
     if (file.size > 10485760) {
-      alert('Fichier trop volumineux. Maximum 10 MB.');
+      var m1 = 'Fichier trop volumineux. Maximum 10 MB.';
+      if (window.confAlert) window.confAlert(m1, { icon: 'warning', title: 'Fichier trop lourd' });
+      else alert(m1);
       return;
     }
-    
+
     // Vérification type
     if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner une image (PNG, JPG, SVG).');
+      var m2 = 'Veuillez sélectionner une image (PNG, JPG, SVG).';
+      if (window.confAlert) window.confAlert(m2, { icon: 'warning', title: 'Format non supporté' });
+      else alert(m2);
       return;
     }
     
