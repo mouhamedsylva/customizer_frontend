@@ -1,209 +1,80 @@
-# Suppression d'arrière-plan (Remove Background)
+# Enlever le fond d'une image — Explication simple
 
-Fonctionnalité qui, **à chaque upload d'image**, propose au client de rendre le
-fond de son image transparent — automatiquement, gratuitement, et de façon
-réversible.
+Cette fonctionnalité permet à votre client, quand il ajoute une image (un logo,
+un visuel…), de **rendre le fond de son image transparent** en un clic.
 
----
-
-## 1. Vue d'ensemble
-
-| Aspect | Choix |
-|---|---|
-| **Méthode** | Côté client (dans le navigateur), IA locale |
-| **Moteur** | [`@imgly/background-removal`](https://www.npmjs.com/package/@imgly/background-removal) |
-| **Coût** | Gratuit (aucune API payante, aucune donnée envoyée à un tiers) |
-| **Portée** | Tous les produits : Textiles, Patchs, Coins, Drapeaux |
-| **Déclenchement** | À chaque upload d'image |
-| **Réversible** | Oui — bouton « Remettre le fond » |
-
-Le traitement se fait **entièrement dans le navigateur du client**. L'image
-n'est envoyée à aucun serveur pour le détourage. Un modèle d'IA (~10 Mo) est
-téléchargé **une seule fois** depuis un CDN, puis mis en cache par le navigateur.
+Exemple : votre client a un logo sur un carré blanc. Grâce à cette option, le
+carré blanc disparaît et il ne reste que le logo, propre, sans fond.
 
 ---
 
-## 2. Parcours utilisateur (UX)
+## Comment ça se passe pour le client
 
-```
-Upload d'une image
-        │
-        ▼
-┌─────────────────────────────────────────┐
-│  Écran 1 — Question                      │
-│  Aperçu de l'image                       │
-│  « Supprimer l'arrière-plan ? »          │
-│  [Non, garder le fond] [Oui, enlever]    │
-└─────────────────────────────────────────┘
-   │                          │
-  Non                        Oui
-   │                          ▼
-   │              ┌───────────────────────────┐
-   │              │  Écran 2 — Traitement      │
-   │              │  🔄 Spinner                │
-   │              │  « Traitement en cours… »  │
-   │              │  Chargement du modèle… %   │
-   │              └───────────────────────────┘
-   │                          │
-   │                          ▼
-   │              ┌───────────────────────────┐
-   │              │  Écran 3 — Résultat        │
-   │              │  Aperçu détouré (damier)   │
-   │              │  [Remettre le fond] [Garder]│
-   │              └───────────────────────────┘
-   │                    │              │
-   │              Remettre le fond   Garder
-   │                    │              │
-   ▼                    ▼              ▼
- Image             Image           Image
- originale         originale       détourée (PNG transparent)
-        \             |             /
-         ▼            ▼            ▼
-     Le src final est appliqué au produit + persisté + uploadé Cloudinary
-```
+1. **Le client ajoute son image** (sur un t-shirt, un drapeau, un patch, une pièce…).
 
-En cas d'erreur (CDN inaccessible, image non traitable…), un écran d'erreur
-s'affiche et **l'image d'origine est utilisée telle quelle** — l'upload n'est
-jamais bloqué.
+2. **Une fenêtre apparaît** avec un aperçu de son image et la question :
+   > « Voulez-vous supprimer l'arrière-plan ? »
+
+   Deux boutons :
+   - **« Non, garder le fond »** → l'image reste telle quelle.
+   - **« Oui, enlever le fond »** → on retire le fond automatiquement.
+
+3. **S'il choisit « Oui »**, une petite animation de chargement s'affiche
+   pendant quelques secondes (le temps du traitement).
+
+4. **Le résultat s'affiche** : il voit son image sans fond. À ce moment, il peut :
+   - **« Garder »** → il valide l'image détourée.
+   - **« Remettre le fond »** → il revient à son image de départ s'il n'aime pas
+     le résultat.
+
+Autrement dit : **rien n'est définitif**, le client peut toujours revenir en arrière.
 
 ---
 
-## 3. Fichiers concernés
+## Sur quels produits ça fonctionne
 
-### `assets/conf-bg-removal.js` (nouveau — le module)
+Sur **tous les produits** de la boutique :
 
-Expose une seule API publique :
+- Textiles (sweatshirts, t-shirts) — logo cœur, dos, manches
+- Drapeaux
+- Pièces / Coins
+- Patchs
 
-```js
-window.ConfBgRemoval.ask(dataUrl)  // -> Promise<string>
-```
-
-- Reçoit le `dataUrl` de l'image uploadée.
-- Affiche la modale (question → spinner → résultat).
-- **Résout avec le `src` final** :
-  - image **originale** si le client répond « Non » ou « Remettre le fond » ;
-  - **PNG transparent** (dataURL) si le client garde le détourage.
-
-Responsabilités internes :
-- `loadImgly()` — charge le module ESM à la demande (import dynamique), une
-  seule fois, avec cache. Réessaie si le chargement échoue.
-- `ensureStyles()` — injecte le CSS de la modale/spinner une seule fois.
-- `buildModal()` — crée l'overlay + la carte.
-- Cache `_lastOriginal` / `_lastCutout` — si on re-traite exactement la même
-  image, on réaffiche le résultat sans relancer l'IA.
-
-### `sections/configurateur.liquid` (branchement)
-
-Le point d'entrée **unique** de tous les uploads est la fonction
-`doUpload(e, zone)`. C'est le seul endroit modifié pour brancher le détourage.
-
-```js
-reader.onload = ev => {
-  const original = ev.target.result;
-
-  // Pose la question (ou passe tout droit si le module est absent).
-  const decide = (window.ConfBgRemoval && window.ConfBgRemoval.ask)
-    ? window.ConfBgRemoval.ask(original)
-    : Promise.resolve(original);
-
-  decide.then(function (src) {
-    saveUpload(zone, src);   // persistance (sessionStorage)
-    applyUpload(zone, src);  // affichage dans le canvas
-
-    // Upload backend de l'image RÉELLEMENT retenue.
-    if (window.ConfAPI) {
-      const uploadFile = (src === original)
-        ? file                              // inchangée
-        : dataUrlToFile(src, file.name);    // détourée -> File PNG
-      window.ConfAPI.uploadLogo(uploadFile).then(/* … */);
-    }
-  });
-};
-```
-
-Helper ajouté : `dataUrlToFile(dataUrl, name)` — convertit le dataURL détouré
-en objet `File` (`.png`) pour l'upload Cloudinary.
-
-Chargement du script dans le `<head>` :
-
-```liquid
-<script src="{{ 'conf-bg-removal.js' | asset_url }}" defer></script>
-```
-
-### Pourquoi un seul point de branchement ?
-
-Tous les inputs `type="file"` du configurateur appellent `doUpload(event, zone)` :
-
-| Produit | Zones (`zone`) |
-|---|---|
-| Textiles | `f` (cœur), `b` (dos), `sl` / `sr` (manches) |
-| Patchs | `c` |
-| Coins | `coin-recto`, `coin-verso` |
-| Drapeaux | `flag-recto`, `flag-verso` |
-
-Modifier `doUpload` couvre donc **automatiquement tous les produits**.
-
-> Note : `restoreUploads()` (restauration après un rechargement de page)
-> appelle `applyUpload` **directement**, sans repasser par `doUpload`. La
-> question n'est donc **pas** reposée au rechargement — c'est voulu.
+La question est posée **à chaque fois** qu'une image est ajoutée.
 
 ---
 
-## 4. Le moteur : `@imgly/background-removal`
+## Les avantages pour vous
 
-- Chargé dynamiquement en ESM depuis **esm.sh** (qui transforme le paquet npm
-  en module 100 % navigateur — résout les dépendances Node et supprime les
-  `require`, sinon on obtient l'erreur « require is not defined ») :
-  ```
-  https://esm.sh/@imgly/background-removal@1.6.0?bundle
-  ```
-- Télécharge un modèle de segmentation (~10 Mo) au **premier** détourage,
-  ensuite servi depuis le cache du navigateur.
-- Fonction utilisée : `removeBackground(dataUrl, { progress })` → renvoie un
-  `Blob` PNG transparent (converti ensuite en dataURL).
-- Le callback `progress(key, current, total)` alimente le pourcentage affiché
-  pendant le chargement du modèle.
-
-### Prérequis réseau
-
-Le CDN esm.sh doit être joignable. Le thème Shopify n'impose **aucune**
-Content-Security-Policy restrictive, donc l'import fonctionne. Si un
-pare-feu/extension bloque le CDN, le module bascule proprement sur l'image
-d'origine (écran d'erreur, upload non bloqué).
+- **Gratuit** : aucun abonnement, aucun coût par image. Le traitement se fait
+  directement dans le navigateur du client.
+- **Confidentiel** : l'image du client n'est envoyée à aucune société
+  extérieure pour cette opération. Tout se passe sur son propre appareil.
+- **Simple** : le client n'a rien à installer, tout est automatique.
+- **Sans risque** : si le traitement échoue pour une raison quelconque, l'image
+  d'origine est conservée et l'ajout de l'image n'est jamais bloqué.
 
 ---
 
-## 5. Persistance & réversibilité
+## Bon à savoir
 
-- **Réversibilité immédiate** : dans la modale de résultat, « Remettre le fond »
-  renvoie l'image d'origine ; « Garder » renvoie la version transparente.
-- **Après application** : le `src` retenu est stocké dans `sessionStorage`
-  (`conf_uploads`) comme n'importe quelle image. Si le client veut re-changer,
-  il ré-uploade — la question est reposée.
-- **Cache intra-session** : re-détourer la même image ne relance pas l'IA
-  (`_lastCutout`).
+- **La première utilisation** peut prendre quelques secondes de plus : l'outil
+  télécharge une petite « intelligence » qui sait détourer les images. Ensuite,
+  c'est plus rapide car elle reste en mémoire.
 
----
+- **La qualité du détourage** est très bonne sur des images nettes avec un fond
+  simple (fond blanc ou uni). Sur des photos très complexes (beaucoup de détails
+  fins, cheveux, dégradés…), le résultat peut être légèrement moins parfait —
+  mais le client voit toujours le résultat avant de valider et peut revenir en
+  arrière.
 
-## 6. Points de personnalisation
-
-| Élément | Où |
-|---|---|
-| Textes de la modale | `conf-bg-removal.js` → `renderQuestion` / `renderResult` / `renderError` |
-| Style (couleurs, tailles, spinner) | `conf-bg-removal.js` → `ensureStyles()` (CSS inline) |
-| Version du moteur | `conf-bg-removal.js` → constante `IMGLY_ESM` |
-| Activer/désactiver globalement | Retirer/commenter le `<script>` dans `configurateur.liquid` — `doUpload` retombe alors sur l'image d'origine sans poser de question |
+- **Connexion internet** : une connexion est nécessaire au premier usage pour
+  télécharger l'outil de détourage.
 
 ---
 
-## 7. Évolutions possibles
+## En résumé (à dire au client)
 
-Si un jour la qualité client ne suffit pas (photos complexes, cheveux, etc.),
-on peut remplacer le **moteur** sans toucher à l'UX (la modale et le flux
-restent identiques) :
-
-- **Cloudinary Background Removal** (add-on payant) — via le backend existant.
-- **remove.bg** (API tierce, payante au crédit) — meilleure qualité du marché.
-
-Il suffirait de remplacer l'appel `removeBackground(...)` par un appel backend
-qui renvoie l'URL/dataURL détourée.
+> « Quand vous ajoutez une image, nous vous proposons automatiquement d'enlever
+> le fond pour un rendu plus propre. C'est gratuit, instantané, et vous pouvez
+> toujours revenir à votre image d'origine si vous préférez. »

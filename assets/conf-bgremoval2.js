@@ -26,7 +26,9 @@
   // <script> avec URL en chaîne échappe à cette transformation.
   var ORT_SCRIPT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js';
   var ORT_WASM   = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
-  var MODEL_URL  = 'https://huggingface.co/briaai/RMBG-1.4/resolve/main/onnx/model_quantized.onnx';
+  // Modèle NON quantifié : nettement plus précis que le quantifié (moins de
+  // « restes » de fond). Plus lourd (~176 Mo) mais mis en cache après le 1er usage.
+  var MODEL_URL  = 'https://huggingface.co/briaai/RMBG-1.4/resolve/main/onnx/model.onnx';
   var MODEL_SIZE = 1024;   // RMBG-1.4 attend une entrée 1024x1024
 
   var _sessionPromise = null; // cache de la session ONNX
@@ -142,7 +144,7 @@
         return session.run(feeds).then(function (results) {
           var mask = results[session.outputNames[0]].data; // 1x1x1024x1024, [0..1]
 
-          // 4) Normalise le masque (min-max) pour un alpha net.
+          // 4) Normalise le masque (min-max) sur [0..1].
           var mn = Infinity, mx = -Infinity;
           for (var k = 0; k < mask.length; k++) {
             if (mask[k] < mn) mn = mask[k];
@@ -150,13 +152,26 @@
           }
           var range = (mx - mn) || 1;
 
+          // Courbe de contraste (seuil doux) : élimine les « restes » de fond.
+          // - en dessous de LOW  -> transparent (0)
+          // - au dessus de HIGH  -> opaque (1)
+          // - entre les deux     -> transition lisse (bords propres).
+          var LOW = 0.35, HIGH = 0.65;
+          function refine(v01) {
+            if (v01 <= LOW) return 0;
+            if (v01 >= HIGH) return 1;
+            var t = (v01 - LOW) / (HIGH - LOW);
+            return t * t * (3 - 2 * t); // smoothstep
+          }
+
           // 5) Reprojette le masque 1024x1024 sur un canvas, puis à la taille réelle.
           var mc = document.createElement('canvas');
           mc.width = MODEL_SIZE; mc.height = MODEL_SIZE;
           var mctx = mc.getContext('2d');
           var mImgData = mctx.createImageData(MODEL_SIZE, MODEL_SIZE);
           for (var j = 0; j < area; j++) {
-            var a = Math.round(((mask[j] - mn) / range) * 255);
+            var norm = (mask[j] - mn) / range;
+            var a = Math.round(refine(norm) * 255);
             mImgData.data[j * 4]     = a;
             mImgData.data[j * 4 + 1] = a;
             mImgData.data[j * 4 + 2] = a;

@@ -126,7 +126,7 @@
       };
     </script>
     <script src="{{ 'conf-alert.js' | asset_url }}"></script>
-    <script src="{{ 'conf-bg-removal.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-bgremoval2.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-product-images.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-dynamic-layout.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-drapeaux.js' | asset_url }}" defer></script>
@@ -345,6 +345,76 @@
     }
     .uz p { font-size: 9px; color: var(--muted); line-height: 1.3; text-align: left; }
     .uz strong { color: var(--muted); }
+
+    /* ── Bouton « Ajouter un texte » ── */
+    .txt-add-btn {
+      width: 100%; padding: 8px 10px; border-radius: 6px;
+      border: 1.5px solid var(--black); background: #fff; color: var(--black);
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .4px; cursor: pointer; transition: .15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .txt-add-btn:hover { background: var(--black); color: #fff; }
+    .txt-add-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .txt-add-btn:disabled:hover { background: #fff; color: var(--black); }
+    /* Aperçu du texte ajouté (chip) dans le sidebar */
+    .txt-chip {
+      display: none; align-items: center; gap: 8px; margin-top: 6px;
+      padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
+      background: #fafafa; font-size: 11px;
+    }
+    .txt-chip .txt-chip-val { flex: 1; font-weight: 600; color: var(--black);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .txt-chip .rmv { border: none; background: none; cursor: pointer; font-size: 11px; }
+
+    /* ── Texte déplaçable sur le canvas ── */
+    .design-text {
+      position: absolute; cursor: grab; pointer-events: auto;
+      user-select: none; touch-action: none; white-space: nowrap;
+      border: 1.5px dashed transparent; border-radius: 4px; padding: 2px 4px;
+      line-height: 1.1; transition: border-color .15s ease;
+    }
+    .design-text:hover, .design-text.dragging { border-color: #1a1a1a; }
+    .design-text.dragging { cursor: grabbing; }
+
+    /* ── Modale « Ajouter un texte » ── */
+    .txt-modal-overlay {
+      position: fixed; inset: 0; z-index: 100000; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(15,18,22,.55); backdrop-filter: blur(2px);
+    }
+    .txt-modal-overlay.open { display: flex; }
+    .txt-modal {
+      background: #fff; border-radius: 14px; width: min(92vw, 380px);
+      padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.28);
+    }
+    .txt-modal h3 { font-size: 15px; font-weight: 800; margin: 0 0 14px; color: #14181c; }
+    .txt-modal label { display: block; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px; color: #5b636c; margin: 10px 0 4px; }
+    .txt-modal input[type="text"] {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7ea;
+      border-radius: 8px; font-size: 14px; outline: none;
+    }
+    .txt-modal input[type="text"]:focus { border-color: #14181c; }
+    .txt-modal-row { display: flex; gap: 10px; }
+    .txt-modal-row > div { flex: 1; }
+    .txt-modal select, .txt-modal input[type="color"] {
+      width: 100%; padding: 8px; border: 1.5px solid #e5e7ea; border-radius: 8px;
+      font-size: 13px; outline: none; height: 40px;
+    }
+    .txt-modal input[type="color"] { padding: 3px; cursor: pointer; }
+    .txt-modal-preview {
+      margin: 12px 0; padding: 14px; border-radius: 8px; text-align: center;
+      background: #f4f5f7; border: 1px solid #eceef1; font-size: 22px;
+      min-height: 54px; display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .txt-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .txt-modal-btn { flex: 1; padding: 11px; border-radius: 9px; font-size: 13px;
+      font-weight: 700; cursor: pointer; border: 1.5px solid transparent; }
+    .txt-modal-btn.sec { background: #f2f3f5; color: #333; border-color: #e5e7ea; }
+    .txt-modal-btn.pri { background: #14181c; color: #fff; }
+    .txt-modal-btn.pri:hover { background: #000; }
 
     .uprev {
       display: none; margin-top: 4px;
@@ -1033,11 +1103,33 @@
           <a class="sgd" href="#">📏 Guide des tailles</a>
         </div>
 
+        <!-- 3b. Texte (face / dos) -->
+        <div class="sec">
+          <div class="sec-title">Texte personnalisé</div>
+          <div class="sec-sub">Ajoutez un texte sur la face ou le dos</div>
+
+          <label style="font-size:9px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px;display:block;margin:2px 0 4px">Face</label>
+          <button class="txt-add-btn" id="txt-btn-f" onclick="openTextModal('f')">✏️ Ajouter un texte</button>
+          <div class="txt-chip" id="txt-chip-f">
+            <span class="txt-chip-val" id="txt-chip-val-f"></span>
+            <button class="rmv" title="Modifier" onclick="openTextModal('f')">✎</button>
+            <button class="rmv" title="Supprimer" onclick="removeText('f')">🗑</button>
+          </div>
+
+          <label style="font-size:9px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px;display:block;margin:10px 0 4px">Dos</label>
+          <button class="txt-add-btn" id="txt-btn-b" onclick="openTextModal('b')">✏️ Ajouter un texte</button>
+          <div class="txt-chip" id="txt-chip-b">
+            <span class="txt-chip-val" id="txt-chip-val-b"></span>
+            <button class="rmv" title="Modifier" onclick="openTextModal('b')">✎</button>
+            <button class="rmv" title="Supprimer" onclick="removeText('b')">🗑</button>
+          </div>
+        </div>
+
         <!-- 4. Logo cœur -->
         <div class="sec">
           <div class="sec-title">4. Logo Cœur</div>
           <div class="sec-sub">Ajoutez un logo sur le cœur (côté gauche)</div>
-          <div class="uz" onclick="document.getElementById('uf').click()">
+          <div class="uz" id="uz-f" onclick="document.getElementById('uf').click()">
             <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
             <p><strong>Cliquez ou glissez votre logo ici</strong><br>PNG, JPG, SVG (max. 5Mo)</p>
           </div>
@@ -1152,9 +1244,13 @@
                    Visibles tant que la zone est vide. left/top/width/height en %.
                    VUE FACE : uniquement le LOGO CŒUR (poitrine, côté cœur = droite
                    de l'image). VUE CÔTÉ : la manche. VUE DOS : le grand logo. -->
-              <div class="logo-zone for-face" id="zone-f"  data-zone="f"  style="left:52%; top:28%; width:9%; height:14%;"></div>
+              <div class="logo-zone for-face" id="zone-f"  data-zone="f"  style="left:53.5%; top:28%; width:6%; height:14%;"></div>
               <div class="logo-zone for-dos"  id="zone-b"  data-zone="b"  style="left:38%; top:23%; width:24%; height:46%;"></div>
               <div class="logo-zone for-cote" id="zone-sl" data-zone="sl" style="left:48%; top:29%; width:6%; height:11%;"></div>
+
+              <!-- Textes déplaçables (face / dos) -->
+              <div class="design-text for-face" id="text-f" style="display:none; left:44%; top:30%; font-size:20px; color:#ffffff;">Texte</div>
+              <div class="design-text for-dos"  id="text-b" style="display:none; left:40%; top:34%; font-size:26px; color:#ffffff;">Texte</div>
 
               <!-- Logo cœur : visible sur la vue de face -->
               <div class="design-logo for-face" id="logo-f" data-zone="f" style="display:none; left:38%; top:34%; width:18%;">
@@ -1190,6 +1286,37 @@
             <div class="mlbl mlbl-r">
               <span>5 cm</span>
               <div class="mline"></div>
+            </div>
+          </div>
+
+          <!-- Modale : saisie de texte -->
+          <div class="txt-modal-overlay" id="txt-modal-overlay">
+            <div class="txt-modal">
+              <h3 id="txt-modal-title">Ajouter un texte</h3>
+              <label>Votre texte</label>
+              <input type="text" id="txt-modal-input" maxlength="40" placeholder="Ex : Mon équipe" oninput="updateTextModalPreview()">
+              <div class="txt-modal-row">
+                <div>
+                  <label>Police</label>
+                  <select id="txt-modal-font" onchange="updateTextModalPreview()">
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="'Georgia', serif">Georgia</option>
+                    <option value="'Impact', sans-serif">Impact</option>
+                    <option value="'Courier New', monospace">Courier</option>
+                    <option value="'Brush Script MT', cursive">Script</option>
+                    <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Couleur</label>
+                  <input type="color" id="txt-modal-color" value="#ffffff" oninput="updateTextModalPreview()">
+                </div>
+              </div>
+              <div class="txt-modal-preview" id="txt-modal-preview">Aperçu</div>
+              <div class="txt-modal-actions">
+                <button class="txt-modal-btn sec" onclick="closeTextModal()">Annuler</button>
+                <button class="txt-modal-btn pri" onclick="insertText()">Insérer</button>
+              </div>
             </div>
           </div>
 
@@ -1381,6 +1508,7 @@
       var doRestore = function () {
         restoreColor();
         if (typeof restoreUploads === 'function') restoreUploads();
+        if (typeof restoreTexts === 'function') restoreTexts();
       };
 
       // Produit non-sweatshirt : on le sélectionne d'abord (textile OU coins/
@@ -1621,7 +1749,7 @@
        logoId = le logo déplaçable ; zoneId = le rectangle guide. */
     const LOGO_ZONES = {
       // Logo cœur : petite zone poitrine, côté cœur (vue face). Portrait.
-      'f':       { zoneId: 'zone-f',       logoId: 'logo-f',       left: 52, top: 28, width: 9, height: 14, maxW: 9 },
+      'f':       { zoneId: 'zone-f',       logoId: 'logo-f',       left: 53.5, top: 28, width: 6, height: 14, maxW: 6 },
       // Logo dos : zone centrale du dos (H39xL30 -> plus haute que large).
       'b':       { zoneId: 'zone-b',       logoId: 'logo-b',       left: 38, top: 23, width: 24, height: 46, maxW: 24 },
       // Manches : vue de côté uniquement.
@@ -1870,6 +1998,8 @@
 
         // ← AJOUT : restaurer les logos sauvegardés pour ce produit
         restoreLogosForProduct(productType);
+        // Restaurer les textes personnalisés de ce produit.
+        if (typeof restoreTexts === 'function') restoreTexts();
       }
     }
 
@@ -3586,6 +3716,12 @@
           return;
         }
 
+        // FACE : logo cœur et texte sont exclusifs. Ajouter un logo retire le texte.
+        if (zone === 'f') {
+          if (typeof removeText === 'function') removeText('f');
+          if (typeof setTextEnabled === 'function') setTextEnabled('f', false);
+        }
+
         // Sidebar preview (textiles)
         const prev = document.getElementById('p' + zone);
         const img  = document.getElementById('i' + zone);
@@ -3754,7 +3890,11 @@
         }
       });
 
-      if (zone === 'f') document.getElementById('rc-front').style.display = 'none';
+      if (zone === 'f') {
+        document.getElementById('rc-front').style.display = 'none';
+        // Le logo cœur est retiré : réautoriser l'ajout de texte en face.
+        if (typeof setTextEnabled === 'function') setTextEnabled('f', true);
+      }
       if (zone === 'b') document.getElementById('rc-back').style.display = 'none';
       if (zone === 'sl' || zone === 'sr') {
         const slSrc = document.getElementById('isl')?.src;
@@ -3765,6 +3905,168 @@
       updateRecapThumbLogo();
       // Réafficher les zones guides dont le logo a été retiré.
       if (typeof refreshZoneGuides === 'function') refreshZoneGuides();
+    }
+
+    /* ══════════════ TEXTE PERSONNALISÉ (textiles) ══════════════
+       Zones : 'f' (face) et 'b' (dos).
+       Règle : en FACE, texte et logo cœur sont EXCLUSIFS (l'un désactive l'autre).
+       Au DOS, texte et logo coexistent. */
+    var _textModalZone = null; // zone en cours d'édition dans la modale
+
+    function openTextModal(zone) {
+      _textModalZone = zone;
+      var overlay = document.getElementById('txt-modal-overlay');
+      var input = document.getElementById('txt-modal-input');
+      var title = document.getElementById('txt-modal-title');
+      var st = getTextState(zone);
+      title.textContent = (zone === 'f') ? 'Texte — Face' : 'Texte — Dos';
+      input.value = st ? st.text : '';
+      document.getElementById('txt-modal-font').value  = st ? st.font  : 'Arial, sans-serif';
+      document.getElementById('txt-modal-color').value = st ? st.color : '#ffffff';
+      updateTextModalPreview();
+      overlay.classList.add('open');
+      setTimeout(function () { input.focus(); }, 50);
+    }
+
+    function closeTextModal() {
+      document.getElementById('txt-modal-overlay').classList.remove('open');
+      _textModalZone = null;
+    }
+
+    function updateTextModalPreview() {
+      var prev = document.getElementById('txt-modal-preview');
+      var val = document.getElementById('txt-modal-input').value || 'Aperçu';
+      prev.textContent = val;
+      prev.style.fontFamily = document.getElementById('txt-modal-font').value;
+      prev.style.color = document.getElementById('txt-modal-color').value;
+      // Fond adapté pour voir un texte clair.
+      var c = document.getElementById('txt-modal-color').value.toLowerCase();
+      prev.style.background = (c === '#ffffff' || c === '#fff') ? '#5b636c' : '#f4f5f7';
+    }
+
+    // Insère/actualise le texte dans le canvas et le sidebar.
+    function insertText() {
+      var zone = _textModalZone;
+      var text = (document.getElementById('txt-modal-input').value || '').trim();
+      if (!zone || !text) { closeTextModal(); return; }
+      var font  = document.getElementById('txt-modal-font').value;
+      var color = document.getElementById('txt-modal-color').value;
+
+      // En FACE : le texte et le logo cœur sont exclusifs -> on retire le logo.
+      if (zone === 'f') {
+        rmUp('f');
+        setUploadEnabled('f', false); // désactive la zone d'upload cœur
+      }
+
+      // Applique au canvas.
+      var el = document.getElementById('text-' + zone);
+      if (el) {
+        el.textContent = text;
+        el.style.color = color;
+        el.style.fontFamily = font;
+        el.style.display = 'block';
+      }
+      // Chip sidebar.
+      var chip = document.getElementById('txt-chip-' + zone);
+      var chipVal = document.getElementById('txt-chip-val-' + zone);
+      if (chip && chipVal) { chipVal.textContent = text; chip.style.display = 'flex'; }
+
+      // Persistance.
+      saveTextState(zone, { text: text, font: font, color: color,
+        left: el ? el.style.left : null, top: el ? el.style.top : null,
+        fontSize: el ? el.style.fontSize : null });
+
+      // Bascule vers la bonne vue pour visualiser.
+      var view = (zone === 'f') ? 'face' : 'dos';
+      var vb = document.querySelector('.vt[onclick*="' + view + '"]');
+      if (vb && typeof selView === 'function') selView(vb, view);
+
+      closeTextModal();
+    }
+
+    function removeText(zone) {
+      var el = document.getElementById('text-' + zone);
+      if (el) { el.style.display = 'none'; el.textContent = ''; }
+      var chip = document.getElementById('txt-chip-' + zone);
+      if (chip) chip.style.display = 'none';
+      clearTextState(zone);
+      // En face : réautoriser l'upload du logo cœur.
+      if (zone === 'f') setUploadEnabled('f', true);
+    }
+
+    // Active/désactive la zone d'upload logo cœur (exclusivité face).
+    function setUploadEnabled(zone, enabled) {
+      if (zone !== 'f') return;
+      var uz = document.getElementById('uz-f');
+      if (!uz) return;
+      uz.style.pointerEvents = enabled ? '' : 'none';
+      uz.style.opacity = enabled ? '' : '0.4';
+      uz.title = enabled ? '' : 'Retirez le texte pour ajouter un logo sur la face';
+    }
+
+    // Inversement : quand un logo cœur est ajouté, on empêche le texte face.
+    function setTextEnabled(zone, enabled) {
+      if (zone !== 'f') return;
+      var btn = document.getElementById('txt-btn-f');
+      if (btn) {
+        btn.disabled = !enabled;
+        btn.title = enabled ? '' : 'Retirez le logo cœur pour ajouter un texte sur la face';
+      }
+    }
+
+    /* Persistance du texte (par produit, comme les uploads). */
+    function getTextStore() {
+      try { return JSON.parse(sessionStorage.getItem('conf_texts')) || {}; }
+      catch (e) { return {}; }
+    }
+    function getTextState(zone) {
+      var all = getTextStore();
+      var byProduct = all[currentProductType] || {};
+      return byProduct[zone] || null;
+    }
+    function saveTextState(zone, data) {
+      var all = getTextStore();
+      if (!all[currentProductType]) all[currentProductType] = {};
+      all[currentProductType][zone] = data;
+      try { sessionStorage.setItem('conf_texts', JSON.stringify(all)); } catch (e) {}
+    }
+    function clearTextState(zone) {
+      var all = getTextStore();
+      if (all[currentProductType]) { delete all[currentProductType][zone]; }
+      try { sessionStorage.setItem('conf_texts', JSON.stringify(all)); } catch (e) {}
+    }
+    // Met à jour uniquement la position (appelé après un drag du texte).
+    function saveTextGeo(zone, geo) {
+      var st = getTextState(zone);
+      if (!st) return;
+      st.left = geo.left; st.top = geo.top;
+      saveTextState(zone, st);
+    }
+    window.saveTextGeo = saveTextGeo;
+
+    /* Restaure les textes du produit courant (appelé au reload / switch). */
+    function restoreTexts() {
+      ['f', 'b'].forEach(function (zone) {
+        var st = getTextState(zone);
+        var el = document.getElementById('text-' + zone);
+        var chip = document.getElementById('txt-chip-' + zone);
+        var chipVal = document.getElementById('txt-chip-val-' + zone);
+        if (st && el) {
+          el.textContent = st.text;
+          el.style.color = st.color;
+          el.style.fontFamily = st.font;
+          if (st.left) el.style.left = st.left;
+          if (st.top) el.style.top = st.top;
+          if (st.fontSize) el.style.fontSize = st.fontSize;
+          el.style.display = 'block';
+          if (chip && chipVal) { chipVal.textContent = st.text; chip.style.display = 'flex'; }
+          if (zone === 'f') setUploadEnabled('f', false);
+        } else if (el) {
+          el.style.display = 'none';
+          if (chip) chip.style.display = 'none';
+          if (zone === 'f') setUploadEnabled('f', true);
+        }
+      });
     }
 
     /* ── Coins functions ── */

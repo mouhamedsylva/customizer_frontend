@@ -74,7 +74,8 @@
 
   function onPointerDown(e) {
     const handle = e.target.closest('.logo-resize');
-    const logo = e.target.closest('.design-logo');
+    // Le texte déplaçable se comporte comme un logo (drag simple).
+    const logo = e.target.closest('.design-logo') || e.target.closest('.design-text');
     if (!logo) return;
 
     const canvas = getCanvas(logo);
@@ -177,14 +178,20 @@
 
   function onPointerUp() {
     if (active) {
-      // Sauvegarder la taille/position pour la retrouver après un rechargement
-      const zone = LOGO_ZONE[active.id];
-      if (zone && typeof window.saveUploadGeo === 'function') {
-        window.saveUploadGeo(zone, {
-          left: active.style.left,
-          top: active.style.top,
-          width: active.style.width
-        });
+      // Texte déplaçable : sauvegarder sa position via le hook dédié.
+      if (active.classList.contains('design-text') && typeof window.saveTextGeo === 'function') {
+        var tzone = active.id === 'text-f' ? 'f' : (active.id === 'text-b' ? 'b' : null);
+        if (tzone) window.saveTextGeo(tzone, { left: active.style.left, top: active.style.top });
+      } else {
+        // Sauvegarder la taille/position pour la retrouver après un rechargement
+        const zone = LOGO_ZONE[active.id];
+        if (zone && typeof window.saveUploadGeo === 'function') {
+          window.saveUploadGeo(zone, {
+            left: active.style.left,
+            top: active.style.top,
+            width: active.style.width
+          });
+        }
       }
       active.classList.remove('dragging', 'resizing');
       active = null;
