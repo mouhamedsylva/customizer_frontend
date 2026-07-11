@@ -606,6 +606,7 @@ class DynamicLayoutManager {
               <!-- Vue 3D : image réelle du drapeau -->
               <div class="flag-img-3d" data-face="recto">
                 <img class="flag-base-img" id="flag-base-recto" src="${(window.ASSET_URLS && window.ASSET_URLS.flagRecto) || ''}" alt="Drapeau recto">
+                <div class="flag-color-layer" data-face="recto"></div>
                 <div class="flag-canvas-placeholder flag-ph-recto">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
                     <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
@@ -623,6 +624,7 @@ class DynamicLayoutManager {
                 <div class="flag-pole"></div>
                 <div class="flag-wave orientation-paysage size-90x150" data-face="recto">
                   <div class="flag-design">
+                    <div class="flag-color-layer" data-face="recto"></div>
                     <div class="flag-canvas-placeholder">
                       <svg width="64" height="64" viewBox="0 0 24 24" fill="#dfe3ea">
                         <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
@@ -648,6 +650,7 @@ class DynamicLayoutManager {
               <!-- Vue 3D : image réelle du drapeau -->
               <div class="flag-img-3d" data-face="verso">
                 <img class="flag-base-img" id="flag-base-verso" src="${(window.ASSET_URLS && window.ASSET_URLS.flagVerso) || ''}" alt="Drapeau verso">
+                <div class="flag-color-layer" data-face="verso"></div>
                 <div class="flag-canvas-placeholder flag-ph-verso">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
                     <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
@@ -665,6 +668,7 @@ class DynamicLayoutManager {
                 <div class="flag-pole"></div>
                 <div class="flag-wave orientation-paysage size-90x150" data-face="verso">
                   <div class="flag-design">
+                    <div class="flag-color-layer" data-face="verso"></div>
                     <div class="flag-canvas-placeholder">
                       <svg width="64" height="64" viewBox="0 0 24 24" fill="#dfe3ea">
                         <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
@@ -711,10 +715,22 @@ class DynamicLayoutManager {
     window.__flagOrientation = window.__flagOrientation || 'paysage';
     window.__flagAnneaux = window.__flagAnneaux || '2';
     window.__flagSize = window.__flagSize || '90x150';
+    // Restaure la couleur de fond mémorisée (sinon blanc).
+    try {
+      var savedFlagColor = sessionStorage.getItem('conf_flag_color');
+      if (savedFlagColor) window.__flagColor = savedFlagColor;
+    } catch (e) {}
     setTimeout(function () {
       if (typeof refreshFlagImages === 'function') refreshFlagImages();
       if (typeof applyFlagSizeToImages === 'function') applyFlagSizeToImages();
-    }, 80);
+      if (typeof applyFlagColorToLayers === 'function') applyFlagColorToLayers();
+      // Marque la pastille couleur active dans le sidebar.
+      var fc = window.__flagColor || '#ffffff';
+      document.querySelectorAll('.flag-color-swatch').forEach(function (s) {
+        var bg = (s.getAttribute('style') || '').match(/background:\s*(#[0-9a-fA-F]{3,6})/);
+        s.classList.toggle('active', !!bg && bg[1].toLowerCase() === fc.toLowerCase());
+      });
+    }, 120);
 
     console.log('✅ Canvas Drapeaux chargé');
   }

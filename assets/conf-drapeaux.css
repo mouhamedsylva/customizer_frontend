@@ -799,3 +799,67 @@
   border-radius: 5px;
   padding: 3px 5px;
 }
+
+/* ========================================
+   Couleur du fond du drapeau
+======================================== */
+.flag-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.flag-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  transition: transform 0.13s;
+  flex-shrink: 0;
+}
+
+.flag-color-swatch:hover { transform: scale(1.12); }
+
+.flag-color-swatch.active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1a1a1a;
+}
+
+.flag-color-swatch.active::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6);
+}
+
+/* Calque de couleur : teinte le drapeau blanc en épousant sa silhouette.
+   Masqué par l'image de base (mask) pour ne colorer QUE le drapeau. */
+.flag-color-layer {
+  position: absolute;
+  inset: 0;
+  background: transparent;         /* défini en JS via --flag-color */
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;                      /* sous le design uploadé, sur l'image de base */
+  transition: background 0.2s ease;
+}
+
+/* En 3D, le calque épouse la forme réelle du drapeau via un masque = image de base. */
+.flag-img-3d .flag-color-layer {
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Le design uploadé doit rester au-dessus du calque couleur. */
+.flag-logo { z-index: 3; }
+.flag-design-img { position: relative; z-index: 2; }

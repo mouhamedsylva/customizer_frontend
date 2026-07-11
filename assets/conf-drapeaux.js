@@ -80,6 +80,31 @@ const DRAPEAUX_SIDEBAR_TEMPLATE = `
     </div>
   </div>
 
+  <!-- 2b. Couleur du fond -->
+  <div class="sec">
+    <div class="sec-title">Couleur du fond</div>
+    <div class="sec-sub">Choisissez la couleur de fond du drapeau</div>
+
+    <div class="flag-color-grid">
+      <button class="flag-color-swatch active" title="Blanc" style="background:#ffffff;border:1.5px solid #ddd" onclick="selFlagColor(this,'#ffffff')"></button>
+      <button class="flag-color-swatch" title="Noir" style="background:#1a1a1a" onclick="selFlagColor(this,'#1a1a1a')"></button>
+      <button class="flag-color-swatch" title="Blanc cassé" style="background:#f5f2ed;border:1.5px solid #ddd" onclick="selFlagColor(this,'#f5f2ed')"></button>
+      <button class="flag-color-swatch" title="Gris" style="background:#9e9e9e" onclick="selFlagColor(this,'#9e9e9e')"></button>
+      <button class="flag-color-swatch" title="Gris foncé" style="background:#555555" onclick="selFlagColor(this,'#555555')"></button>
+      <button class="flag-color-swatch" title="Gris ardoise" style="background:#607d8b" onclick="selFlagColor(this,'#607d8b')"></button>
+      <button class="flag-color-swatch" title="Bleu marine" style="background:#1e3a5f" onclick="selFlagColor(this,'#1e3a5f')"></button>
+      <button class="flag-color-swatch" title="Bleu ciel" style="background:#5bb8e8" onclick="selFlagColor(this,'#5bb8e8')"></button>
+      <button class="flag-color-swatch" title="Vert foncé" style="background:#2e6b45" onclick="selFlagColor(this,'#2e6b45')"></button>
+      <button class="flag-color-swatch" title="Rose clair" style="background:#f0c8d8;border:1.5px solid #e0afc4" onclick="selFlagColor(this,'#f0c8d8')"></button>
+      <button class="flag-color-swatch" title="Rose" style="background:#e8729a" onclick="selFlagColor(this,'#e8729a')"></button>
+      <button class="flag-color-swatch" title="Rouge" style="background:#c0392b" onclick="selFlagColor(this,'#c0392b')"></button>
+      <button class="flag-color-swatch" title="Orange" style="background:#e8842a" onclick="selFlagColor(this,'#e8842a')"></button>
+      <button class="flag-color-swatch" title="Jaune" style="background:#f5c842;border:1.5px solid #d4aa20" onclick="selFlagColor(this,'#f5c842')"></button>
+      <button class="flag-color-swatch" title="Violet" style="background:#9b6bb5" onclick="selFlagColor(this,'#9b6bb5')"></button>
+      <button class="flag-color-swatch" title="Marron" style="background:#7d4e2d" onclick="selFlagColor(this,'#7d4e2d')"></button>
+    </div>
+  </div>
+
   <!-- 3. Taille -->
   <div class="sec">
     <div class="sec-title">3. Taille</div>
@@ -299,6 +324,48 @@ function refreshFlagImages() {
   if (typeof window.updateFlagRecapThumb === 'function') {
     setTimeout(window.updateFlagRecapThumb, 80);
   }
+  // Réapplique la couleur de fond (le masque suit la nouvelle image).
+  setTimeout(applyFlagColorToLayers, 90);
+}
+
+/* Applique la couleur de fond courante à tous les calques .flag-color-layer.
+   - background = couleur choisie (teinte via mix-blend-mode: multiply)
+   - mask = image de base du drapeau (le calque épouse la silhouette).
+   Couleur blanche (#ffffff) = pas de teinte visible (drapeau blanc d'origine). */
+function applyFlagColorToLayers() {
+  var color = window.__flagColor || '#ffffff';
+  document.querySelectorAll('.flag-color-layer').forEach(function (layer) {
+    layer.style.background = color;
+    // Masque : image de base correspondant à la face (recto/verso).
+    var face = layer.getAttribute('data-face') || 'recto';
+    var baseImg = document.getElementById('flag-base-' + face);
+    var src = baseImg ? baseImg.getAttribute('src') : '';
+    if (src) {
+      var maskUrl = 'url("' + src + '")';
+      layer.style.webkitMaskImage = maskUrl;
+      layer.style.maskImage = maskUrl;
+    }
+  });
+}
+
+// Sélection de la couleur de fond du drapeau
+function selFlagColor(element, hex) {
+  document.querySelectorAll('.flag-color-swatch').forEach(function (s) {
+    s.classList.remove('active');
+  });
+  if (element) element.classList.add('active');
+
+  window.__flagColor = hex;
+  applyFlagColorToLayers();
+
+  // Persistance (récupérée au rechargement / partage).
+  try { sessionStorage.setItem('conf_flag_color', hex); } catch (e) {}
+
+  // Vignette récap : la couleur doit s'y refléter aussi.
+  if (typeof window.updateFlagRecapThumb === 'function') {
+    setTimeout(window.updateFlagRecapThumb, 40);
+  }
+  console.log('🎨 Couleur drapeau:', hex);
 }
 
 // Changer l'orientation des drapeaux du canvas
