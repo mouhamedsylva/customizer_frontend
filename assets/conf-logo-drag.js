@@ -8,6 +8,7 @@
   let active = null;     // logo manipulé
   let startX = 0, startY = 0;
   let startLeft = 0, startTop = 0, startW = 0;
+  let startFont = 0;     // taille de police au début d'un resize de texte
   let bounds = null;
 
   const MIN_W = 4;       // largeur min du logo en % du canvas
@@ -89,6 +90,7 @@
     startLeft = parseFloat(logo.style.left) || 0;
     startTop = parseFloat(logo.style.top) || 0;
     startW = parseFloat(logo.style.width) || 18;
+    startFont = parseFloat(logo.style.fontSize) || parseFloat(getComputedStyle(logo).fontSize) || 20;
 
     if (handle) {
       mode = 'resize';
@@ -117,6 +119,13 @@
       let newW = startW + (dx / bounds.width) * 100;
       newW = Math.max(MIN_W, Math.min(maxW, newW));
       active.style.width = newW + '%';
+      // Pour un TEXTE simple : la taille de police suit la largeur (proportionnel).
+      if (active.classList.contains('design-text') && !active.classList.contains('is-shaped')) {
+        var ratio = newW / (startW || newW);
+        if (!startFont) startFont = parseFloat(getComputedStyle(active).fontSize) || 20;
+        var newFont = Math.max(8, Math.min(120, startFont * ratio));
+        active.style.fontSize = newFont + 'px';
+      }
     } else {
       // Déplacement
       let newLeft = startLeft + (dx / bounds.width) * 100;
@@ -145,6 +154,11 @@
     };
     if (TEXTILE_ZONE[active.id] && typeof window.clampLogoToZone === 'function') {
       window.clampLogoToZone(TEXTILE_ZONE[active.id]);
+    }
+    // Le texte reste DANS sa zone horizontale (pas de sortie).
+    if (active.classList.contains('design-text') && typeof window.clampTextToZone === 'function') {
+      var tz = active.id === 'text-f' ? 'f' : (active.id === 'text-b' ? 'b' : null);
+      if (tz) window.clampTextToZone(tz);
     }
 
     // Idem pour le drapeau recto (vignette récap drapeau)
@@ -178,10 +192,13 @@
 
   function onPointerUp() {
     if (active) {
-      // Texte déplaçable : sauvegarder sa position via le hook dédié.
+      // Texte déplaçable : sauvegarder position + taille via le hook dédié.
       if (active.classList.contains('design-text') && typeof window.saveTextGeo === 'function') {
         var tzone = active.id === 'text-f' ? 'f' : (active.id === 'text-b' ? 'b' : null);
-        if (tzone) window.saveTextGeo(tzone, { left: active.style.left, top: active.style.top });
+        if (tzone) window.saveTextGeo(tzone, {
+          left: active.style.left, top: active.style.top,
+          width: active.style.width, fontSize: active.style.fontSize
+        });
       } else {
         // Sauvegarder la taille/position pour la retrouver après un rechargement
         const zone = LOGO_ZONE[active.id];

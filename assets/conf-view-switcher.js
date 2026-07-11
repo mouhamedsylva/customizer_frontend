@@ -28,6 +28,9 @@ function selView(btn, viewName) {
   // Mettre à jour la couche des logos (n'affiche que les logos de la vue active)
   const logoLayer = document.getElementById('logo-layer');
   if (logoLayer) logoLayer.setAttribute('data-view', viewName);
+
+  // Réévalue le bouton « Ajouter un texte » selon la vue (face/dos/côté).
+  if (typeof refreshTextButton === 'function') refreshTextButton();
 }
 
 // Initialisation au chargement

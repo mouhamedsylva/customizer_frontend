@@ -133,6 +133,11 @@
     <script src="{{ 'conf-patches.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-logo-drag.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-api.js' | asset_url }}" defer></script>
+    <!-- Polices Google pour l'éditeur de texte -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Bebas+Neue&family=Caveat:wght@700&family=Dancing+Script:wght@700&family=Fredoka+One&family=Great+Vibes&family=Lobster&family=Luckiest+Guy&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Oswald:wght@600&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@700&family=Poppins:wght@700&family=Righteous&family=Roboto+Slab:wght@700&family=Rock+Salt&family=Sacramento&family=Satisfy&family=Shrikhand&family=Special+Elite&family=Teko:wght@600&family=Yellowtail&display=swap" rel="stylesheet">
+    <script src="{{ 'conf-text-editor.js' | asset_url }}" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -233,6 +238,7 @@
       display: flex; flex-direction: column;
       overflow: hidden;
       flex-shrink: 0;
+      position: relative;   /* ancre le panneau d'édition texte (inset:0) */
     }
     /* inner scroll only if needed but designed to NOT need it */
     .sb-inner {
@@ -370,51 +376,113 @@
     /* ── Texte déplaçable sur le canvas ── */
     .design-text {
       position: absolute; cursor: grab; pointer-events: auto;
-      user-select: none; touch-action: none; white-space: nowrap;
-      border: 1.5px dashed transparent; border-radius: 4px; padding: 2px 4px;
+      user-select: none; touch-action: none;
+      border: 1.5px dashed transparent; border-radius: 4px;
       line-height: 1.1; transition: border-color .15s ease;
     }
-    .design-text:hover, .design-text.dragging { border-color: #1a1a1a; }
+    .design-text:hover, .design-text.dragging, .design-text.resizing { border-color: #1a1a1a; }
     .design-text.dragging { cursor: grabbing; }
 
-    /* ── Modale « Ajouter un texte » ── */
-    .txt-modal-overlay {
-      position: fixed; inset: 0; z-index: 100000; display: none;
-      align-items: center; justify-content: center;
-      background: rgba(15,18,22,.55); backdrop-filter: blur(2px);
+    /* Contenu texte : centré, sur une ligne, occupe la largeur du conteneur. */
+    .design-text .dt-content { display: block; width: 100%; text-align: center;
+      white-space: nowrap; overflow: visible; line-height: 1.1; }
+    /* Texte courbé (SVG) : occupe la largeur de son conteneur. */
+    .design-text.is-shaped { padding: 0; white-space: normal; }
+    .design-text.is-shaped .dt-content { white-space: normal; }
+    .design-text.is-shaped svg { display: block; width: 100%; height: auto; }
+    /* Poignée de resize visible au survol du texte. */
+    .design-text .logo-resize { display: none; }
+    .design-text:hover .logo-resize,
+    .design-text.resizing .logo-resize { display: block; }
+
+    /* Zone pointillée en mode TEXTE : bandeau horizontal. */
+    .logo-zone.text-mode { border-style: dashed; }
+
+    /* ── Champ inline (remplace le bouton) ── */
+    .txt-inline { margin-top: 2px; }
+    .txt-inline input[type="text"] {
+      width: 100%; padding: 9px 11px; border: 1.5px solid #14181c;
+      border-radius: 7px; font-size: 13px; outline: none;
     }
-    .txt-modal-overlay.open { display: flex; }
-    .txt-modal {
-      background: #fff; border-radius: 14px; width: min(92vw, 380px);
-      padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.28);
-    }
-    .txt-modal h3 { font-size: 15px; font-weight: 800; margin: 0 0 14px; color: #14181c; }
-    .txt-modal label { display: block; font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .4px; color: #5b636c; margin: 10px 0 4px; }
-    .txt-modal input[type="text"] {
-      width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7ea;
-      border-radius: 8px; font-size: 14px; outline: none;
-    }
-    .txt-modal input[type="text"]:focus { border-color: #14181c; }
-    .txt-modal-row { display: flex; gap: 10px; }
-    .txt-modal-row > div { flex: 1; }
-    .txt-modal select, .txt-modal input[type="color"] {
-      width: 100%; padding: 8px; border: 1.5px solid #e5e7ea; border-radius: 8px;
-      font-size: 13px; outline: none; height: 40px;
-    }
-    .txt-modal input[type="color"] { padding: 3px; cursor: pointer; }
-    .txt-modal-preview {
-      margin: 12px 0; padding: 14px; border-radius: 8px; text-align: center;
-      background: #f4f5f7; border: 1px solid #eceef1; font-size: 22px;
-      min-height: 54px; display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-    }
-    .txt-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-    .txt-modal-btn { flex: 1; padding: 11px; border-radius: 9px; font-size: 13px;
+    .txt-inline-acts { display: flex; gap: 8px; margin-top: 7px; }
+    .txt-inline-btn { flex: 1; padding: 8px; border-radius: 7px; font-size: 11px;
       font-weight: 700; cursor: pointer; border: 1.5px solid transparent; }
-    .txt-modal-btn.sec { background: #f2f3f5; color: #333; border-color: #e5e7ea; }
-    .txt-modal-btn.pri { background: #14181c; color: #fff; }
-    .txt-modal-btn.pri:hover { background: #000; }
+    .txt-inline-btn.sec { background: #f2f3f5; color: #333; border-color: #e5e7ea; }
+    .txt-inline-btn.pri { background: #14181c; color: #fff; }
+
+    /* ── Panneau d'édition texte (remplace le sidebar) ── */
+    .txt-panel {
+      position: absolute; inset: 0; background: #fff; z-index: 20;
+      display: flex; flex-direction: column;
+    }
+    .txt-panel-head {
+      display: flex; align-items: center; gap: 8px; padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .txt-panel-back, .txt-panel-x {
+      width: 28px; height: 28px; border: none; background: #f2f3f5; color: #333;
+      border-radius: 7px; font-size: 16px; cursor: pointer; line-height: 1;
+    }
+    .txt-panel-back:hover, .txt-panel-x:hover { background: #e5e7ea; }
+    .txt-panel-title { flex: 1; font-size: 13px; font-weight: 800; color: var(--black); }
+    .txt-panel-body { flex: 1; overflow-y: auto; padding: 14px; }
+    .txt-panel-input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7ea;
+      border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 14px;
+    }
+    .txt-panel-input:focus { border-color: #14181c; }
+    .txt-panel-row {
+      display: flex; align-items: center; gap: 10px; padding: 13px 12px;
+      border: 1.5px solid #e5e7ea; border-radius: 10px; margin-bottom: 10px;
+      cursor: pointer; transition: .15s;
+    }
+    .txt-panel-row:hover { border-color: #b8c0c8; }
+    .txt-panel-lbl { font-size: 12px; font-weight: 700; color: #5b636c;
+      text-transform: uppercase; letter-spacing: .3px; }
+    .txt-panel-val { flex: 1; text-align: right; color: var(--black); font-weight: 600; }
+    .txt-panel-caret { color: #b8c0c8; font-size: 18px; }
+    /* Sélecteur de polices */
+    .txt-font-picker { border: 1.5px solid #e5e7ea; border-radius: 10px;
+      padding: 10px; margin: -4px 0 12px; background: #fafbfc; }
+    .txt-font-search { width: 100%; padding: 8px 10px; border: 1.5px solid #e5e7ea;
+      border-radius: 8px; font-size: 12px; outline: none; margin-bottom: 8px; }
+    .txt-font-scroll { max-height: 300px; overflow-y: auto; display: flex;
+      flex-direction: column; gap: 6px; }
+    .txt-font-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 10px; border: 1.5px solid #e5e7ea; border-radius: 9px;
+      cursor: pointer; background: #fff; transition: .12s;
+    }
+    .txt-font-item:hover { border-color: #b8c0c8; }
+    .txt-font-item.active { border-color: #14181c; box-shadow: 0 0 0 2px rgba(20,24,28,.08); }
+    .txt-font-sample { flex: 1; min-width: 0; font-size: 22px; line-height: 1.2;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #14181c; }
+    .txt-font-nm { font-size: 9px; font-weight: 700; color: #8a929b;
+      text-transform: uppercase; letter-spacing: .3px; flex-shrink: 0; }
+    /* Palette couleur dans le panneau */
+    .txt-color-swatches { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    .txt-color-sw { width: 24px; height: 24px; border-radius: 6px; border: 2px solid transparent;
+      cursor: pointer; padding: 0; transition: .12s; }
+    .txt-color-sw:hover { transform: scale(1.12); }
+    .txt-color-sw.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #14181c; }
+    /* Grille de formes */
+    .txt-shape-picker { margin: -4px 0 12px; }
+    .txt-shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .txt-shape-cell {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 10px 6px; border: 1.5px solid #e5e7ea; border-radius: 9px;
+      cursor: pointer; background: #fafbfc; transition: .12s;
+    }
+    .txt-shape-cell:hover { border-color: #b8c0c8; }
+    .txt-shape-cell.active { border-color: #14181c; box-shadow: 0 0 0 2px rgba(20,24,28,.08); background: #fff; }
+    .txt-shape-cell span { font-size: 9px; font-weight: 700; color: #5b636c;
+      text-transform: uppercase; letter-spacing: .3px; }
+    .txt-panel-foot { padding: 12px 14px; border-top: 1px solid var(--border); }
+    .txt-panel-save {
+      width: 100%; padding: 13px; border: none; border-radius: 11px;
+      background: #14181c; color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
+    }
+    .txt-panel-save:hover { background: #000; }
 
     .uprev {
       display: none; margin-top: 4px;
@@ -1103,31 +1171,39 @@
           <a class="sgd" href="#">📏 Guide des tailles</a>
         </div>
 
-        <!-- 3b. Texte (face / dos) -->
-        <div class="sec">
-          <div class="sec-title">Texte personnalisé</div>
-          <div class="sec-sub">Ajoutez un texte sur la face ou le dos</div>
+        <!-- 4. Texte : bouton -> champ inline -> panneau d'édition (façon CustomInk) -->
+        <div class="sec" id="txt-sec">
+          <div class="sec-title">4. Texte personnalisé</div>
+          <div class="sec-sub">Ajoutez un texte sur la vue affichée (face ou dos)</div>
 
-          <label style="font-size:9px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px;display:block;margin:2px 0 4px">Face</label>
-          <button class="txt-add-btn" id="txt-btn-f" onclick="openTextModal('f')">✏️ Ajouter un texte</button>
-          <div class="txt-chip" id="txt-chip-f">
-            <span class="txt-chip-val" id="txt-chip-val-f"></span>
-            <button class="rmv" title="Modifier" onclick="openTextModal('f')">✎</button>
-            <button class="rmv" title="Supprimer" onclick="removeText('f')">🗑</button>
+          <!-- État 1 : bouton -->
+          <button class="txt-add-btn" id="txt-add-btn" onclick="startTextInline()">✏️ Ajouter un texte</button>
+
+          <!-- État 2 : champ de saisie inline (remplace le bouton) -->
+          <div class="txt-inline" id="txt-inline" style="display:none">
+            <input type="text" id="txt-inline-input" maxlength="40" placeholder="Saisissez votre texte…">
+            <div class="txt-inline-acts">
+              <button class="txt-inline-btn sec" onclick="cancelTextInline()">Annuler</button>
+              <button class="txt-inline-btn pri" onclick="confirmTextInline()">Insérer</button>
+            </div>
           </div>
 
-          <label style="font-size:9px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.4px;display:block;margin:10px 0 4px">Dos</label>
-          <button class="txt-add-btn" id="txt-btn-b" onclick="openTextModal('b')">✏️ Ajouter un texte</button>
+          <!-- Aperçu du texte FACE / DOS (chips) -->
+          <div class="txt-chip" id="txt-chip-f">
+            <span class="txt-chip-val" id="txt-chip-val-f"></span>
+            <button class="rmv" title="Modifier" onclick="editText('f')">✎</button>
+            <button class="rmv" title="Supprimer" onclick="removeText('f')">🗑</button>
+          </div>
           <div class="txt-chip" id="txt-chip-b">
             <span class="txt-chip-val" id="txt-chip-val-b"></span>
-            <button class="rmv" title="Modifier" onclick="openTextModal('b')">✎</button>
+            <button class="rmv" title="Modifier" onclick="editText('b')">✎</button>
             <button class="rmv" title="Supprimer" onclick="removeText('b')">🗑</button>
           </div>
         </div>
 
         <!-- 4. Logo cœur -->
         <div class="sec">
-          <div class="sec-title">4. Logo Cœur</div>
+          <div class="sec-title">5. Logo Cœur</div>
           <div class="sec-sub">Ajoutez un logo sur le cœur (côté gauche)</div>
           <div class="uz" id="uz-f" onclick="document.getElementById('uf').click()">
             <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
@@ -1145,7 +1221,7 @@
 
         <!-- 5. Logo dos -->
         <div class="sec">
-          <div class="sec-title">5. Logo Dos</div>
+          <div class="sec-title">6. Logo Dos</div>
           <div class="sec-sub">Ajoutez un logo au dos de l'article</div>
           <div class="uz" onclick="document.getElementById('ub').click()">
             <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
@@ -1163,7 +1239,7 @@
 
         <!-- 6. Manches -->
         <div class="sec">
-          <div class="sec-title">6. Personnalisation Manches 👕</div>
+          <div class="sec-title">7. Personnalisation Manches 👕</div>
           <div class="sec-sub">Ajoutez un logo ou texte sur les manches (facultatif)</div>
           <div class="note">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
@@ -1200,6 +1276,52 @@
         </div>
 
       </div><!-- /sb-inner -->
+
+      <!-- PANNEAU D'ÉDITION TEXTE (remplace le sidebar, façon CustomInk) -->
+      <div class="txt-panel" id="txt-panel" style="display:none">
+        <div class="txt-panel-head">
+          <button class="txt-panel-back" onclick="closeTextPanel(false)" title="Retour">‹</button>
+          <span class="txt-panel-title">Modifier le texte</span>
+          <button class="txt-panel-x" onclick="closeTextPanel(false)" title="Fermer">✕</button>
+        </div>
+
+        <div class="txt-panel-body">
+          <!-- Champ texte -->
+          <input type="text" class="txt-panel-input" id="txt-panel-input" maxlength="40"
+                 placeholder="Votre texte" oninput="onPanelTextChange()">
+
+          <!-- Change Font -->
+          <div class="txt-panel-row" onclick="toggleFontPicker()">
+            <span class="txt-panel-lbl">Police</span>
+            <span class="txt-panel-val" id="txt-panel-font-val" style="font-size:16px">Arial</span>
+            <span class="txt-panel-caret">›</span>
+          </div>
+          <div class="txt-font-picker" id="txt-font-picker" style="display:none">
+            <input type="text" class="txt-font-search" id="txt-font-search" placeholder="Rechercher une police…" oninput="filterFonts()">
+            <div class="txt-font-scroll" id="txt-font-scroll"></div>
+          </div>
+
+          <!-- Edit Color -->
+          <div class="txt-panel-row">
+            <span class="txt-panel-lbl">Couleur</span>
+            <div class="txt-color-swatches" id="txt-color-swatches"></div>
+          </div>
+
+          <!-- Text Shape -->
+          <div class="txt-panel-row" onclick="toggleShapePicker()">
+            <span class="txt-panel-lbl">Forme du texte</span>
+            <span class="txt-panel-val" id="txt-panel-shape-val">Normal</span>
+            <span class="txt-panel-caret">›</span>
+          </div>
+          <div class="txt-shape-picker" id="txt-shape-picker" style="display:none">
+            <div class="txt-shape-grid" id="txt-shape-grid"></div>
+          </div>
+        </div>
+
+        <div class="txt-panel-foot">
+          <button class="txt-panel-save" onclick="closeTextPanel(true)">✓ Enregistrer</button>
+        </div>
+      </div>
     </aside>
 
     <!-- ══ CANVAS ══ -->
@@ -1248,9 +1370,9 @@
               <div class="logo-zone for-dos"  id="zone-b"  data-zone="b"  style="left:38%; top:23%; width:24%; height:46%;"></div>
               <div class="logo-zone for-cote" id="zone-sl" data-zone="sl" style="left:48%; top:29%; width:6%; height:11%;"></div>
 
-              <!-- Textes déplaçables (face / dos) -->
-              <div class="design-text for-face" id="text-f" style="display:none; left:44%; top:30%; font-size:20px; color:#ffffff;">Texte</div>
-              <div class="design-text for-dos"  id="text-b" style="display:none; left:40%; top:34%; font-size:26px; color:#ffffff;">Texte</div>
+              <!-- Textes déplaçables + redimensionnables (face / dos) -->
+              <div class="design-text for-face" id="text-f" style="display:none; left:44%; top:31%; width:22%; font-size:20px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-f"></span></div>
+              <div class="design-text for-dos"  id="text-b" style="display:none; left:36%; top:27%; width:28%; font-size:26px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-b"></span></div>
 
               <!-- Logo cœur : visible sur la vue de face -->
               <div class="design-logo for-face" id="logo-f" data-zone="f" style="display:none; left:38%; top:34%; width:18%;">
@@ -1286,37 +1408,6 @@
             <div class="mlbl mlbl-r">
               <span>5 cm</span>
               <div class="mline"></div>
-            </div>
-          </div>
-
-          <!-- Modale : saisie de texte -->
-          <div class="txt-modal-overlay" id="txt-modal-overlay">
-            <div class="txt-modal">
-              <h3 id="txt-modal-title">Ajouter un texte</h3>
-              <label>Votre texte</label>
-              <input type="text" id="txt-modal-input" maxlength="40" placeholder="Ex : Mon équipe" oninput="updateTextModalPreview()">
-              <div class="txt-modal-row">
-                <div>
-                  <label>Police</label>
-                  <select id="txt-modal-font" onchange="updateTextModalPreview()">
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="'Georgia', serif">Georgia</option>
-                    <option value="'Impact', sans-serif">Impact</option>
-                    <option value="'Courier New', monospace">Courier</option>
-                    <option value="'Brush Script MT', cursive">Script</option>
-                    <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Couleur</label>
-                  <input type="color" id="txt-modal-color" value="#ffffff" oninput="updateTextModalPreview()">
-                </div>
-              </div>
-              <div class="txt-modal-preview" id="txt-modal-preview">Aperçu</div>
-              <div class="txt-modal-actions">
-                <button class="txt-modal-btn sec" onclick="closeTextModal()">Annuler</button>
-                <button class="txt-modal-btn pri" onclick="insertText()">Insérer</button>
-              </div>
             </div>
           </div>
 
@@ -1823,7 +1914,11 @@
         if (!zoneEl) return;
         var img = logo ? logo.querySelector('img') : null;
         var hasLogo = logo && logo.style.display !== 'none' && img && img.getAttribute('src');
-        zoneEl.classList.toggle('filled', !!hasLogo);
+        // La zone se masque aussi si un TEXTE est présent (face 'f' / dos 'b').
+        var txtEl = (zone === 'f' || zone === 'b') ? document.getElementById('text-' + zone) : null;
+        var hasText = txtEl && txtEl.style.display !== 'none' &&
+          (txtEl.textContent.trim() || txtEl.querySelector('svg'));
+        zoneEl.classList.toggle('filled', !!hasLogo || !!hasText);
       });
     }
 
@@ -3908,91 +4003,11 @@
     }
 
     /* ══════════════ TEXTE PERSONNALISÉ (textiles) ══════════════
-       Zones : 'f' (face) et 'b' (dos).
-       Règle : en FACE, texte et logo cœur sont EXCLUSIFS (l'un désactive l'autre).
-       Au DOS, texte et logo coexistent. */
-    var _textModalZone = null; // zone en cours d'édition dans la modale
-
-    function openTextModal(zone) {
-      _textModalZone = zone;
-      var overlay = document.getElementById('txt-modal-overlay');
-      var input = document.getElementById('txt-modal-input');
-      var title = document.getElementById('txt-modal-title');
-      var st = getTextState(zone);
-      title.textContent = (zone === 'f') ? 'Texte — Face' : 'Texte — Dos';
-      input.value = st ? st.text : '';
-      document.getElementById('txt-modal-font').value  = st ? st.font  : 'Arial, sans-serif';
-      document.getElementById('txt-modal-color').value = st ? st.color : '#ffffff';
-      updateTextModalPreview();
-      overlay.classList.add('open');
-      setTimeout(function () { input.focus(); }, 50);
-    }
-
-    function closeTextModal() {
-      document.getElementById('txt-modal-overlay').classList.remove('open');
-      _textModalZone = null;
-    }
-
-    function updateTextModalPreview() {
-      var prev = document.getElementById('txt-modal-preview');
-      var val = document.getElementById('txt-modal-input').value || 'Aperçu';
-      prev.textContent = val;
-      prev.style.fontFamily = document.getElementById('txt-modal-font').value;
-      prev.style.color = document.getElementById('txt-modal-color').value;
-      // Fond adapté pour voir un texte clair.
-      var c = document.getElementById('txt-modal-color').value.toLowerCase();
-      prev.style.background = (c === '#ffffff' || c === '#fff') ? '#5b636c' : '#f4f5f7';
-    }
-
-    // Insère/actualise le texte dans le canvas et le sidebar.
-    function insertText() {
-      var zone = _textModalZone;
-      var text = (document.getElementById('txt-modal-input').value || '').trim();
-      if (!zone || !text) { closeTextModal(); return; }
-      var font  = document.getElementById('txt-modal-font').value;
-      var color = document.getElementById('txt-modal-color').value;
-
-      // En FACE : le texte et le logo cœur sont exclusifs -> on retire le logo.
-      if (zone === 'f') {
-        rmUp('f');
-        setUploadEnabled('f', false); // désactive la zone d'upload cœur
-      }
-
-      // Applique au canvas.
-      var el = document.getElementById('text-' + zone);
-      if (el) {
-        el.textContent = text;
-        el.style.color = color;
-        el.style.fontFamily = font;
-        el.style.display = 'block';
-      }
-      // Chip sidebar.
-      var chip = document.getElementById('txt-chip-' + zone);
-      var chipVal = document.getElementById('txt-chip-val-' + zone);
-      if (chip && chipVal) { chipVal.textContent = text; chip.style.display = 'flex'; }
-
-      // Persistance.
-      saveTextState(zone, { text: text, font: font, color: color,
-        left: el ? el.style.left : null, top: el ? el.style.top : null,
-        fontSize: el ? el.style.fontSize : null });
-
-      // Bascule vers la bonne vue pour visualiser.
-      var view = (zone === 'f') ? 'face' : 'dos';
-      var vb = document.querySelector('.vt[onclick*="' + view + '"]');
-      if (vb && typeof selView === 'function') selView(vb, view);
-
-      closeTextModal();
-    }
-
-    function removeText(zone) {
-      var el = document.getElementById('text-' + zone);
-      if (el) { el.style.display = 'none'; el.textContent = ''; }
-      var chip = document.getElementById('txt-chip-' + zone);
-      if (chip) chip.style.display = 'none';
-      clearTextState(zone);
-      // En face : réautoriser l'upload du logo cœur.
-      if (zone === 'f') setUploadEnabled('f', true);
-    }
+       La logique d'édition (panneau, polices, formes) est dans le module
+       conf-text-editor.js. Ici on garde uniquement :
+       - l'exclusivité FACE (texte <-> logo cœur),
+       - le passage de la zone pointillée en mode HORIZONTAL pour le texte,
+       - le clamp du texte DANS sa zone. */
 
     // Active/désactive la zone d'upload logo cœur (exclusivité face).
     function setUploadEnabled(zone, enabled) {
@@ -4001,73 +4016,97 @@
       if (!uz) return;
       uz.style.pointerEvents = enabled ? '' : 'none';
       uz.style.opacity = enabled ? '' : '0.4';
-      uz.title = enabled ? '' : 'Retirez le texte pour ajouter un logo sur la face';
     }
+    function setTextEnabled(zone, enabled) { refreshTextButton(); }
 
-    // Inversement : quand un logo cœur est ajouté, on empêche le texte face.
-    function setTextEnabled(zone, enabled) {
-      if (zone !== 'f') return;
-      var btn = document.getElementById('txt-btn-f');
-      if (btn) {
-        btn.disabled = !enabled;
-        btn.title = enabled ? '' : 'Retirez le logo cœur pour ajouter un texte sur la face';
+    // Active/désactive le bouton « Ajouter un texte » selon la vue courante.
+    function refreshTextButton() {
+      var btn = document.getElementById('txt-add-btn');
+      if (!btn) return;
+      var layer = document.getElementById('logo-layer');
+      var view = layer ? layer.getAttribute('data-view') : 'face';
+      if (view === 'cote') {
+        btn.disabled = true;
+        btn.title = 'Le texte n\'est pas disponible sur les manches';
+        return;
+      }
+      if (view === 'face') {
+        var logoF = document.getElementById('logo-f');
+        var hasLogo = logoF && logoF.style.display !== 'none' &&
+          logoF.querySelector('img') && logoF.querySelector('img').getAttribute('src');
+        btn.disabled = !!hasLogo;
+        btn.title = hasLogo ? 'Retirez le logo cœur pour ajouter un texte sur la face' : '';
+      } else {
+        btn.disabled = false;
+        btn.title = '';
       }
     }
+    window.refreshTextButton = refreshTextButton;
 
-    /* Persistance du texte (par produit, comme les uploads). */
-    function getTextStore() {
-      try { return JSON.parse(sessionStorage.getItem('conf_texts')) || {}; }
-      catch (e) { return {}; }
-    }
-    function getTextState(zone) {
-      var all = getTextStore();
-      var byProduct = all[currentProductType] || {};
-      return byProduct[zone] || null;
-    }
-    function saveTextState(zone, data) {
-      var all = getTextStore();
-      if (!all[currentProductType]) all[currentProductType] = {};
-      all[currentProductType][zone] = data;
-      try { sessionStorage.setItem('conf_texts', JSON.stringify(all)); } catch (e) {}
-    }
-    function clearTextState(zone) {
-      var all = getTextStore();
-      if (all[currentProductType]) { delete all[currentProductType][zone]; }
-      try { sessionStorage.setItem('conf_texts', JSON.stringify(all)); } catch (e) {}
-    }
-    // Met à jour uniquement la position (appelé après un drag du texte).
-    function saveTextGeo(zone, geo) {
-      var st = getTextState(zone);
-      if (!st) return;
-      st.left = geo.left; st.top = geo.top;
-      saveTextState(zone, st);
-    }
-    window.saveTextGeo = saveTextGeo;
-
-    /* Restaure les textes du produit courant (appelé au reload / switch). */
-    function restoreTexts() {
-      ['f', 'b'].forEach(function (zone) {
-        var st = getTextState(zone);
-        var el = document.getElementById('text-' + zone);
-        var chip = document.getElementById('txt-chip-' + zone);
-        var chipVal = document.getElementById('txt-chip-val-' + zone);
-        if (st && el) {
-          el.textContent = st.text;
-          el.style.color = st.color;
-          el.style.fontFamily = st.font;
-          if (st.left) el.style.left = st.left;
-          if (st.top) el.style.top = st.top;
-          if (st.fontSize) el.style.fontSize = st.fontSize;
-          el.style.display = 'block';
-          if (chip && chipVal) { chipVal.textContent = st.text; chip.style.display = 'flex'; }
-          if (zone === 'f') setUploadEnabled('f', false);
-        } else if (el) {
-          el.style.display = 'none';
-          if (chip) chip.style.display = 'none';
-          if (zone === 'f') setUploadEnabled('f', true);
+    /* Passe la zone pointillée en mode HORIZONTAL (bandeau) pour le texte, ou
+       la remet dans sa forme d'origine. Mémorise le style d'origine. */
+    var _zoneOrigStyle = {};
+    var TEXT_ZONE_HORIZ = {
+      // Bandeau horizontal centré, adapté au texte (plus étroit).
+      'f': { left: 44, top: 31, width: 22, height: 9 },
+      'b': { left: 36, top: 27, width: 28, height: 11 }
+    };
+    function setTextZoneMode(zone, on) {
+      var zid = (zone === 'f') ? 'zone-f' : (zone === 'b' ? 'zone-b' : null);
+      if (!zid) return;
+      var zoneEl = document.getElementById(zid);
+      if (!zoneEl) return;
+      if (on) {
+        if (!_zoneOrigStyle[zone]) {
+          _zoneOrigStyle[zone] = { left: zoneEl.style.left, top: zoneEl.style.top,
+            width: zoneEl.style.width, height: zoneEl.style.height };
         }
-      });
+        var h = TEXT_ZONE_HORIZ[zone];
+        zoneEl.style.left = h.left + '%'; zoneEl.style.top = h.top + '%';
+        zoneEl.style.width = h.width + '%'; zoneEl.style.height = h.height + '%';
+        zoneEl.classList.add('text-mode');
+        // Centre le texte dans la zone.
+        var el = document.getElementById('text-' + zone);
+        if (el) {
+          el.style.left = h.left + '%';
+          el.style.top = (h.top + 1) + '%';
+          el.style.width = h.width + '%';
+          el.style.textAlign = 'center';
+        }
+      } else {
+        var o = _zoneOrigStyle[zone];
+        if (o) { zoneEl.style.left = o.left; zoneEl.style.top = o.top;
+          zoneEl.style.width = o.width; zoneEl.style.height = o.height; }
+        zoneEl.classList.remove('text-mode');
+      }
+      if (typeof refreshZoneGuides === 'function') refreshZoneGuides();
     }
+    window.setTextZoneMode = setTextZoneMode;
+
+    /* Contraint le texte à rester DANS sa zone horizontale (pas de sortie). */
+    function clampTextToZone(zone) {
+      var h = TEXT_ZONE_HORIZ[zone];
+      var el = document.getElementById('text-' + zone);
+      var layer = document.getElementById('logo-layer');
+      if (!h || !el || !layer) return;
+      var lb = layer.getBoundingClientRect();
+      var eb = el.getBoundingClientRect();
+      // Largeur/hauteur du texte en % du layer.
+      var wPct = lb.width ? (eb.width / lb.width) * 100 : 0;
+      var hPct = lb.height ? (eb.height / lb.height) * 100 : 0;
+      var left = parseFloat(el.style.left); if (isNaN(left)) left = h.left;
+      var top = parseFloat(el.style.top); if (isNaN(top)) top = h.top;
+      // Bornes de la zone.
+      var minL = h.left, maxL = h.left + h.width - wPct;
+      var minT = h.top, maxT = h.top + h.height - hPct;
+      if (maxL < minL) maxL = minL;
+      if (maxT < minT) maxT = minT;
+      left = Math.max(minL, Math.min(maxL, left));
+      top = Math.max(minT, Math.min(maxT, top));
+      el.style.left = left + '%';
+      el.style.top = top + '%';
+    }
+    window.clampTextToZone = clampTextToZone;
 
     /* ── Coins functions ── */
     function selectShape(el) {
