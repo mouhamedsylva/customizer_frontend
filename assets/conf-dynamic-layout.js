@@ -415,17 +415,22 @@ class DynamicLayoutManager {
         <div class="coins-canvas-container">
           <div class="patch-stage" id="patch-stage">
             <div class="coins-canvas-circle shape-rond size-8cm" id="coins-canvas">
+              <!-- Cercle INTÉRIEUR : zone d'impression. Le logo y est rogné et
+                   ne peut pas en sortir. Le grand cercle (fond) prend la couleur. -->
+              <div class="patch-inner" id="patch-inner">
+                <!-- Logo déplaçable/redimensionnable. Reste ENTIER (pas de clip)
+                     mais borné au cercle intérieur (ne dépasse pas). -->
+                <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:15%; top:15%; width:70%;">
+                  <img id="coins-preview-img" src="" alt="Aperçu" draggable="false">
+                  <span class="logo-resize" data-resize="c"></span>
+                </div>
+              </div>
               <div class="coins-placeholder">
                 <svg width="80" height="80" viewBox="0 0 24 24" fill="#ccc">
                   <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                 </svg>
                 <p>Téléchargez votre logo<br>pour voir l'aperçu</p>
               </div>
-            </div>
-            <!-- Logo déplaçable/redimensionnable, HORS du cercle (non coupé) -->
-            <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:25%; top:25%; width:50%;">
-              <img id="coins-preview-img" src="" alt="Aperçu" draggable="false">
-              <span class="logo-resize" data-resize="c"></span>
             </div>
           </div>
           

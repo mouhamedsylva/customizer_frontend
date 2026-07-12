@@ -484,6 +484,48 @@
     }
     .txt-panel-save:hover { background: #000; }
 
+    /* ── Modale Guide des tailles ── */
+    .sg-modal-overlay {
+      position: fixed; inset: 0; z-index: 100000; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(15,18,22,.6); backdrop-filter: blur(3px);
+      animation: txt-fade .2s ease; padding: 16px;
+    }
+    .sg-modal-overlay.open { display: flex; }
+    .sg-modal {
+      background: #fff; border-radius: 18px; width: min(96vw, 720px);
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 70px rgba(0,0,0,.32);
+      animation: txt-pop .22s cubic-bezier(.2,.9,.3,1.2);
+    }
+    .sg-modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px; border-bottom: 1px solid var(--border);
+    }
+    .sg-modal-head h3 { font-size: 18px; font-weight: 800; margin: 0; color: #14181c; }
+    .sg-modal-x {
+      width: 32px; height: 32px; border: none; border-radius: 50%;
+      background: #f2f3f5; color: #5b636c; font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: .15s;
+    }
+    .sg-modal-x:hover { background: #e5e7ea; color: #14181c; }
+    .sg-modal-body {
+      padding: 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px;
+    }
+    .sg-figure { flex-shrink: 0; }
+    .sg-table-wrap { flex: 1; min-width: 320px; overflow-x: auto; }
+    .sg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .sg-table th, .sg-table td {
+      padding: 9px 8px; text-align: center; border-bottom: 1px solid #eef0f2;
+    }
+    .sg-table thead th {
+      font-weight: 800; color: #14181c; background: #f7f8fa;
+      border-bottom: 2px solid #e5e7ea;
+    }
+    .sg-table thead th:first-child { background: transparent; }
+    .sg-table .sg-row-lbl { text-align: left; font-weight: 700; color: #14181c; white-space: nowrap; }
+    .sg-table tbody tr:hover td { background: #fafbfc; }
+    .sg-note { flex-basis: 100%; font-size: 11px; color: var(--faint); margin-top: 4px; }
+
     .uprev {
       display: none; margin-top: 4px;
       border: 1px solid var(--border); border-radius: 5px;
@@ -1168,7 +1210,7 @@
             <button class="sb" onclick="selSize(this)">XL</button>
             <button class="sb" onclick="selSize(this)">XXL</button>
           </div>
-          <a class="sgd" href="#">📏 Guide des tailles</a>
+          <a class="sgd" href="#" onclick="openSizeGuide(event)">📏 Guide des tailles</a>
         </div>
 
         <!-- 4. Texte : bouton -> champ inline -> panneau d'édition (façon CustomInk) -->
@@ -1509,7 +1551,58 @@
       </div>
     </aside>
 
+    <!-- MODALE : Guide des tailles -->
+    <div class="sg-modal-overlay" id="sg-modal-overlay" onclick="if(event.target===this)closeSizeGuide()">
+      <div class="sg-modal">
+        <div class="sg-modal-head">
+          <h3>Guide des tailles</h3>
+          <button class="sg-modal-x" onclick="closeSizeGuide()" title="Fermer">✕</button>
+        </div>
+        <div class="sg-modal-body">
+          <div class="sg-figure">
+            <svg viewBox="0 0 120 130" width="110" height="120" fill="none" stroke="#333" stroke-width="2">
+              <path d="M40 18 L30 26 L18 38 L26 48 L34 42 L34 112 L86 112 L86 42 L94 48 L102 38 L90 26 L80 18 Q60 30 40 18 Z"/>
+              <line x1="46" y1="40" x2="46" y2="60" stroke="#e02424" stroke-width="1.5"/>
+              <text x="49" y="54" font-size="12" fill="#e02424" stroke="none" font-weight="700">A</text>
+              <line x1="46" y1="70" x2="46" y2="105" stroke="#e02424" stroke-width="1.5"/>
+              <text x="49" y="92" font-size="12" fill="#e02424" stroke="none" font-weight="700">B</text>
+            </svg>
+          </div>
+          <div class="sg-table-wrap">
+            <table class="sg-table">
+              <thead>
+                <tr>
+                  <th></th><th>XS</th><th>S</th><th>M</th><th>L</th><th>XL</th>
+                  <th>XXL</th><th>3XL</th><th>4XL</th><th>5XL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td class="sg-row-lbl">A — Largeur (cm)</td>
+                  <td>47</td><td>50</td><td>53</td><td>56</td><td>59</td>
+                  <td>62</td><td>65</td><td>70</td><td>75</td></tr>
+                <tr><td class="sg-row-lbl">B — Hauteur (cm)</td>
+                  <td>68</td><td>70</td><td>72</td><td>74</td><td>76</td>
+                  <td>78</td><td>80</td><td>82</td><td>84</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="sg-note">Mesures approximatives à plat. A = largeur poitrine, B = longueur du vêtement.</p>
+        </div>
+      </div>
+    </div>
+
   <script>
+    /* ── Guide des tailles ── */
+    function openSizeGuide(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      var m = document.getElementById('sg-modal-overlay');
+      if (m) m.classList.add('open');
+    }
+    function closeSizeGuide() {
+      var m = document.getElementById('sg-modal-overlay');
+      if (m) m.classList.remove('open');
+    }
+
     /* ── State ── */
     let zl = 100;
     let currentColor = '#0a0a0a';
@@ -3753,6 +3846,9 @@
             const ph = coinsCanvas.querySelector('.coins-placeholder');
             if (ph) ph.style.display = 'none';
           }
+          // Masquer le pointillé du cercle intérieur (zone remplie).
+          const patchInner = document.getElementById('patch-inner');
+          if (patchInner) patchInner.classList.add('filled');
           
           // Recap - miniature ronde : patch (fond couleur) + logo positionné.
           updatePatchRecapThumb();
@@ -3944,10 +4040,14 @@
         if (coinsPreviewImg) coinsPreviewImg.src = '';
         if (patchLogo) {
           patchLogo.style.display = 'none';
-          patchLogo.style.left = '25%';
-          patchLogo.style.top = '25%';
-          patchLogo.style.width = '50%';
+          patchLogo.style.left = '15%';
+          patchLogo.style.top = '15%';
+          patchLogo.style.width = '70%';
+          patchLogo.style.height = '';
         }
+        // Réafficher le pointillé du cercle intérieur (zone vidée).
+        const patchInner = document.getElementById('patch-inner');
+        if (patchInner) patchInner.classList.remove('filled');
 
         // Réinitialiser la miniature du récap
         const recapThumb = document.getElementById('coins-recap-thumb');

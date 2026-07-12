@@ -24,6 +24,9 @@
       if (coinDisc) return coinDisc;
       const flagWrap = logo.closest('.flag-img-3d');
       if (flagWrap) return flagWrap;
+      // Patch : le logo est positionné dans le CERCLE INTÉRIEUR (zone d'impression).
+      const patchInner = logo.closest('.patch-inner');
+      if (patchInner) return patchInner;
       const patchStage = logo.closest('.patch-stage');
       if (patchStage) return patchStage;
     }
@@ -108,11 +111,11 @@
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    // Le patch autorise le logo à dépasser (bornes élargies)
-    const isPatch = active.classList.contains('patch-logo');
-    const MIN_POS = isPatch ? -60 : 0;
-    const maxPos = (sizePct) => isPatch ? (160 - sizePct) : (100 - sizePct);
-    const maxW = isPatch ? 160 : MAX_W;
+    // Le patch : l'image reste ENTIÈRE (pas de clip) mais BORNÉE au cercle
+    // intérieur — elle ne peut pas dépasser (position 0..100, largeur ≤ 100 %).
+    const MIN_POS = 0;
+    const maxPos = (sizePct) => (100 - sizePct);
+    const maxW = MAX_W;
 
     if (mode === 'resize') {
       // Nouvelle largeur en % selon le déplacement horizontal

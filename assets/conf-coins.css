@@ -1377,7 +1377,7 @@
 }
 .patch-logo img {
   width: 100%;
-  height: auto;
+  height: auto;           /* ratio naturel : le logo reste redimensionnable */
   display: block;
   pointer-events: none;
 }
@@ -1405,3 +1405,32 @@
 .patch-stage .patch-logo {
   z-index: 5;
 }
+
+/* ── Cercle INTÉRIEUR (zone d'impression) ──
+   Centré dans le grand cercle. Rogne le logo (overflow hidden + border-radius).
+   Le grand cercle (coins-canvas) garde la couleur/bordure. */
+.patch-inner {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 88%; height: 88%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  overflow: visible;                /* l'image reste ENTIÈRE (pas de clip) */
+  z-index: 2;
+  /* Fond blanc opaque : la couleur ne teinte QUE l'anneau externe. */
+  background: #ffffff;
+  /* Zone d'impression : léger pointillé discret quand vide. */
+  border: 1.5px dashed rgba(120,120,120,0.55);
+  transition: border-color .2s ease;
+}
+/* Rempli : on masque le pointillé. */
+.patch-inner.filled { border-color: transparent; }
+
+/* Le cercle intérieur suit la forme du patch. */
+.coins-canvas-circle.shape-carre .patch-inner { border-radius: 8px; }
+.coins-canvas-circle.shape-rectangle .patch-inner { border-radius: 8px; }
+.coins-canvas-circle.shape-blason .patch-inner { border-radius: 0; }
+
+/* Le logo est maintenant positionné RELATIVEMENT au cercle intérieur.
+   Par défaut il remplit tout le cercle (image en cover). */
+.patch-inner .patch-logo { position: absolute; z-index: 3; }
