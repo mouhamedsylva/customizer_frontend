@@ -32,6 +32,28 @@
         flag4anVersoPortrait: "{{ 'flag-4an-verso-portrait.png' | asset_url }}"
       };
 
+      /* Dictionnaire des images DRAPEAU, une par combinaison.
+         Clé   : "{anneaux}-{couleur}-{face}-{orientation}"
+         Ex.   : "2an-rouge-recto-paysage"
+         Fichier attendu : flag-2an-rouge-recto-paysage.png
+         16 couleurs × 2 anneaux × 2 faces × 2 orientations = 128 images. */
+      window.FLAG_IMAGE_URLS = {
+        {%- assign fl_anneaux = "2an,4an" | split: "," -%}
+        {%- assign fl_colors = "blanc,noir,blanc-casse,gris,gris-fonce,gris-ardoise,bleu-marine,bleu-ciel,vert-fonce,rose-clair,rose,rouge,orange,jaune,violet,marron" | split: "," -%}
+        {%- assign fl_faces = "recto,verso" | split: "," -%}
+        {%- assign fl_orients = "paysage,portrait" | split: "," -%}
+        {%- for a in fl_anneaux -%}
+          {%- for c in fl_colors -%}
+            {%- for f in fl_faces -%}
+              {%- for o in fl_orients -%}
+                {%- assign fname = "flag-" | append: a | append: "-" | append: c | append: "-" | append: f | append: "-" | append: o | append: ".png" -%}
+                "{{ a }}-{{ c }}-{{ f }}-{{ o }}": "{{ fname | asset_url }}",
+              {%- endfor -%}
+            {%- endfor -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      };
+
       // Dictionnaire de toutes les images textile (clé = "produit-couleur-vue")
       // Généré côté Liquid pour avoir les URLs CDN exactes (avec ?v=...).
       window.PRODUCT_IMAGE_URLS = {
@@ -2038,11 +2060,23 @@
 
       if (!bgSrc) return;
 
+      // Couleur de fond choisie : on la reproduit comme sur le canvas, via un
+      // calque en mix-blend-mode:multiply masqué par la silhouette du drapeau.
+      var flagColor = window.__flagColor || '#ffffff';
+      var isWhite = (flagColor.toLowerCase() === '#ffffff' || flagColor.toLowerCase() === '#fff');
+
       var html = '<div style="position:relative;width:100%;height:100%;">' +
         '<img src="' + bgSrc + '" alt="Drapeau" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:4px;">';
+      if (!isWhite) {
+        html += '<div style="position:absolute;inset:0;background:' + flagColor +
+                ';mix-blend-mode:multiply;pointer-events:none;' +
+                '-webkit-mask-image:url(&quot;' + bgSrc + '&quot;);mask-image:url(&quot;' + bgSrc + '&quot;);' +
+                '-webkit-mask-size:100% 100%;mask-size:100% 100%;' +
+                '-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"></div>';
+      }
       if (logoSrc) {
         html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
-                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;">';
+                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;z-index:2;">';
       }
       html += '</div>';
       thumb.innerHTML = html;
@@ -2067,14 +2101,108 @@
       var top  = logoEl ? (parseFloat(logoEl.style.top)  || 25) : 25;
       var width = logoEl ? (parseFloat(logoEl.style.width) || 50) : 50;
 
-      var html = '<div style="position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:' + bg + ';">';
+      // La miniature doit suivre la FORME choisie (rond, carré, rectangle, blason)
+      // et reproduire les DEUX zones :
+      //  - extérieure : la couleur choisie (bordure)
+      //  - intérieure (88 %) : fond blanc, zone d'impression du logo.
+      var shape = patchShapeStyle();
+
+      // IMPORTANT : le conteneur .rp-patch-thumb a un border-radius:50% + overflow
+      // hidden en CSS, qui rognerait tout en cercle. On applique donc la forme
+      // (et la couleur) directement SUR LE CONTENEUR.
+      thumb.style.borderRadius = '';
+      thumb.style.clipPath = '';
+      thumb.style.background = bg;
+      thumb.style.border = 'none';
+      thumb.style.overflow = 'hidden';
+      thumb.style.position = 'relative';
+      if (shape.clip) {
+        thumb.style.clipPath = shape.clip;          // blason
+      } else {
+        thumb.style.borderRadius = shape.radius;    // rond / carré / rectangle
+      }
+
+      var innerStyle =
+        'position:absolute;top:50%;left:50%;width:88%;height:88%;' +
+        'transform:translate(-50%,-50%);overflow:hidden;background:#fff;' +
+        (shape.clip ? ('clip-path:' + shape.clip) : ('border-radius:' + shape.radiusInner));
+
+      var html = '<div style="' + innerStyle + '">';
       if (logoSrc) {
         html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
                 '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;">';
       }
       html += '</div>';
       thumb.innerHTML = html;
-      thumb.style.overflow = 'hidden';
+    }
+
+    /* Forme du patch actuellement choisie : 'rond' | 'carre' | 'rectangle' | 'blason'. */
+    function patchShapeName() {
+      var canvas = document.getElementById('coins-canvas');
+      var cls = canvas ? canvas.className : '';
+      if (cls.indexOf('shape-blason') !== -1) return 'blason';
+      if (cls.indexOf('shape-rectangle') !== -1) return 'rectangle';
+      if (cls.indexOf('shape-carre') !== -1) return 'carre';
+      return 'rond';
+    }
+
+    /* Trace le contour du patch (forme choisie) dans un contexte canvas.
+       La zone est définie par (x, y, w, h). Appeler ctx.fill() ensuite. */
+    function tracePatchShape(ctx, shape, x, y, w, h) {
+      ctx.beginPath();
+
+      if (shape === 'rond') {
+        ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+        return;
+      }
+
+      if (shape === 'blason') {
+        // Même écusson que le clip-path CSS du canvas.
+        var pts = [
+          [50, 0], [92, 12], [92, 45], [84, 68], [68, 86], [50, 100],
+          [32, 86], [16, 68], [8, 45], [8, 12]
+        ];
+        pts.forEach(function (p, i) {
+          var px = x + (p[0] / 100) * w;
+          var py = y + (p[1] / 100) * h;
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+        return;
+      }
+
+      // Carré / rectangle : coins arrondis (comme le border-radius du canvas).
+      var r = Math.min(w, h) * 0.025;
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    /* Forme du patch pour la miniature du récap.
+       Renvoie soit un clip-path (blason), soit des rayons (rond/carré/rectangle). */
+    function patchShapeStyle() {
+      var shape = patchShapeName();
+
+      if (shape === 'blason') {
+        // Même écusson que le canvas (haut plat, pointe en bas).
+        return {
+          clip: 'polygon(50% 0%,92% 12%,92% 45%,84% 68%,68% 86%,50% 100%,' +
+                '32% 86%,16% 68%,8% 45%,8% 12%)',
+          radius: '', radiusInner: ''
+        };
+      }
+      if (shape === 'carre' || shape === 'rectangle') {
+        return { clip: '', radius: '6px', radiusInner: '4px' };
+      }
+      // Rond par défaut.
+      return { clip: '', radius: '50%', radiusInner: '50%' };
     }
 
     /* Met à jour la vignette du récap COIN (vue RECTO uniquement) : disque
@@ -2120,11 +2248,21 @@
     function currentProductImageURL(view) {
       const prefix = PRODUCT_SLUGS[currentProductKey];
       if (!prefix) return '';
+      // Les fichiers image réels sont nommés en FRANÇAIS (ex. sweatshirt-noir-
+      // face.png). L'URL "EN" (sweatshirt-black-face.png) pointe vers un fichier
+      // inexistant -> vignette cassée dans le panier. On privilégie donc l'image
+      // FR existante, sinon l'EN (si un jour fournie), sinon l'image générique.
       const urls = window.PRODUCT_IMAGE_URLS || {};
-      const key = prefix + '-' + currentColorSlug + '-' + view;
-      if (urls[key]) return absUrl(urls[key]);
+      const legacyUrls = window.PRODUCT_IMAGE_URLS_LEGACY || {};
+      const legacyMap = window.COLOR_SLUG_LEGACY || {};
+      const enKey = prefix + '-' + currentColorSlug + '-' + view;
+      const frSlug = legacyMap[currentColorSlug];
+      const frKey = frSlug ? (prefix + '-' + frSlug + '-' + view) : null;
       const fallbacks = (window.PRODUCT_FALLBACK_URLS || {})[prefix] || {};
-      return absUrl(fallbacks[view] || '');
+      const chosen =
+        (frKey && legacyUrls[frKey]) ||
+        fallbacks[view] || '';
+      return absUrl(chosen || urls[enKey] || '');
     }
 
     /* ── Applique la couleur : charge les images correspondantes ── */
@@ -2560,7 +2698,15 @@
         const baseImg = disc.querySelector('.coin-base-img');
         const logoImg = disc.querySelector('.coin-logo img, .coin-cote-logo');
         const base = validSrc(baseImg);
-        const logo = validSrc(logoImg);
+        let logo = validSrc(logoImg);
+
+        // VERSO NUMÉROTÉ : le numéro est du TEXTE, pas une image. On le rasterise
+        // pour qu'il apparaisse dans l'aperçu du devis (sinon le verso semble vide).
+        if (face === 'verso' && !logo) {
+          const num = coinNumberDataUrl();
+          if (num) logo = num;
+        }
+
         // On garde la face seulement si la pièce de base existe
         if (base) {
           previews.push({ label: face.toUpperCase(), base: base, logo: logo });
@@ -3118,15 +3264,169 @@
             }
           }
         }
+
+        // VERSO NUMÉROTÉ : le numéro est un élément TEXTE (div), pas une image.
+        // On le rasterise en PNG transparent pour qu'il apparaisse dans les
+        // aperçus composés côté serveur (devis, commande, partage).
+        if (f.label === 'VERSO') {
+          var numImg = captureCoinNumberImage(discBox);
+          if (numImg) logos.push(numImg);
+        }
+
         views.push({ label: f.label, background: baseImg.src, logos: logos });
       });
 
       return views.length ? views : null;
     }
 
+    /* Rend le numéro du verso (ex. "001") en PNG transparent CENTRÉ sur un carré.
+       Utilisé comme "logo" du verso dans l'aperçu du devis (le numéro est du texte
+       et n'apparaîtrait pas sinon). Renvoie un dataURL ou '' si pas de numéro. */
+    function coinNumberDataUrl() {
+      var numEl = document.getElementById('coin-verso-number');
+      if (!numEl || numEl.style.display === 'none') return '';
+      var text = (numEl.textContent || '').trim();
+      if (!text) return '';
+
+      var cs = window.getComputedStyle(numEl);
+      var fontSize = 200;                   // haute résolution ; l'affichage scale
+      var spacing = fontSize * 0.1;         // letter-spacing: 0.1em (comme le CSS)
+      var font = (cs.fontWeight || '800') + ' ' + fontSize + 'px ' +
+                 (cs.fontFamily || "'Courier New', monospace");
+
+      // 1) Mesure le texte pour dimensionner le canvas AU PLUS JUSTE.
+      //    Un canvas serré évite que le numéro paraisse minuscule une fois
+      //    affiché à 52 % du disque dans l'aperçu du devis.
+      var meas = document.createElement('canvas').getContext('2d');
+      meas.font = font;
+      var widths = [], total = 0;
+      for (var i = 0; i < text.length; i++) {
+        var w = meas.measureText(text[i]).width;
+        widths.push(w);
+        total += w + spacing;
+      }
+      total -= spacing;
+
+      var padX = fontSize * 0.12;
+      var padY = fontSize * 0.18;
+      var cv = document.createElement('canvas');
+      cv.width = Math.ceil(total + padX * 2);
+      cv.height = Math.ceil(fontSize + padY * 2);
+
+      // 2) Dessine, lettre par lettre (le canvas 2D ignore letter-spacing).
+      var ctx = cv.getContext('2d');
+      ctx.font = font;
+      ctx.fillStyle = cs.color || 'rgba(30,25,15,0.75)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      var x = padX;
+      for (var j = 0; j < text.length; j++) {
+        ctx.fillText(text[j], x + widths[j] / 2, cv.height / 2);
+        x += widths[j] + spacing;
+      }
+      return cv.toDataURL('image/png');
+    }
+
+    /* Rend le numéro du verso (ex. "001") en image PNG transparente, positionnée
+       comme à l'écran. Renvoie un objet logo {src,x,y,w} ou null si pas de numéro. */
+    function captureCoinNumberImage(discBox) {
+      var numEl = document.getElementById('coin-verso-number');
+      if (!numEl || numEl.style.display === 'none') return null;
+      var text = (numEl.textContent || '').trim();
+      if (!text) return null;
+
+      var r = numEl.getBoundingClientRect();
+      if (!r.width || !r.height || !discBox || !discBox.width) return null;
+
+      // Rendu haute résolution (x4) pour rester net une fois recomposé.
+      var scale = 4;
+      var cv = document.createElement('canvas');
+      cv.width = Math.ceil(r.width * scale);
+      cv.height = Math.ceil(r.height * scale);
+      var ctx = cv.getContext('2d');
+
+      var cs = window.getComputedStyle(numEl);
+      var fontSize = parseFloat(cs.fontSize) || 40;
+      ctx.font = cs.fontWeight + ' ' + (fontSize * scale) + 'px ' + cs.fontFamily;
+      ctx.fillStyle = cs.color || 'rgba(30,25,15,0.75)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Léger relief blanc (comme le text-shadow CSS).
+      ctx.shadowColor = 'rgba(255,255,255,0.4)';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 1 * scale;
+
+      // letter-spacing n'existe pas en canvas 2D : on dessine lettre par lettre.
+      var spacing = parseFloat(cs.letterSpacing);
+      if (isNaN(spacing)) spacing = 0;
+      spacing *= scale;
+
+      if (spacing) {
+        var widths = [], total = 0;
+        for (var i = 0; i < text.length; i++) {
+          var w = ctx.measureText(text[i]).width;
+          widths.push(w);
+          total += w + spacing;
+        }
+        total -= spacing;
+        var x = (cv.width - total) / 2;
+        for (var j = 0; j < text.length; j++) {
+          ctx.fillText(text[j], x + widths[j] / 2, cv.height / 2);
+          x += widths[j] + spacing;
+        }
+      } else {
+        ctx.fillText(text, cv.width / 2, cv.height / 2);
+      }
+
+      return {
+        src: cv.toDataURL('image/png'),
+        x: (r.left - discBox.left) / discBox.width,
+        y: (r.top - discBox.top) / discBox.height,
+        w: r.width / discBox.width
+      };
+    }
+
     /* Capture le design d'un DRAPEAU (recto + verso s'il y a un logo) : fond +
        logo positionné, pour composer une image d'aperçu. Renvoie un tableau de
        "views" (comme captureCoinDesign) ou null si le produit n'est pas drapeau. */
+    /* Produit un fond de drapeau TEINTÉ à la couleur choisie (dataURL PNG).
+       Le canvas reproduit le rendu du calque CSS (multiply masqué par le drapeau) :
+       sans ça, la composition serveur reçoit le drapeau blanc et la couleur est
+       perdue dans le panier / la commande.
+       Renvoie '' si la couleur est blanche (rien à teinter) ou en cas d'échec. */
+    function tintedFlagBackground(imgEl) {
+      var color = window.__flagColor || '#ffffff';
+      var c = String(color).toLowerCase();
+      if (c === '#ffffff' || c === '#fff') return '';        // blanc : image d'origine
+      if (!imgEl || !imgEl.naturalWidth) return '';
+
+      try {
+        var cv = document.createElement('canvas');
+        cv.width = imgEl.naturalWidth;
+        cv.height = imgEl.naturalHeight;
+        var ctx = cv.getContext('2d');
+
+        // 1) Le drapeau (avec ses plis et sa transparence).
+        ctx.drawImage(imgEl, 0, 0, cv.width, cv.height);
+        // 2) La couleur en multiply : teinte le blanc, conserve les ombres.
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, cv.width, cv.height);
+        // 3) Re-découpe sur la silhouette du drapeau (le multiply a rempli le
+        //    rectangle entier ; on ne garde que les pixels non transparents).
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.drawImage(imgEl, 0, 0, cv.width, cv.height);
+        ctx.globalCompositeOperation = 'source-over';
+
+        return cv.toDataURL('image/png');
+      } catch (e) {
+        // Image cross-origin non "taintable" -> on retombe sur l'image d'origine.
+        console.warn('Teinte du drapeau impossible (canvas) :', e);
+        return '';
+      }
+    }
+
     function captureFlagDesign() {
       if (currentProductType !== 'drapeaux') return null;
 
@@ -3162,8 +3462,11 @@
             }
           }
         }
+        // Fond teinté à la couleur choisie (sinon le serveur compose un drapeau blanc).
+        var bg = tintedFlagBackground(baseImg) || baseImg.src;
+
         // On ne garde que les faces AVEC un logo (évite un verso vide).
-        if (logos.length) views.push({ label: f.label, background: baseImg.src, logos: logos });
+        if (logos.length) views.push({ label: f.label, background: bg, logos: logos });
       });
 
       return views.length ? views : null;
@@ -3180,26 +3483,49 @@
       var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
       if (!logoSrc) return null;
 
-      // Couleur de fond du patch.
+      // Couleur de fond du patch (l'ANNEAU extérieur).
       var canvasEl = document.getElementById('coins-canvas');
       var bgColor = (canvasEl && canvasEl.style.backgroundColor) ? canvasEl.style.backgroundColor : '#ffffff';
 
-      // Génère un cercle plein de la couleur (fond transparent autour).
+      // Le patch a DEUX zones, à la FORME choisie (rond, carré, rectangle, blason) :
+      //  - extérieure : la couleur choisie (bordure)
+      //  - intérieure (INNER = 88 %) : blanche, zone d'impression du logo.
+      var INNER = 0.88;
+      var shape = patchShapeName();
       var size = 1000;
+      var W = (shape === 'rectangle') ? Math.round(size * 1.4) : size;
+      var H = size;
+
       var c = document.createElement('canvas');
-      c.width = size; c.height = size;
+      c.width = W; c.height = H;
       var ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, size, size);
-      ctx.beginPath();
-      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.clearRect(0, 0, W, H);
+
+      // 1) Forme extérieure, colorée.
       ctx.fillStyle = bgColor;
+      tracePatchShape(ctx, shape, 0, 0, W, H);
       ctx.fill();
+
+      // 2) Forme intérieure, blanche (zone d'impression).
+      var iw = W * INNER, ih = H * INNER;
+      var ix = (W - iw) / 2, iy = (H - ih) / 2;
+      ctx.fillStyle = '#ffffff';
+      tracePatchShape(ctx, shape, ix, iy, iw, ih);
+      ctx.fill();
+
       var bgDataUrl = c.toDataURL('image/png');
 
-      // Position du logo (% inline du logo patch).
-      var lx = logoEl ? (parseFloat(logoEl.style.left) || 25) / 100 : 0.25;
-      var ly = logoEl ? (parseFloat(logoEl.style.top)  || 25) / 100 : 0.25;
-      var lw = logoEl ? (parseFloat(logoEl.style.width) || 50) / 100 : 0.5;
+      // Position du logo : ses % sont relatifs au cercle INTÉRIEUR (son parent).
+      // On les convertit en % du cercle ENTIER, sinon le logo est mal placé
+      // et surdimensionné dans l'image composée (panier, commande).
+      var offset = (1 - INNER) / 2;                       // marge de l'anneau
+      var lxIn = logoEl ? (parseFloat(logoEl.style.left) || 0) / 100 : 0;
+      var lyIn = logoEl ? (parseFloat(logoEl.style.top)  || 0) / 100 : 0;
+      var lwIn = logoEl ? (parseFloat(logoEl.style.width) || 100) / 100 : 1;
+
+      var lx = offset + lxIn * INNER;
+      var ly = offset + lyIn * INNER;
+      var lw = lwIn * INNER;
 
       return { background: bgDataUrl, logos: [{ src: logoSrc, x: lx, y: ly, w: lw }] };
     }
@@ -4213,11 +4539,21 @@
       document.querySelectorAll('.coins-shape-card').forEach(s => s.classList.remove('active'));
       el.classList.add('active');
       const shapeName = el.querySelector('span').textContent;
-      console.log('Forme sélectionnée:', el.dataset.shape);
+      const shape = el.dataset.shape;
+
+      // Applique la forme au canvas (rond / carré / rectangle / blason).
+      const canvas = document.getElementById('coins-canvas');
+      if (canvas && shape) {
+        canvas.classList.remove('shape-rond', 'shape-carre', 'shape-rectangle', 'shape-blason');
+        canvas.classList.add('shape-' + shape);
+      }
 
       // Mettre à jour le récap
       const recapShape = document.getElementById('coins-recap-shape');
       if (recapShape) recapShape.textContent = shapeName;
+
+      // La vignette du récap doit suivre la nouvelle forme.
+      if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
     }
 
     // Couleur de fond du patch
@@ -4225,9 +4561,14 @@
       document.querySelectorAll('.patch-color-sw').forEach(s => s.classList.remove('active'));
       el.classList.add('active');
 
-      // Colorer le fond du cercle patch
+      // Colorer le fond du patch. La variable --patch-color sert au blason,
+      // dont la forme est peinte par un pseudo-élément (le clip-path du canvas
+      // rognerait le logo, qui doit rester entier).
       const canvas = document.getElementById('coins-canvas');
-      if (canvas) canvas.style.backgroundColor = hex;
+      if (canvas) {
+        canvas.style.backgroundColor = hex;
+        canvas.style.setProperty('--patch-color', hex);
+      }
 
       // Met à jour la vignette du récap (cercle coloré + logo positionné).
       if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();

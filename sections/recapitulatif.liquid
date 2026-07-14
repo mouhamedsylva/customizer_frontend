@@ -279,14 +279,48 @@
       'Jaune':        47846856294563,
       'Violet':       47846856327331,
       'Marron':       47846856360099
-    }
+    },
+    // DRAPEAUX : variants par couleur de fond.
+    // Tant que ce bloc est vide, la commande utilise le variant de base
+    // (CONF_VARIANTS.drapeaux) et la couleur reste dans les propriétés.
+    // Pour activer : créer les variants Couleur du produit Drapeau dans Shopify
+    // puis coller ici les IDs, ex. 'Rouge': 47xxxxxxxxxxx.
+    drapeaux: {}
   };
 
-  // Extrait le nom de couleur depuis le champ "color" d'un item
-  // (ex. "Couleur : Violet" -> "Violet"). Renvoie '' si absent.
+  // Correspondance : nouvelle couleur (palette 40, EN) -> couleur FR qui a un
+  // variant Shopify existant. Tant que les 40 vrais variants ne sont pas créés,
+  // on rattache la commande au variant FR le plus proche (la couleur RÉELLE
+  // choisie reste dans les propriétés de la ligne, visible en production).
+  var COLOR_EN_TO_FR = {
+    'black': 'Noir', 'used black': 'Noir',
+    'white': 'Blanc cassé', 'ash': 'Blanc cassé', 'natural': 'Blanc cassé', 'sand': 'Blanc cassé',
+    'navy': 'Bleu marine', 'navy blue': 'Bleu marine', 'cobalt blue': 'Bleu marine',
+    'royal blue': 'Bleu marine', 'urban purple': 'Bleu marine', 'stone blue': 'Bleu marine',
+    'diva blue': 'Bleu marine',
+    'sky': 'Bleu ciel', 'atoll': 'Bleu ciel', 'swimming pool': 'Bleu ciel',
+    'millennial mint': 'Bleu ciel', 'millennial lilac': 'Bleu ciel',
+    'red': 'Rouge', 'fire red': 'Rouge', 'burgundy': 'Rouge',
+    'orange': 'Orange', 'urban orange': 'Orange', 'sunset orange': 'Orange', 'apricot': 'Orange',
+    'gold': 'Jaune', 'solar yellow': 'Jaune',
+    'brown': 'Marron', 'chocolate': 'Marron',
+    'bottle green': 'Vert foncé', 'kelly green': 'Vert foncé', 'urban khaki': 'Vert foncé',
+    'orchid green': 'Vert foncé', 'pixel lime': 'Vert foncé',
+    'radiant purple': 'Violet',
+    'orchid pink': 'Rose clair', 'sorbet': 'Rose',
+    'dark grey': 'Gris foncé', 'pacific grey': 'Gris', 'sport grey': 'Gris ardoise'
+  };
+
+  // Extrait le nom de couleur depuis le champ "color" d'un item.
+  // - Textiles : "Couleur : Violet" -> "Violet"
+  // - Drapeaux/patchs : les détails sont concaténés
+  //   ("Type : Recto verso · Couleur : Rouge · Taille : …") -> on isole la couleur.
   function colorNameFromItem(it) {
     if (!it || !it.color) return '';
-    return String(it.color).replace(/^\s*Couleur\s*:\s*/i, '').trim();
+    var raw = String(it.color);
+    var m = raw.match(/Couleur\s*:\s*([^·|]+)/i);
+    if (m) return m[1].trim();
+    return raw.replace(/^\s*Couleur\s*:\s*/i, '').trim();
   }
 
   // Normalise un nom de couleur pour un matching robuste : minuscules, sans
@@ -304,13 +338,24 @@
   function variantForItem(it) {
     var byColor = CONF_COLOR_VARIANTS[it.productType];
     if (byColor) {
-      var target = normColor(colorNameFromItem(it));
+      var rawName = colorNameFromItem(it);
+      var target = normColor(rawName);
       if (target) {
+        // 1) Correspondance directe avec un variant FR existant.
         for (var label in byColor) {
           if (Object.prototype.hasOwnProperty.call(byColor, label) &&
               normColor(label) === target) {
             return byColor[label];
           }
+        }
+        // 2) Nouvelle couleur (palette 40) -> variant FR le plus proche.
+        var frName = COLOR_EN_TO_FR[target];
+        if (frName && byColor[frName]) {
+          return byColor[frName];
+        }
+        // 3) Repli sûr : premier variant du produit (évite "Cannot find variant").
+        for (var k in byColor) {
+          if (Object.prototype.hasOwnProperty.call(byColor, k)) return byColor[k];
         }
       }
     }

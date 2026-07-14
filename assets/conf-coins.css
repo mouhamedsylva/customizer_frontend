@@ -264,19 +264,10 @@
   border: none;
   aspect-ratio: 0.9 / 1;
   max-width: 340px;
+  /* Écusson : haut plat, flancs droits, pointe centrale en bas. */
   clip-path: polygon(
-    50% 0%,
-    90% 5%,
-    92% 15%,
-    92% 45%,
-    85% 65%,
-    70% 80%,
-    50% 96%,
-    30% 80%,
-    15% 65%,
-    8% 45%,
-    8% 15%,
-    10% 5%
+    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
+    32% 86%, 16% 68%, 8% 45%, 8% 12%
   );
   position: relative;
 }
@@ -316,19 +307,10 @@
   border: none;
   aspect-ratio: 0.9 / 1;
   max-width: 340px;
+  /* Écusson : haut plat, flancs droits, pointe centrale en bas. */
   clip-path: polygon(
-    50% 0%,          /* point haut centre */
-    90% 5%,          /* coin haut droit légèrement incliné */
-    92% 15%,         /* début côté droit */
-    92% 45%,         /* milieu côté droit */
-    85% 65%,         /* début courbe droite */
-    70% 80%,         /* courbe droite */
-    50% 96%,         /* pointe bas centre */
-    30% 80%,         /* courbe gauche */
-    15% 65%,         /* début courbe gauche */
-    8% 45%,          /* milieu côté gauche */
-    8% 15%,          /* début côté gauche */
-    10% 5%           /* coin haut gauche légèrement incliné */
+    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
+    32% 86%, 16% 68%, 8% 45%, 8% 12%
   );
   position: relative;
 }
@@ -342,19 +324,10 @@
   right: 0;
   bottom: 0;
   background: transparent;
+  /* Écusson : haut plat, flancs droits, pointe centrale en bas. */
   clip-path: polygon(
-    50% 0%,
-    90% 5%,
-    92% 15%,
-    92% 45%,
-    85% 65%,
-    70% 80%,
-    50% 96%,
-    30% 80%,
-    15% 65%,
-    8% 45%,
-    8% 15%,
-    10% 5%
+    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
+    32% 86%, 16% 68%, 8% 45%, 8% 12%
   );
   box-shadow: inset 0 0 0 3px #e5e5e5;
   pointer-events: none;
@@ -1429,8 +1402,55 @@
 /* Le cercle intérieur suit la forme du patch. */
 .coins-canvas-circle.shape-carre .patch-inner { border-radius: 8px; }
 .coins-canvas-circle.shape-rectangle .patch-inner { border-radius: 8px; }
-.coins-canvas-circle.shape-blason .patch-inner { border-radius: 0; }
 
-/* Le logo est maintenant positionné RELATIVEMENT au cercle intérieur.
-   Par défaut il remplit tout le cercle (image en cover). */
+/* BLASON : la zone d'impression doit épouser l'écusson. On NE clippe PAS
+   .patch-inner (ça rognerait le logo, qui doit rester entier) : on peint le
+   fond blanc en écusson via un pseudo-élément placé DERRIÈRE le logo. */
+.coins-canvas-circle.shape-blason .patch-inner {
+  border-radius: 0;
+  background: transparent;          /* le fond passe sur le ::before */
+  border-color: transparent;        /* le pointillé rond n'a pas de sens ici */
+}
+.coins-canvas-circle.shape-blason .patch-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  clip-path: polygon(
+    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
+    32% 86%, 16% 68%, 8% 45%, 8% 12%
+  );
+  z-index: 0;                        /* derrière le logo (z-index: 3) */
+  pointer-events: none;
+}
+
+/* Le logo est positionné RELATIVEMENT au cercle intérieur. */
 .patch-inner .patch-logo { position: absolute; z-index: 3; }
+
+/* PATCH : le logo se pose AU-DESSUS du patch et reste ENTIER (jamais rogné).
+   Il est simplement BORNÉ au cercle intérieur (clamp au drag/resize).
+   Il faut donc lever le clip du conteneur, sinon un logo plus haut que large
+   serait coupé. La forme du patch reste portée par les fonds (border-radius /
+   clip-path), pas par un overflow. */
+.patch-stage .coins-canvas-circle { overflow: visible; }
+.patch-stage .patch-inner { overflow: visible; }
+
+/* BLASON : le clip-path du canvas rognerait aussi le logo. On le retire et on
+   peint la forme colorée dans un pseudo-élément placé au fond. */
+.patch-stage .coins-canvas-circle.shape-blason {
+  clip-path: none;
+  background: transparent;
+}
+.patch-stage .coins-canvas-circle.shape-blason::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* La couleur choisie est passée en variable par selectPatchColor(). */
+  background: var(--patch-color, #fafafa);
+  clip-path: polygon(
+    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
+    32% 86%, 16% 68%, 8% 45%, 8% 12%
+  );
+  z-index: 0;
+  pointer-events: none;
+}

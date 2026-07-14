@@ -291,32 +291,76 @@ function selectFlagOrientation(element) {
   console.log('🔄 Orientation:', orientation);
 }
 
-/* Choisit et applique les images recto/verso du drapeau selon l'état courant :
-   orientation (paysage/portrait) + nombre d'anneaux (2/4). Repli sur paysage si
-   une image portrait manque. */
-function refreshFlagImages() {
-  const A = window.ASSET_URLS || {};
-  const isPortrait = (window.__flagOrientation === 'portrait');
-  const is4 = (window.__flagAnneaux === '4');
+/* Couleur (hex du bouton) -> slug utilisé dans le nom de fichier.
+   Doit rester aligné sur les pastilles du sidebar et sur IMAGES-DRAPEAUX.md. */
+var FLAG_COLOR_SLUGS = {
+  '#ffffff': 'blanc',
+  '#1a1a1a': 'noir',
+  '#f5f2ed': 'blanc-casse',
+  '#9e9e9e': 'gris',
+  '#555555': 'gris-fonce',
+  '#607d8b': 'gris-ardoise',
+  '#1e3a5f': 'bleu-marine',
+  '#5bb8e8': 'bleu-ciel',
+  '#2e6b45': 'vert-fonce',
+  '#f0c8d8': 'rose-clair',
+  '#e8729a': 'rose',
+  '#c0392b': 'rouge',
+  '#e8842a': 'orange',
+  '#f5c842': 'jaune',
+  '#9b6bb5': 'violet',
+  '#7d4e2d': 'marron'
+};
 
-  var recto, verso;
-  if (isPortrait) {
-    recto = is4 ? (A.flag4anRectoPortrait || A.flagRectoPortrait) : A.flagRectoPortrait;
-    verso = is4 ? (A.flag4anVersoPortrait || A.flagVersoPortrait) : A.flagVersoPortrait;
-    // Repli paysage si portrait indisponible.
-    recto = recto || (is4 ? (A.flag4anRecto || A.flagRecto) : A.flagRecto);
-    verso = verso || (is4 ? (A.flag4anVerso || A.flagVerso) : A.flagVerso);
-  } else {
-    recto = is4 ? (A.flag4anRecto || A.flagRecto) : A.flagRecto;
-    verso = is4 ? (A.flag4anVerso || A.flagVerso) : A.flagVerso;
+/** Slug de la couleur de drapeau courante (par défaut : blanc). */
+function currentFlagColorSlug() {
+  var hex = String(window.__flagColor || '#ffffff').toLowerCase();
+  return FLAG_COLOR_SLUGS[hex] || 'blanc';
+}
+
+/* Choisit et applique les images recto/verso du drapeau selon l'état courant :
+   COULEUR + anneaux (2/4) + orientation (paysage/portrait).
+   Chaque combinaison a sa propre image : flag-{2an|4an}-{couleur}-{face}-{orientation}.png
+   Repli sur le drapeau blanc si l'image de la couleur n'existe pas encore. */
+function refreshFlagImages() {
+  var A = window.ASSET_URLS || {};
+  var URLS = window.FLAG_IMAGE_URLS || {};
+
+  var anneaux = (window.__flagAnneaux === '4') ? '4an' : '2an';
+  var orient = (window.__flagOrientation === 'portrait') ? 'portrait' : 'paysage';
+  var color = currentFlagColorSlug();
+
+  // URL de la face demandée, avec repli sur le blanc puis sur l'image générique.
+  function pick(face) {
+    var key = anneaux + '-' + color + '-' + face + '-' + orient;
+    if (URLS[key]) return URLS[key];
+
+    // Repli 1 : même variante en blanc.
+    var white = anneaux + '-blanc-' + face + '-' + orient;
+    if (URLS[white]) return URLS[white];
+
+    // Repli 2 : anciennes images génériques (sécurité).
+    var is4 = (anneaux === '4an');
+    var isPortrait = (orient === 'portrait');
+    if (face === 'recto') {
+      return isPortrait
+        ? (is4 ? A.flag4anRectoPortrait : A.flagRectoPortrait) || A.flagRecto
+        : (is4 ? A.flag4anRecto : A.flagRecto);
+    }
+    return isPortrait
+      ? (is4 ? A.flag4anVersoPortrait : A.flagVersoPortrait) || A.flagVerso
+      : (is4 ? A.flag4anVerso : A.flagVerso);
   }
+
+  var recto = pick('recto');
+  var verso = pick('verso');
 
   var baseRecto = document.getElementById('flag-base-recto');
   var baseVerso = document.getElementById('flag-base-verso');
   if (baseRecto && recto) swapFlagImage(baseRecto, recto);
   if (baseVerso && verso) swapFlagImage(baseVerso, verso);
 
-  // Réapplique le format (proportions) après un éventuel changement d'image.
+  // Réapplique le format (proportions) après le changement d'image.
   if (typeof applyFlagSizeToImages === 'function') {
     setTimeout(applyFlagSizeToImages, 60);
   }
@@ -324,27 +368,15 @@ function refreshFlagImages() {
   if (typeof window.updateFlagRecapThumb === 'function') {
     setTimeout(window.updateFlagRecapThumb, 80);
   }
-  // Réapplique la couleur de fond (le masque suit la nouvelle image).
-  setTimeout(applyFlagColorToLayers, 90);
 }
 
-/* Applique la couleur de fond courante à tous les calques .flag-color-layer.
-   - background = couleur choisie (teinte via mix-blend-mode: multiply)
-   - mask = image de base du drapeau (le calque épouse la silhouette).
-   Couleur blanche (#ffffff) = pas de teinte visible (drapeau blanc d'origine). */
+/* La couleur vient désormais des IMAGES elles-mêmes : plus de teinte CSS.
+   Conservée (neutralisée) car appelée depuis d'autres modules. */
 function applyFlagColorToLayers() {
-  var color = window.__flagColor || '#ffffff';
   document.querySelectorAll('.flag-color-layer').forEach(function (layer) {
-    layer.style.background = color;
-    // Masque : image de base correspondant à la face (recto/verso).
-    var face = layer.getAttribute('data-face') || 'recto';
-    var baseImg = document.getElementById('flag-base-' + face);
-    var src = baseImg ? baseImg.getAttribute('src') : '';
-    if (src) {
-      var maskUrl = 'url("' + src + '")';
-      layer.style.webkitMaskImage = maskUrl;
-      layer.style.maskImage = maskUrl;
-    }
+    layer.style.background = 'transparent';
+    layer.style.webkitMaskImage = '';
+    layer.style.maskImage = '';
   });
 }
 
@@ -356,10 +388,20 @@ function selFlagColor(element, hex) {
   if (element) element.classList.add('active');
 
   window.__flagColor = hex;
+  // Nom lisible de la couleur (title du bouton) : sert au récap et à la commande.
+  var colorName = (element && element.getAttribute('title')) || 'Blanc';
+  window.__flagColorName = colorName;
   applyFlagColorToLayers();
 
+  // Récap : affiche le nom de la couleur (repris dans les propriétés de commande).
+  var recapColor = document.getElementById('flag-recap-color');
+  if (recapColor) recapColor.textContent = colorName;
+
   // Persistance (récupérée au rechargement / partage).
-  try { sessionStorage.setItem('conf_flag_color', hex); } catch (e) {}
+  try {
+    sessionStorage.setItem('conf_flag_color', hex);
+    sessionStorage.setItem('conf_flag_color_name', colorName);
+  } catch (e) {}
 
   // Vignette récap : la couleur doit s'y refléter aussi.
   if (typeof window.updateFlagRecapThumb === 'function') {

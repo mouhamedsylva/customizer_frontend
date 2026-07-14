@@ -610,7 +610,7 @@ class DynamicLayoutManager {
 
               <!-- Vue 3D : image réelle du drapeau -->
               <div class="flag-img-3d" data-face="recto">
-                <img class="flag-base-img" id="flag-base-recto" src="${(window.ASSET_URLS && window.ASSET_URLS.flagRecto) || ''}" alt="Drapeau recto">
+                <img class="flag-base-img" id="flag-base-recto" crossorigin="anonymous" src="${(window.ASSET_URLS && window.ASSET_URLS.flagRecto) || ''}" alt="Drapeau recto">
                 <div class="flag-color-layer" data-face="recto"></div>
                 <div class="flag-canvas-placeholder flag-ph-recto">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
@@ -654,7 +654,7 @@ class DynamicLayoutManager {
 
               <!-- Vue 3D : image réelle du drapeau -->
               <div class="flag-img-3d" data-face="verso">
-                <img class="flag-base-img" id="flag-base-verso" src="${(window.ASSET_URLS && window.ASSET_URLS.flagVerso) || ''}" alt="Drapeau verso">
+                <img class="flag-base-img" id="flag-base-verso" crossorigin="anonymous" src="${(window.ASSET_URLS && window.ASSET_URLS.flagVerso) || ''}" alt="Drapeau verso">
                 <div class="flag-color-layer" data-face="verso"></div>
                 <div class="flag-canvas-placeholder flag-ph-verso">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
@@ -724,17 +724,26 @@ class DynamicLayoutManager {
     try {
       var savedFlagColor = sessionStorage.getItem('conf_flag_color');
       if (savedFlagColor) window.__flagColor = savedFlagColor;
+      var savedFlagColorName = sessionStorage.getItem('conf_flag_color_name');
+      if (savedFlagColorName) window.__flagColorName = savedFlagColorName;
     } catch (e) {}
     setTimeout(function () {
       if (typeof refreshFlagImages === 'function') refreshFlagImages();
       if (typeof applyFlagSizeToImages === 'function') applyFlagSizeToImages();
       if (typeof applyFlagColorToLayers === 'function') applyFlagColorToLayers();
-      // Marque la pastille couleur active dans le sidebar.
+      // Marque la pastille couleur active dans le sidebar + met à jour le récap.
       var fc = window.__flagColor || '#ffffff';
+      var activeName = null;
       document.querySelectorAll('.flag-color-swatch').forEach(function (s) {
         var bg = (s.getAttribute('style') || '').match(/background:\s*(#[0-9a-fA-F]{3,6})/);
-        s.classList.toggle('active', !!bg && bg[1].toLowerCase() === fc.toLowerCase());
+        var isActive = !!bg && bg[1].toLowerCase() === fc.toLowerCase();
+        s.classList.toggle('active', isActive);
+        if (isActive) activeName = s.getAttribute('title');
       });
+      var name = window.__flagColorName || activeName || 'Blanc';
+      window.__flagColorName = name;
+      var recapColor = document.getElementById('flag-recap-color');
+      if (recapColor) recapColor.textContent = name;
     }, 120);
 
     console.log('✅ Canvas Drapeaux chargé');
@@ -758,6 +767,7 @@ class DynamicLayoutManager {
             <h3 class="rp-patch-title">Drapeau sublimé</h3>
             <div class="rp-patch-details">
               <p>Type : <span id="flag-recap-type">Recto verso</span></p>
+              <p>Couleur : <span id="flag-recap-color">Blanc</span></p>
               <p>Taille : <span id="flag-recap-size">90 x 150 cm</span></p>
               <p>Orientation : <span id="flag-recap-orientation">Paysage</span></p>
               <p>Matière : <span>Polyester 110g/m²</span></p>
@@ -1046,13 +1056,18 @@ function selectShape(element) {
 function changeCanvasShape(shape) {
   const canvas = document.getElementById('coins-canvas');
   if (!canvas) return;
-  
+
   // Retirer toutes les classes de forme
   canvas.classList.remove('shape-rond', 'shape-carre', 'shape-rectangle', 'shape-blason');
-  
+
   // Ajouter la nouvelle classe
   canvas.classList.add('shape-' + shape);
-  
+
+  // La vignette du récap doit suivre la nouvelle forme.
+  if (typeof window.updatePatchRecapThumb === 'function') {
+    window.updatePatchRecapThumb();
+  }
+
   console.log('🔷 Forme changée:', shape);
 }
 
