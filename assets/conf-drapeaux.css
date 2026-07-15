@@ -711,10 +711,21 @@
   max-height: clamp(340px, 62vh, 620px);
 }
 
-/* Animation lors du changement 2 ↔ 4 anneaux */
-.flag-base-img.swapping {
-  opacity: 0;
-  transform: scale(0.92) rotateY(12deg);
+/* ── Changement d'image en CROSSFADE ──
+   La nouvelle image apparaît en fondu par-dessus l'ancienne, qui reste en place.
+   Résultat : le changement de couleur (ou d'anneaux) est imperceptible — pas de
+   clignotement, pas de déplacement, pas de "trou" blanc. */
+.flag-fade-in {
+  transition: opacity .32s ease;
+  will-change: opacity;
+}
+
+/* Ancien effet (scale + rotation) : retiré, il rendait le changement très visible.
+   Conservé neutralisé pour les appels résiduels. */
+.flag-base-img.swapping { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flag-fade-in { transition: none; }
 }
 
 /* Le conteneur 3D sert de repère pour le logo déplaçable */

@@ -225,50 +225,48 @@
   gap: 20px;
 }
 
+/* Conteneur du patch : simple boîte TRANSPARENTE qui porte l'aspect-ratio de la
+   forme. La forme et la couleur sont désormais rendues par une IMAGE PNG
+   (#patch-shape-img), plus par du border-radius / clip-path CSS. */
 .coins-canvas-circle {
   width: 100%;
   max-width: 350px;
   aspect-ratio: 1;
-  border-radius: 50%;
-  border: 3px solid #e5e5e5;
-  background: #fafafa;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  transition: border-radius 0.3s ease, aspect-ratio 0.3s ease;
+  transition: aspect-ratio 0.3s ease;
 }
 
-/* Formes dynamiques */
-.coins-canvas-circle.shape-rond {
-  border-radius: 50%;
-  aspect-ratio: 1;
+/* Image PNG du patch entier (forme + couleur), en fond, SOUS le logo. */
+.patch-shape-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
 }
 
-.coins-canvas-circle.shape-carre {
-  border-radius: 8px;
-  aspect-ratio: 1;
-}
-
-.coins-canvas-circle.shape-rectangle {
-  border-radius: 8px;
-  aspect-ratio: 1.4 / 1;
-  max-width: 420px;
-}
-
+/* Anciennes classes de forme : neutralisées (la forme vient de l'image PNG). */
+.coins-canvas-circle.shape-rond,
+.coins-canvas-circle.shape-carre,
+.coins-canvas-circle.shape-rectangle,
 .coins-canvas-circle.shape-blason {
   border-radius: 0;
   border: none;
-  aspect-ratio: 0.9 / 1;
-  max-width: 340px;
-  /* Écusson : haut plat, flancs droits, pointe centrale en bas. */
-  clip-path: polygon(
-    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
-    32% 86%, 16% 68%, 8% 45%, 8% 12%
-  );
+  clip-path: none;
+  background: transparent;
+  box-shadow: none;
   position: relative;
 }
 
@@ -302,37 +300,7 @@
   max-width: 450px;
 }
 
-.coins-canvas-circle.shape-blason {
-  border-radius: 0;
-  border: none;
-  aspect-ratio: 0.9 / 1;
-  max-width: 340px;
-  /* Écusson : haut plat, flancs droits, pointe centrale en bas. */
-  clip-path: polygon(
-    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
-    32% 86%, 16% 68%, 8% 45%, 8% 12%
-  );
-  position: relative;
-}
-
-/* Bordure pour le blason avec pseudo-élément */
-.coins-canvas-circle.shape-blason::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  /* Écusson : haut plat, flancs droits, pointe centrale en bas. */
-  clip-path: polygon(
-    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
-    32% 86%, 16% 68%, 8% 45%, 8% 12%
-  );
-  box-shadow: inset 0 0 0 3px #e5e5e5;
-  pointer-events: none;
-  z-index: 1;
-}
+/* (Ancien blason CSS + bordure ::before supprimés : la forme vient de l'image PNG.) */
 
 .coins-placeholder {
   display: flex;
@@ -1025,20 +993,21 @@
 .rp-patch-thumb {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
-  background: #f5f5f5;
-  border: 2px solid #e5e5e5;
+  border-radius: 0;
+  background: transparent;
+  border: none;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .rp-patch-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .rp-patch-info {
@@ -1356,101 +1325,32 @@
 }
 
 
-/* Scène du patch : le cercle + le logo déplaçable (logo NON coupé) */
+/* Scène du patch : l'image du patch + le logo déplaçable (logo NON coupé).
+   La scène ne force plus de ratio : c'est le canvas qui porte l'aspect-ratio de
+   la forme (appliqué en JS), et la scène le laisse simplement respirer. */
 .patch-stage {
   position: relative;
   width: 100%;
   max-width: 350px;
-  aspect-ratio: 1 / 1;
   margin: 40px auto;   /* marge autour pour laisser dépasser le logo */
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: visible;   /* le logo peut sortir du cercle */
+  overflow: visible;   /* le logo peut sortir de l'image */
 }
 
+/* Le canvas se dimensionne lui-même selon son aspect-ratio (inline en JS). */
 .patch-stage .coins-canvas-circle {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  width: 100%;
   z-index: 1;
+  overflow: visible;   /* le logo reste ENTIER (jamais rogné) */
 }
 
 .patch-stage .patch-logo {
   z-index: 5;
 }
 
-/* ── Cercle INTÉRIEUR (zone d'impression) ──
-   Centré dans le grand cercle. Rogne le logo (overflow hidden + border-radius).
-   Le grand cercle (coins-canvas) garde la couleur/bordure. */
-.patch-inner {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 88%; height: 88%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  overflow: visible;                /* l'image reste ENTIÈRE (pas de clip) */
-  z-index: 2;
-  /* Fond blanc opaque : la couleur ne teinte QUE l'anneau externe. */
-  background: #ffffff;
-  /* Zone d'impression : léger pointillé discret quand vide. */
-  border: 1.5px dashed rgba(120,120,120,0.55);
-  transition: border-color .2s ease;
-}
-/* Rempli : on masque le pointillé. */
-.patch-inner.filled { border-color: transparent; }
-
-/* Le cercle intérieur suit la forme du patch. */
-.coins-canvas-circle.shape-carre .patch-inner { border-radius: 8px; }
-.coins-canvas-circle.shape-rectangle .patch-inner { border-radius: 8px; }
-
-/* BLASON : la zone d'impression doit épouser l'écusson. On NE clippe PAS
-   .patch-inner (ça rognerait le logo, qui doit rester entier) : on peint le
-   fond blanc en écusson via un pseudo-élément placé DERRIÈRE le logo. */
-.coins-canvas-circle.shape-blason .patch-inner {
-  border-radius: 0;
-  background: transparent;          /* le fond passe sur le ::before */
-  border-color: transparent;        /* le pointillé rond n'a pas de sens ici */
-}
-.coins-canvas-circle.shape-blason .patch-inner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: #ffffff;
-  clip-path: polygon(
-    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
-    32% 86%, 16% 68%, 8% 45%, 8% 12%
-  );
-  z-index: 0;                        /* derrière le logo (z-index: 3) */
-  pointer-events: none;
-}
-
-/* Le logo est positionné RELATIVEMENT au cercle intérieur. */
-.patch-inner .patch-logo { position: absolute; z-index: 3; }
-
-/* PATCH : le logo se pose AU-DESSUS du patch et reste ENTIER (jamais rogné).
-   Il est simplement BORNÉ au cercle intérieur (clamp au drag/resize).
-   Il faut donc lever le clip du conteneur, sinon un logo plus haut que large
-   serait coupé. La forme du patch reste portée par les fonds (border-radius /
-   clip-path), pas par un overflow. */
-.patch-stage .coins-canvas-circle { overflow: visible; }
-.patch-stage .patch-inner { overflow: visible; }
-
-/* BLASON : le clip-path du canvas rognerait aussi le logo. On le retire et on
-   peint la forme colorée dans un pseudo-élément placé au fond. */
-.patch-stage .coins-canvas-circle.shape-blason {
-  clip-path: none;
-  background: transparent;
-}
-.patch-stage .coins-canvas-circle.shape-blason::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  /* La couleur choisie est passée en variable par selectPatchColor(). */
-  background: var(--patch-color, #fafafa);
-  clip-path: polygon(
-    50% 0%, 92% 12%, 92% 45%, 84% 68%, 68% 86%, 50% 100%,
-    32% 86%, 16% 68%, 8% 45%, 8% 12%
-  );
-  z-index: 0;
-  pointer-events: none;
-}
+/* Le logo est positionné DIRECTEMENT dans #coins-canvas, AU-DESSUS de l'image.
+   Il reste entier et est simplement borné à l'intérieur de la forme (clamp JS). */
+#coins-canvas > .patch-logo { position: absolute; z-index: 5; }

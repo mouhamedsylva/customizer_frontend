@@ -32,6 +32,77 @@
   display: none !important;
 }
 
+/* En vue de côté, un seul profil est montré à la fois (gauche OU droite).
+   Sans cette règle, les deux zones de manche se superposeraient sur la même
+   image : deux pointillés côte à côte au même endroit.
+   data-side sur la couche = l | r */
+.logo-layer[data-side="l"] .side-r,
+.logo-layer[data-side="r"] .side-l {
+  display: none !important;
+}
+
+/* ── Bascule gauche / droite (vue de côté) ──────────────────────────────
+   Il n'existe qu'UNE image de profil par couleur. Le côté droit est le
+   côté gauche retourné en miroir : le vêtement est symétrique.
+   Le logo, LUI, n'est pas retourné (il apparaîtrait inversé) — d'où le
+   miroir appliqué à l'image seule, et non à la couche des logos. */
+.product-img-single#view-cote {
+  transition: transform .45s cubic-bezier(.4, 0, .2, 1);
+  transform-origin: center;
+}
+.cv-single-view.side-r .product-img-single#view-cote {
+  transform: scaleX(-1);
+}
+
+/* Rotation jouée au changement de côté : le vêtement pivote. */
+@keyframes sleeveFlip {
+  0%   { transform: perspective(900px) rotateY(0deg)   scaleX(var(--flip, 1)); }
+  50%  { transform: perspective(900px) rotateY(-78deg) scaleX(var(--flip, 1)); }
+  100% { transform: perspective(900px) rotateY(0deg)   scaleX(var(--flip, 1)); }
+}
+.cv-single-view.flipping .product-img-single#view-cote {
+  animation: sleeveFlip .55s ease-in-out;
+}
+
+/* Bascule : petit sélecteur segmenté, ancré en haut à droite de l'aperçu.
+   Hors du flux (absolute) pour ne pas décaler les onglets de vue. */
+.cv-wrap { position: relative; }
+
+.side-toggle {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  z-index: 6;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: #f1f3f5;
+  border-radius: 8px;
+}
+.st-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.st-btn:hover { color: #1a1a1a; }
+.st-btn.on {
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+}
+.st-ico { font-size: 8px; opacity: .65; }
+
 .design-logo {
   position: absolute;
   /* width défini en inline (modifiable au redimensionnement) */

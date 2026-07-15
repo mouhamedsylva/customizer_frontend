@@ -54,6 +54,34 @@
         {%- endfor -%}
       };
 
+      /* Dictionnaire des images PATCH, une par (forme × couleur).
+         Clé   : "{forme}-{slug}"          Ex. : "rond-rouge"
+         Fichier attendu : patch-{forme}-{slug}.png
+         4 formes × 16 couleurs = 64 images. asset_url renvoie TOUJOURS une URL
+         (même si le fichier n'existe pas encore) : le repli réel se fait côté JS
+         par onload/onerror (comme loadFirstAvailable), avec repli sur l'image
+         BLANCHE patch-{forme}-blanc.png teintée en CSS. */
+      window.PATCH_IMAGE_URLS = {
+        {%- assign pt_shapes = "rond,carre,rectangle,blason" | split: "," -%}
+        {%- assign pt_colors = "noir,blanc-casse,gris,gris-fonce,gris-ardoise,bleu-marine,bleu-ciel,vert-fonce,rose-clair,rose,rouge,orange,jaune,violet,marron,blanc" | split: "," -%}
+        {%- for s in pt_shapes -%}
+          {%- for c in pt_colors -%}
+            {%- assign pname = "patch-" | append: s | append: "-" | append: c | append: ".png" -%}
+            "{{ s }}-{{ c }}": "{{ pname | asset_url }}",
+          {%- endfor -%}
+        {%- endfor -%}
+      };
+
+      /* URL des 4 images BLANCHES de repli (patch-{forme}-blanc.png). Ces images
+         EXISTENT déjà ; elles sont teintées en CSS/canvas avec la couleur choisie
+         quand la vraie image colorée n'a pas encore été fournie. */
+      window.PATCH_WHITE_URLS = {
+        rond:      "{{ 'patch-rond-blanc.png'      | asset_url }}",
+        carre:     "{{ 'patch-carre-blanc.png'     | asset_url }}",
+        rectangle: "{{ 'patch-rectangle-blanc.png' | asset_url }}",
+        blason:    "{{ 'patch-blason-blanc.png'    | asset_url }}"
+      };
+
       // Dictionnaire de toutes les images textile (clé = "produit-couleur-vue")
       // Généré côté Liquid pour avoir les URLs CDN exactes (avec ?v=...).
       window.PRODUCT_IMAGE_URLS = {
@@ -154,6 +182,7 @@
     <script src="{{ 'conf-drapeaux.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-patches.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-logo-drag.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-sleeve-side.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-api.js' | asset_url }}" defer></script>
     <!-- Polices Google pour l'éditeur de texte -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -168,6 +197,7 @@
       --white: #ffffff;
       --border: #e5e5e5;
       --bg-light: #f8f8f8;
+      --stage: #f1f1f3;   /* fond de la scène d'aperçu produit (gris doux) */
       --muted: #666;
       --faint: #999;
       --blue: #2c5aa0;
@@ -604,7 +634,7 @@
 
     .cv-wrap {
       flex: 1;
-      background: var(--white);
+      background: var(--stage);   /* fond de scène gris doux (produit mis en valeur) */
       border-radius: 0;
       box-shadow: none;
       position: relative;
@@ -1398,9 +1428,23 @@
           <button class="vt" onclick="selView(this,'dos')">Vue de dos</button>
           <button class="vt" onclick="selView(this,'cote')">Vue de côté</button>
         </div>
+
       </div>
 
             <div class="cv-wrap">
+        <!-- Bascule gauche/droite : ancrée en haut à droite de l'aperçu, hors
+             du flux pour ne pas décaler les onglets de vue. Visible seulement
+             en vue de côté. Le profil droit est le profil gauche en miroir
+             (le vêtement est symétrique) : aucune image supplémentaire. -->
+        <div class="side-toggle" id="side-toggle" style="display:none">
+          <button class="st-btn on" id="st-l" onclick="setSleeveSide('l')" title="Voir la manche gauche">
+            <span class="st-ico">◀</span> Gauche
+          </button>
+          <button class="st-btn" id="st-r" onclick="setSleeveSide('r')" title="Voir la manche droite">
+            Droite <span class="st-ico">▶</span>
+          </button>
+        </div>
+
         <div class="cv-canvas-row">
           <!-- UNE SEULE grande image qui change -->
           <div class="cv-single-view">
@@ -1425,14 +1469,18 @@
               alt="Sweatshirt vue de côté">
             
             <!-- Couche des logos déplaçables (par-dessus le vêtement) -->
-            <div class="logo-layer" id="logo-layer" data-view="face">
+            <div class="logo-layer" id="logo-layer" data-view="face" data-side="l">
               <!-- ZONES GUIDES (pointillés rouges) : délimitent où poser l'asset.
                    Visibles tant que la zone est vide. left/top/width/height en %.
                    VUE FACE : uniquement le LOGO CŒUR (poitrine, côté cœur = droite
                    de l'image). VUE CÔTÉ : la manche. VUE DOS : le grand logo. -->
               <div class="logo-zone for-face" id="zone-f"  data-zone="f"  style="left:53.5%; top:28%; width:6%; height:14%;"></div>
               <div class="logo-zone for-dos"  id="zone-b"  data-zone="b"  style="left:38%; top:23%; width:24%; height:46%;"></div>
-              <div class="logo-zone for-cote" id="zone-sl" data-zone="sl" style="left:48%; top:29%; width:6%; height:11%;"></div>
+              <!-- Manches : une zone par côté. L'image de profil est la même,
+                   retournée en miroir pour la droite : la zone l'est aussi
+                   (48% -> 46% = 100 - 48 - 6, la largeur de la zone). -->
+              <div class="logo-zone for-cote side-l" id="zone-sl" data-zone="sl" style="left:48%; top:29%; width:6%; height:11%;"></div>
+              <div class="logo-zone for-cote side-r" id="zone-sr" data-zone="sr" style="left:46%; top:29%; width:6%; height:11%;"></div>
 
               <!-- Textes déplaçables + redimensionnables (face / dos) -->
               <div class="design-text for-face" id="text-f" style="display:none; left:44%; top:31%; width:22%; font-size:20px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-f"></span></div>
@@ -1448,12 +1496,13 @@
                 <img src="" alt="Logo dos" draggable="false">
                 <span class="logo-resize" data-resize="b"></span>
               </div>
-              <!-- Logos manches : visibles sur la vue de côté -->
-              <div class="design-logo for-cote" id="logo-sl" data-zone="sl" style="display:none; left:48%; top:31%; width:6%;">
+              <!-- Logos manches : visibles sur la vue de côté, un par côté.
+                   side-l / side-r : n'apparaissent que sur le côté affiché. -->
+              <div class="design-logo for-cote side-l" id="logo-sl" data-zone="sl" style="display:none; left:48%; top:31%; width:6%;">
                 <img src="" alt="Logo manche gauche" draggable="false">
                 <span class="logo-resize" data-resize="sl"></span>
               </div>
-              <div class="design-logo for-cote" id="logo-sr" data-zone="sr" style="display:none; left:42%; top:46%; width:12%;">
+              <div class="design-logo for-cote side-r" id="logo-sr" data-zone="sr" style="display:none; left:46%; top:31%; width:6%;">
                 <img src="" alt="Logo manche droite" draggable="false">
                 <span class="logo-resize" data-resize="sr"></span>
               </div>
@@ -1899,6 +1948,97 @@
       tryNext();
     }
 
+    /* ═══════════════════════ IMAGES PATCH (PNG) ═══════════════════════
+       Un patch = UNE image PNG (forme + couleur). Le logo se pose PAR-DESSUS.
+       - Si l'image colorée patch-{forme}-{slug}.png existe -> on l'affiche.
+       - Sinon -> repli sur l'image blanche patch-{forme}-blanc.png, telle
+         quelle (aucune teinte : la couleur vient uniquement des vraies
+         images fournies par le client).                                       */
+
+    // hex de la pastille -> slug de fichier (mêmes 16 couleurs que les drapeaux).
+    var PATCH_COLOR_SLUGS = {
+      '#1a1a1a': 'noir', '#f5f2ed': 'blanc-casse', '#9e9e9e': 'gris',
+      '#555555': 'gris-fonce', '#607d8b': 'gris-ardoise', '#1e3a5f': 'bleu-marine',
+      '#5bb8e8': 'bleu-ciel', '#2e6b45': 'vert-fonce', '#f0c8d8': 'rose-clair',
+      '#e8729a': 'rose', '#c0392b': 'rouge', '#e8842a': 'orange',
+      '#f5c842': 'jaune', '#9b6bb5': 'violet', '#7d4e2d': 'marron', '#ffffff': 'blanc'
+    };
+    window.PATCH_COLOR_SLUGS = PATCH_COLOR_SLUGS;
+
+    // Aspect-ratio (largeur/hauteur) de chaque forme, pour ne pas déformer l'image.
+    var PATCH_SHAPE_RATIO = { rond: 1, carre: 1, rectangle: 1346 / 861, blason: 829 / 972 };
+    window.PATCH_SHAPE_RATIO = PATCH_SHAPE_RATIO;
+
+    // Couleur de patch courante (hex + slug), suivie pour le récap et la capture.
+    window.currentPatchHex = '#1a1a1a';
+    window.currentPatchSlug = 'noir';
+
+    function patchHexToSlug(hex) {
+      if (!hex) return 'noir';
+      var h = hex.trim().toLowerCase();
+      // rgb(...) -> #rrggbb (le canvas renvoie parfois du rgb()).
+      var m = h.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (m) {
+        h = '#' + [m[1], m[2], m[3]].map(function (n) {
+          return ('0' + parseInt(n, 10).toString(16)).slice(-2);
+        }).join('');
+      }
+      return PATCH_COLOR_SLUGS[h] || 'noir';
+    }
+    window.patchHexToSlug = patchHexToSlug;
+
+    // URL de la vraie image colorée (peut ne pas exister) pour (forme, slug).
+    function patchColorUrl(shape, slug) {
+      var t = window.PATCH_IMAGE_URLS || {};
+      return t[shape + '-' + slug] || '';
+    }
+    // URL de l'image blanche de repli (existe toujours) pour la forme.
+    function patchWhiteUrl(shape) {
+      var t = window.PATCH_WHITE_URLS || {};
+      return t[shape] || '';
+    }
+
+    /* Met à jour l'image de fond du canevas (#patch-shape-img) selon la forme et
+       la couleur courantes, + applique l'aspect-ratio de la forme. Applique la
+       teinte de repli si l'image colorée est absente. */
+    function updatePatchShapeImg() {
+      var img = document.getElementById('patch-shape-img');
+      var canvas = document.getElementById('coins-canvas');
+      console.log('[PATCH] updatePatchShapeImg — img:', !!img, 'canvas:', !!canvas,
+        '| WHITE_URLS:', window.PATCH_WHITE_URLS,
+        '| canvas dims:', canvas ? (canvas.offsetWidth + 'x' + canvas.offsetHeight) : 'n/a');
+      if (!img || !canvas) return;
+
+      var shape = patchShapeName();
+      var slug = window.currentPatchSlug || 'noir';
+
+      // Aspect-ratio de la forme (rond/carré=1, rectangle=1.56, blason=0.85).
+      var ratio = PATCH_SHAPE_RATIO[shape] || 1;
+      canvas.style.aspectRatio = ratio;
+
+      var whiteUrl = patchWhiteUrl(shape);
+      var colorUrl = patchColorUrl(shape, slug);
+
+      // On affiche TOUJOURS l'image blanche d'abord : elle existe et s'affiche
+      // immédiatement. (asset_url renvoie une URL même pour un fichier absent,
+      // donc on ne peut pas se fier à "colorUrl vide" pour détecter l'absence —
+      // il faut charger et voir si ça réussit.)
+      console.log('[PATCH] shape:', shape, 'whiteUrl:', whiteUrl, 'colorUrl:', colorUrl);
+      if (whiteUrl) img.src = whiteUrl;
+      img.onload = function () { console.log('[PATCH] image CHARGÉE', img.naturalWidth + 'x' + img.naturalHeight, 'affichée', img.offsetWidth + 'x' + img.offsetHeight); };
+      img.onerror = function () { console.error('[PATCH] ÉCHEC chargement:', img.src); };
+
+      // Puis, si une VRAIE image colorée existe pour cette couleur, on la
+      // substitue une fois chargée. Sinon (404), on garde le blanc.
+      if (colorUrl && colorUrl !== whiteUrl) {
+        var test = new Image();
+        test.onload = function () { img.src = colorUrl; };
+        // onerror : on ne touche à rien, le blanc reste affiché.
+        test.src = colorUrl;
+      }
+    }
+    window.updatePatchShapeImg = updatePatchShapeImg;
+
     function updateProductImages() {
       const prefix = PRODUCT_SLUGS[currentProductKey];
       if (!prefix) return;
@@ -1958,8 +2098,11 @@
       'f':       { zoneId: 'zone-f',       logoId: 'logo-f',       left: 53.5, top: 28, width: 6, height: 14, maxW: 6 },
       // Logo dos : zone centrale du dos (H39xL30 -> plus haute que large).
       'b':       { zoneId: 'zone-b',       logoId: 'logo-b',       left: 38, top: 23, width: 24, height: 46, maxW: 24 },
-      // Manches : vue de côté uniquement.
-      'sl':      { zoneId: 'zone-sl',      logoId: 'logo-sl',      left: 48, top: 29, width: 6, height: 11, maxW: 6 }
+      // Manches : vue de côté uniquement, une zone par côté. L'image du profil
+      // droit est le profil gauche en miroir, d'où la zone symétrique
+      // (46 = 100 - 48 - 6, où 6 est la largeur de la zone).
+      'sl':      { zoneId: 'zone-sl',      logoId: 'logo-sl',      left: 48, top: 29, width: 6, height: 11, maxW: 6 },
+      'sr':      { zoneId: 'zone-sr',      logoId: 'logo-sr',      left: 46, top: 29, width: 6, height: 11, maxW: 6 }
     };
 
     /* Place un logo AU CENTRE de sa zone, à une largeur adaptée (bornée à maxW),
@@ -2060,20 +2203,10 @@
 
       if (!bgSrc) return;
 
-      // Couleur de fond choisie : on la reproduit comme sur le canvas, via un
-      // calque en mix-blend-mode:multiply masqué par la silhouette du drapeau.
-      var flagColor = window.__flagColor || '#ffffff';
-      var isWhite = (flagColor.toLowerCase() === '#ffffff' || flagColor.toLowerCase() === '#fff');
-
+      // L'image du drapeau est DÉJÀ à la bonne couleur (une image par couleur) :
+      // aucune teinte à appliquer, on affiche simplement l'image + le logo.
       var html = '<div style="position:relative;width:100%;height:100%;">' +
         '<img src="' + bgSrc + '" alt="Drapeau" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:4px;">';
-      if (!isWhite) {
-        html += '<div style="position:absolute;inset:0;background:' + flagColor +
-                ';mix-blend-mode:multiply;pointer-events:none;' +
-                '-webkit-mask-image:url(&quot;' + bgSrc + '&quot;);mask-image:url(&quot;' + bgSrc + '&quot;);' +
-                '-webkit-mask-size:100% 100%;mask-size:100% 100%;' +
-                '-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;"></div>';
-      }
       if (logoSrc) {
         html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
                 '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;z-index:2;">';
@@ -2089,11 +2222,12 @@
       var thumb = document.getElementById('coins-recap-thumb');
       if (!thumb) return;
 
-      // Couleur de fond du patch = fond du cercle canvas.
-      var canvas = document.getElementById('coins-canvas');
-      var bg = (canvas && canvas.style.backgroundColor) ? canvas.style.backgroundColor : '#ffffff';
+      // Image du patch actuellement affichée dans le canevas (forme + couleur,
+      // repli teinté inclus). On la RÉUTILISE telle quelle dans la miniature.
+      var shapeImg = document.getElementById('patch-shape-img');
+      var imgSrc = shapeImg ? shapeImg.getAttribute('src') : '';
 
-      // Logo patch + sa position (% inline).
+      // Logo patch + sa position (% inline, relatifs au canvas = à l'image).
       var logoEl = document.getElementById('patch-logo');
       var logoImg = logoEl ? logoEl.querySelector('img') : null;
       var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
@@ -2101,38 +2235,22 @@
       var top  = logoEl ? (parseFloat(logoEl.style.top)  || 25) : 25;
       var width = logoEl ? (parseFloat(logoEl.style.width) || 50) : 50;
 
-      // La miniature doit suivre la FORME choisie (rond, carré, rectangle, blason)
-      // et reproduire les DEUX zones :
-      //  - extérieure : la couleur choisie (bordure)
-      //  - intérieure (88 %) : fond blanc, zone d'impression du logo.
-      var shape = patchShapeStyle();
-
-      // IMPORTANT : le conteneur .rp-patch-thumb a un border-radius:50% + overflow
-      // hidden en CSS, qui rognerait tout en cercle. On applique donc la forme
-      // (et la couleur) directement SUR LE CONTENEUR.
-      thumb.style.borderRadius = '';
+      // Conteneur transparent, image en object-fit:contain, logo par-dessus.
+      thumb.style.borderRadius = '0';
       thumb.style.clipPath = '';
-      thumb.style.background = bg;
+      thumb.style.background = 'transparent';
       thumb.style.border = 'none';
-      thumb.style.overflow = 'hidden';
+      thumb.style.overflow = 'visible';
       thumb.style.position = 'relative';
-      if (shape.clip) {
-        thumb.style.clipPath = shape.clip;          // blason
-      } else {
-        thumb.style.borderRadius = shape.radius;    // rond / carré / rectangle
+
+      var html = '';
+      if (imgSrc) {
+        html += '<img src="' + imgSrc + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;">';
       }
-
-      var innerStyle =
-        'position:absolute;top:50%;left:50%;width:88%;height:88%;' +
-        'transform:translate(-50%,-50%);overflow:hidden;background:#fff;' +
-        (shape.clip ? ('clip-path:' + shape.clip) : ('border-radius:' + shape.radiusInner));
-
-      var html = '<div style="' + innerStyle + '">';
       if (logoSrc) {
         html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
-                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;">';
+                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;z-index:2;">';
       }
-      html += '</div>';
       thumb.innerHTML = html;
     }
 
@@ -2388,6 +2506,12 @@
       // panier) et une PLANCHE multi-vues (face+dos+côté, pour la commande).
       const design = await resolveDesignImage(fallbackSrc, btnEl);
 
+      // Logos uploadés + textes personnalisés rasterisés (courbe/couleur/taille
+      // fidèles) uploadés sur Cloudinary : les deux apparaissent parmi les
+      // assets de la commande.
+      const logoAssets = collectDesignAssets();
+      const textAssets = await collectTextAssets();
+
       const item = {
         id: Date.now(),
         productType: currentProductType,
@@ -2397,8 +2521,8 @@
         price: price,
         img:   design.thumb,   // vignette panier (face + logo)
         sheet: design.sheet,   // planche multi-vues (aperçu commande) — peut être null
-        // URLs Cloudinary des logos/assets réellement utilisés (pour la commande Shopify)
-        assets: collectDesignAssets(),
+        // URLs Cloudinary des logos/textes réellement utilisés (pour la commande Shopify)
+        assets: logoAssets.concat(textAssets),
         qty: 1
       };
 
@@ -2429,6 +2553,82 @@
         if (url) assets.push({ label: zoneLabels[zone], url: url });
       });
       return assets;
+    }
+
+    /* Rasterise le texte personnalisé d'une zone en PNG transparent, FIDÈLE au
+       rendu (courbe, couleur, taille de police). Renvoie une data-URL, ou ''
+       si la zone n'a pas de texte. Réutilisé pour les vignettes-assets de la
+       commande (le texte apparaît alors parmi les logos). */
+    function textAssetDataUrl(zone) {
+      var el = document.getElementById('text-' + zone);
+      if (!el || el.style.display === 'none') return '';
+      var content = el.querySelector('.dt-content');
+      if (!content) return '';
+      var raw = (content.textContent || '').trim();
+      if (!raw) return '';
+
+      var cs = window.getComputedStyle(el);
+      var color = cs.color || '#111';
+      var fontFamily = cs.fontFamily || 'sans-serif';
+
+      // Texte COURBÉ : rasterise le SVG déjà rendu (conserve la forme exacte).
+      var svg = content.querySelector('svg');
+      if (el.classList.contains('is-shaped') && svg) {
+        var clone = svg.cloneNode(true);
+        clone.setAttribute('width', '600');
+        clone.setAttribute('height', '180');
+        var xml = new XMLSerializer().serializeToString(clone);
+        var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+        return new Promise(function (resolve) {
+          var im = new Image();
+          im.onload = function () {
+            var cv = document.createElement('canvas');
+            cv.width = 600; cv.height = 180;
+            cv.getContext('2d').drawImage(im, 0, 0, 600, 180);
+            try { resolve(cv.toDataURL('image/png')); } catch (e) { resolve(''); }
+          };
+          im.onerror = function () { resolve(''); };
+          im.src = url;
+        });
+      }
+
+      // Texte SIMPLE : dessin canvas 2D haute résolution.
+      var fontSize = 160;
+      var font = '700 ' + fontSize + 'px ' + fontFamily;
+      var meas = document.createElement('canvas').getContext('2d');
+      meas.font = font;
+      var tw = Math.max(1, meas.measureText(raw).width);
+      var padX = fontSize * 0.15, padY = fontSize * 0.35;
+      var cv = document.createElement('canvas');
+      cv.width = Math.ceil(tw + padX * 2);
+      cv.height = Math.ceil(fontSize + padY * 2);
+      var ctx = cv.getContext('2d');
+      ctx.font = font;
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(raw, cv.width / 2, cv.height / 2);
+      try { return cv.toDataURL('image/png'); } catch (e) { return ''; }
+    }
+
+    /* Rasterise les textes (face/dos), les upload sur Cloudinary, et renvoie
+       leurs assets { label, url } pour la commande. Async : l'upload doit
+       aboutir à une URL hébergée (une data-URL serait rejetée par Shopify). */
+    async function collectTextAssets() {
+      if (!window.ConfAPI || typeof window.ConfAPI.uploadLogo !== 'function') return [];
+      var zones = [{ z: 'f', label: 'Texte face' }, { z: 'b', label: 'Texte dos' }];
+      var out = [];
+      for (var i = 0; i < zones.length; i++) {
+        var dataUrl = await Promise.resolve(textAssetDataUrl(zones[i].z));
+        if (!dataUrl) continue;
+        try {
+          var file = dataUrlToFile(dataUrl, 'texte-' + zones[i].z + '.png');
+          var res = await window.ConfAPI.uploadLogo(file);
+          var url = res && (res.url || res.secure_url);
+          if (url) out.push({ label: zones[i].label, url: url });
+        } catch (e) { /* upload raté : on n'ajoute pas ce texte, sans bloquer */ }
+      }
+      return out;
     }
 
     /* Assets (logos Cloudinary) utilisés pour les produits NON textiles :
@@ -2467,12 +2667,27 @@
       const busy = () => { if (btnEl && original === null) { original = btnEl.innerHTML; btnEl.disabled = true; btnEl.innerHTML = 'Préparation du design…'; } };
       const done = () => { if (btnEl && original !== null) { btnEl.disabled = false; btnEl.innerHTML = original; original = null; } };
 
-      // --- 1) VIGNETTE : vue de face + logo (image carrée lisible) ---
+      // --- 1) VIGNETTE : vue de face + logo cœur (image carrée lisible) ---
+      //
+      // Un repli capturait ici la VUE COURANTE quand la face n'avait pas de
+      // logo. Résultat : en vue de côté, il récupérait le logo de MANCHE (avec
+      // ses coordonnées de profil) et le composait sur l'image de FACE — le
+      // logo de manche se retrouvait plaqué au milieu du torse.
+      //
+      // La vignette du panier montre la face, et rien d'autre. Si la face n'est
+      // pas personnalisée, on garde l'image produit nue (fallbackSrc) : les
+      // manches sont visibles sur la planche de production, pas ici.
+      const isTextile = ['sweatshirt', 'tshirt', 'tshirt_polyester']
+        .indexOf(currentProductType) !== -1;
+
       let thumb = fallbackSrc;
       let faceDesign = null;
       try {
         faceDesign = captureFaceDesign();
-        if (!faceDesign || !faceDesign.logos || !faceDesign.logos.length) {
+        // Coins / drapeaux / patchs n'ont pas de « vue de face » : pour eux, la
+        // vue courante EST le design. Le repli reste donc légitime.
+        if (!isTextile &&
+            (!faceDesign || !faceDesign.logos || !faceDesign.logos.length)) {
           const fb = captureCurrentDesign();
           if (fb && fb.logos && fb.logos.length) faceDesign = fb;
         }
@@ -2492,7 +2707,7 @@
       // --- 2) PLANCHE multi-vues (textile uniquement, si au moins un logo) ---
       let sheet = null;
       try {
-        const views = captureAllViews();
+        const views = await captureAllViews();
         if (views && views.length && views.some(v => v.logos && v.logos.length)) {
           busy();
           try {
@@ -2595,7 +2810,7 @@
       // PATCH : fond couleur (généré en canvas) + logo -> composition serveur.
       if (currentProductType === 'patches') {
         var patch = null;
-        try { patch = capturePatchDesign(); } catch (e) { patch = null; }
+        try { patch = await capturePatchDesign(); } catch (e) { patch = null; }
         if (patch && patch.logos && patch.logos.length) {
           var origP = btnEl ? btnEl.innerHTML : '';
           if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Préparation…'; }
@@ -2918,12 +3133,15 @@
       try {
         sessionStorage.removeItem('conf_cart');
         sessionStorage.removeItem('conf_uploads');
+        sessionStorage.removeItem('conf_texts');          // textes personnalisés (face/dos)
         sessionStorage.removeItem('conf_order');
         sessionStorage.removeItem('pendingProduct');
         sessionStorage.removeItem('conf_current_product');
         sessionStorage.removeItem('conf_current_color');
         sessionStorage.removeItem('conf_patch_color');
         sessionStorage.removeItem('conf_coin_finish');
+        sessionStorage.removeItem('conf_flag_color');      // couleur de fond drapeau
+        sessionStorage.removeItem('conf_flag_color_name');
         localStorage.removeItem('last_design_id');
       } catch (e) {}
     }
@@ -3035,9 +3253,9 @@
     }
 
     /* Capture le design de la VUE DE FACE indépendamment de la vue actuellement
-       affichée. Les logos face (cœur + manches vues de face) sont lus via leurs
-       styles inline (left/top/width en %) : fiable même quand la vue courante
-       est "dos" ou "côté" (où ces logos sont masqués par CSS et donneraient une
+       affichée. Seul le logo cœur y figure (les manches sont sur les côtés).
+       Il est lu via ses styles inline (left/top/width en %) : fiable même quand
+       la vue courante est "dos" ou "côté" (où ce logo est masqué par CSS et donnerait une
        taille nulle). Sert à générer l'aperçu envoyé au panier/commande. */
     function captureFaceDesign() {
       const background = currentProductImageURL('face');
@@ -3069,11 +3287,17 @@
         imgBox = imgBoxWithinLayer(refImg, layerBox);
       }
 
-      const faceZones = ['logo-f', 'logo-sl-face', 'logo-sr-face'];
+      // Vue de FACE : uniquement ce qui est visible de face, donc le logo cœur.
+      // Les manches (logo-sl-face / logo-sr-face) étaient incluses ici — un
+      // reste de l'époque où elles s'affichaient sur la vue de face. Elles ont
+      // été retirées du canevas mais pas d'ici : leurs logos se retrouvaient
+      // plaqués sur la vignette du panier alors qu'ils sont sur les côtés.
+      const faceZones = ['logo-f'];
       const logos = [];
       faceZones.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
+        if (el.style.display === 'none') return;   // zone non personnalisée
         const img = el.querySelector('img');
         if (!img || !img.getAttribute('src')) return;
 
@@ -3143,7 +3367,92 @@
       return { left, top, width: w, height: h };
     }
 
-    function captureAllViews() {
+    /* Rasterise le texte personnalisé d'une zone (#text-f / #text-b) en PNG
+       transparent, et renvoie { src, x, y, w } reprojeté sur l'image produit —
+       exactement comme un logo — pour l'ajouter à la planche. Renvoie null si la
+       zone n'a pas de texte. Gère le texte simple ET le texte courbé (SVG).
+       Sans ça, le texte du client n'apparaissait pas sur la planche. */
+    function textZoneImage(zoneId, imgBox, layerBox, canReproject) {
+      var el = document.getElementById(zoneId);
+      if (!el || el.style.display === 'none') return null;
+      var content = el.querySelector('.dt-content');
+      if (!content) return null;
+      var raw = (content.textContent || '').trim();
+      if (!raw) return null;
+
+      return new Promise(function (resolve) {
+        // Dimensions écran de la zone de texte (pour reprojeter comme un logo).
+        var pct = function (v) {
+          if (typeof v !== 'string') return null;
+          var m = v.trim().match(/^([\d.]+)%$/);
+          return m ? parseFloat(m[1]) / 100 : null;
+        };
+        var geo;
+        if (canReproject) {
+          var r = el.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            geo = {
+              x: (r.left - imgBox.left) / imgBox.width,
+              y: (r.top - imgBox.top) / imgBox.height,
+              w: r.width / imgBox.width
+            };
+          }
+        }
+        if (!geo) {
+          var lx = pct(el.style.left), ly = pct(el.style.top), lw = pct(el.style.width);
+          if (lx == null || ly == null || lw == null) { resolve(null); return; }
+          geo = { x: lx, y: ly, w: lw };
+        }
+
+        var cs = window.getComputedStyle(el);
+        var color = cs.color || '#111';
+        var fontFamily = cs.fontFamily || 'sans-serif';
+        var shaped = el.classList.contains('is-shaped');
+
+        // Texte courbé : on rasterise le SVG déjà rendu dans .dt-content.
+        var svg = content.querySelector('svg');
+        if (shaped && svg) {
+          var clone = svg.cloneNode(true);
+          // Fige une taille de rendu nette.
+          clone.setAttribute('width', '600');
+          clone.setAttribute('height', '180');
+          var xml = new XMLSerializer().serializeToString(clone);
+          var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+          var im = new Image();
+          im.onload = function () {
+            var cv = document.createElement('canvas');
+            cv.width = 600; cv.height = 180;
+            cv.getContext('2d').drawImage(im, 0, 0, 600, 180);
+            try { resolve({ src: cv.toDataURL('image/png'), x: geo.x, y: geo.y, w: geo.w }); }
+            catch (e) { resolve(null); }
+          };
+          im.onerror = function () { resolve(null); };
+          im.src = url;
+          return;
+        }
+
+        // Texte simple : dessin canvas 2D haute résolution.
+        var fontSize = 160;
+        var font = '700 ' + fontSize + 'px ' + fontFamily;
+        var meas = document.createElement('canvas').getContext('2d');
+        meas.font = font;
+        var tw = Math.max(1, meas.measureText(raw).width);
+        var padX = fontSize * 0.15, padY = fontSize * 0.35;
+        var cv = document.createElement('canvas');
+        cv.width = Math.ceil(tw + padX * 2);
+        cv.height = Math.ceil(fontSize + padY * 2);
+        var ctx = cv.getContext('2d');
+        ctx.font = font;
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(raw, cv.width / 2, cv.height / 2);
+        try { resolve({ src: cv.toDataURL('image/png'), x: geo.x, y: geo.y, w: geo.w }); }
+        catch (e) { resolve(null); }
+      });
+    }
+
+    async function captureAllViews() {
       // Uniquement pour les produits TEXTILES. Pour coins/drapeaux/patches,
       // currentProductKey peut rester sur un ancien textile -> on vérifie le
       // type de produit COURANT réel avant de capturer les vues face/dos/côté.
@@ -3199,26 +3508,71 @@
       };
 
       // Mapping vue -> logos qui s'y affichent.
-      const viewZones = {
-        face: ['logo-f', 'logo-sl-face', 'logo-sr-face'],
-        dos:  ['logo-b'],
-        cote: ['logo-sl', 'logo-sr']
-      };
-      const labels = { face: 'FACE', dos: 'DOS', cote: 'CÔTÉ' };
+      // Les deux manches partagent la même image de profil : on les sépare en
+      // deux vues distinctes, sinon leurs logos se superposeraient sur un seul
+      // visuel et l'atelier ne saurait pas laquelle imprimer.
+      // NB : les textes personnalisés (#text-f, #text-b) ne sont pas capturés
+      // ici — project() attend une <img>, or un texte n'en est pas une. Ils
+      // restent visibles sur la vignette du panier.
+      // mirror : il n'existe qu'UNE image de profil (le côté gauche). Le côté
+      // droit est cette image retournée — comme dans le configurateur. Sans ce
+      // drapeau, les deux vues de manche sortent orientées à l'identique et
+      // l'atelier ne peut pas distinguer quel côté imprimer.
+      // textZone : la zone de texte personnalisé visible sur cette vue
+      // (face -> #text-f, dos -> #text-b). Les manches n'ont pas de texte.
+      const viewDefs = [
+        { key: 'face',  img: 'face', label: 'FACE',          zones: ['logo-f'], textZone: 'f' },
+        { key: 'dos',   img: 'dos',  label: 'DOS',           zones: ['logo-b'], textZone: 'b' },
+        { key: 'sl',    img: 'cote', label: 'MANCHE GAUCHE', zones: ['logo-sl'] },
+        { key: 'sr',    img: 'cote', label: 'MANCHE DROITE', zones: ['logo-sr'], mirror: true }
+      ];
 
       const views = [];
-      ['face', 'dos', 'cote'].forEach(view => {
-        const background = currentProductImageURL(view);
-        if (!background) return;
+      for (const def of viewDefs) {
+        const background = currentProductImageURL(def.img);
+        if (!background) continue;
+
         const logos = [];
-        (viewZones[view] || []).forEach(id => {
+        def.zones.forEach(id => {
           const el = document.getElementById(id);
           if (!el) return;
+          // « Non personnalisé » = le style inline dit display:none. On ne se
+          // fie PAS à la visibilité réelle : en vue de côté, la manche du côté
+          // non affiché est masquée par CSS ([data-side]) alors qu'elle porte
+          // bien un logo — la tester ferait disparaître son visuel de la
+          // planche de production.
+          if (el.style.display === 'none') return;
           const p = project(el);
           if (p) logos.push(p);
         });
-        views.push({ label: labels[view], background: background, logos: logos });
-      });
+
+        // Texte personnalisé de la vue : rasterisé en PNG et ajouté comme un
+        // logo. C'est ce qui le fait apparaître sur la planche (il était ignoré
+        // avant, car ce n'est pas une <img>).
+        if (def.textZone) {
+          const t = await textZoneImage('text-' + def.textZone, imgBox, layerBox, canReproject);
+          if (t) logos.push(t);
+        }
+
+        // Une vue sans impression n'apprend rien à l'atelier : on l'omet.
+        // (Sans ce filtre, une vue de côté vide apparaissait systématiquement.)
+        if (!logos.length) continue;
+
+        // Vue miroir (manche droite) : le serveur retourne le FOND. Le logo,
+        // lui, ne doit PAS être inversé — le design du client apparaîtrait à
+        // l'envers. On lui donne donc sa position déjà convertie dans le repère
+        // retourné : x' = 1 - x - w. Le serveur le pose tel quel, à l'endroit.
+        if (def.mirror) {
+          logos.forEach(l => { l.x = 1 - l.x - l.w; });
+        }
+
+        views.push({
+          label: def.label,
+          background: background,
+          logos: logos,
+          mirror: !!def.mirror
+        });
+      }
 
       return views.length ? views : null;
     }
@@ -3390,43 +3744,6 @@
     /* Capture le design d'un DRAPEAU (recto + verso s'il y a un logo) : fond +
        logo positionné, pour composer une image d'aperçu. Renvoie un tableau de
        "views" (comme captureCoinDesign) ou null si le produit n'est pas drapeau. */
-    /* Produit un fond de drapeau TEINTÉ à la couleur choisie (dataURL PNG).
-       Le canvas reproduit le rendu du calque CSS (multiply masqué par le drapeau) :
-       sans ça, la composition serveur reçoit le drapeau blanc et la couleur est
-       perdue dans le panier / la commande.
-       Renvoie '' si la couleur est blanche (rien à teinter) ou en cas d'échec. */
-    function tintedFlagBackground(imgEl) {
-      var color = window.__flagColor || '#ffffff';
-      var c = String(color).toLowerCase();
-      if (c === '#ffffff' || c === '#fff') return '';        // blanc : image d'origine
-      if (!imgEl || !imgEl.naturalWidth) return '';
-
-      try {
-        var cv = document.createElement('canvas');
-        cv.width = imgEl.naturalWidth;
-        cv.height = imgEl.naturalHeight;
-        var ctx = cv.getContext('2d');
-
-        // 1) Le drapeau (avec ses plis et sa transparence).
-        ctx.drawImage(imgEl, 0, 0, cv.width, cv.height);
-        // 2) La couleur en multiply : teinte le blanc, conserve les ombres.
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.fillStyle = color;
-        ctx.fillRect(0, 0, cv.width, cv.height);
-        // 3) Re-découpe sur la silhouette du drapeau (le multiply a rempli le
-        //    rectangle entier ; on ne garde que les pixels non transparents).
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.drawImage(imgEl, 0, 0, cv.width, cv.height);
-        ctx.globalCompositeOperation = 'source-over';
-
-        return cv.toDataURL('image/png');
-      } catch (e) {
-        // Image cross-origin non "taintable" -> on retombe sur l'image d'origine.
-        console.warn('Teinte du drapeau impossible (canvas) :', e);
-        return '';
-      }
-    }
-
     function captureFlagDesign() {
       if (currentProductType !== 'drapeaux') return null;
 
@@ -3462,20 +3779,34 @@
             }
           }
         }
-        // Fond teinté à la couleur choisie (sinon le serveur compose un drapeau blanc).
-        var bg = tintedFlagBackground(baseImg) || baseImg.src;
-
+        // L'image du drapeau est DÉJÀ à la bonne couleur : on l'envoie telle quelle.
         // On ne garde que les faces AVEC un logo (évite un verso vide).
-        if (logos.length) views.push({ label: f.label, background: bg, logos: logos });
+        if (logos.length) views.push({ label: f.label, background: baseImg.src, logos: logos });
       });
 
       return views.length ? views : null;
     }
 
-    /* Capture le design d'un PATCH : le fond est une COULEUR (pas une image), donc
-       on génère un cercle coloré en canvas -> data-URL, qui sert de background.
-       Le logo est superposé à sa position. Renvoie { background, logos } ou null. */
-    function capturePatchDesign() {
+    /* Charge une image (Promise). crossOrigin pour pouvoir toDataURL (CDN Shopify
+       renvoie les en-têtes CORS). Renvoie null si le chargement échoue. */
+    function loadImagePromise(url) {
+      return new Promise(function (resolve) {
+        if (!url) { resolve(null); return; }
+        var im = new Image();
+        im.crossOrigin = 'anonymous';
+        im.onload = function () { resolve(im); };
+        im.onerror = function () { resolve(null); };
+        im.src = url;
+      });
+    }
+
+    /* Capture le design d'un PATCH : le fond est désormais l'IMAGE PNG du patch
+       (forme + couleur). Si la vraie image colorée n'existe pas, on prend l'image
+       BLANCHE et on la TEINTE (couleur en 'source-in' sur une copie masquée par
+       l'alpha de l'image, en 'multiply' pour garder la couture). Le logo est
+       superposé à sa position (% du canvas = % de l'image). Renvoie une Promise
+       de { background, logos } ou null. */
+    async function capturePatchDesign() {
       if (currentProductType !== 'patches') return null;
 
       var logoEl = document.getElementById('patch-logo');
@@ -3483,49 +3814,42 @@
       var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
       if (!logoSrc) return null;
 
-      // Couleur de fond du patch (l'ANNEAU extérieur).
-      var canvasEl = document.getElementById('coins-canvas');
-      var bgColor = (canvasEl && canvasEl.style.backgroundColor) ? canvasEl.style.backgroundColor : '#ffffff';
-
-      // Le patch a DEUX zones, à la FORME choisie (rond, carré, rectangle, blason) :
-      //  - extérieure : la couleur choisie (bordure)
-      //  - intérieure (INNER = 88 %) : blanche, zone d'impression du logo.
-      var INNER = 0.88;
       var shape = patchShapeName();
-      var size = 1000;
-      var W = (shape === 'rectangle') ? Math.round(size * 1.4) : size;
-      var H = size;
+      var slug = window.currentPatchSlug || 'noir';
 
+      // 1) Image source : la vraie image colorée si elle existe, sinon l'image
+      //    blanche telle quelle (aucune teinte).
+      var colorUrl = (window.PATCH_IMAGE_URLS || {})[shape + '-' + slug] || '';
+      var whiteUrl = (window.PATCH_WHITE_URLS || {})[shape] || '';
+
+      var baseImg = colorUrl ? await loadImagePromise(colorUrl) : null;
+      if (!baseImg) baseImg = await loadImagePromise(whiteUrl);
+      if (!baseImg) return null;   // aucune image chargeable
+
+      // 2) Canvas au ratio de l'image (donc de la forme).
+      var W = baseImg.naturalWidth || 1000;
+      var H = baseImg.naturalHeight || 1000;
       var c = document.createElement('canvas');
       c.width = W; c.height = H;
       var ctx = c.getContext('2d');
       ctx.clearRect(0, 0, W, H);
 
-      // 1) Forme extérieure, colorée.
-      ctx.fillStyle = bgColor;
-      tracePatchShape(ctx, shape, 0, 0, W, H);
-      ctx.fill();
+      // 3) Dessine l'image du patch, telle quelle.
+      ctx.drawImage(baseImg, 0, 0, W, H);
 
-      // 2) Forme intérieure, blanche (zone d'impression).
-      var iw = W * INNER, ih = H * INNER;
-      var ix = (W - iw) / 2, iy = (H - ih) / 2;
-      ctx.fillStyle = '#ffffff';
-      tracePatchShape(ctx, shape, ix, iy, iw, ih);
-      ctx.fill();
+      var bgDataUrl;
+      try { bgDataUrl = c.toDataURL('image/png'); }
+      catch (e) {
+        // Canvas taint (CORS) : on renvoie l'URL de l'image directement.
+        console.warn('Patch: canvas taint, envoi image brute', e);
+        bgDataUrl = baseImg.src;
+      }
 
-      var bgDataUrl = c.toDataURL('image/png');
-
-      // Position du logo : ses % sont relatifs au cercle INTÉRIEUR (son parent).
-      // On les convertit en % du cercle ENTIER, sinon le logo est mal placé
-      // et surdimensionné dans l'image composée (panier, commande).
-      var offset = (1 - INNER) / 2;                       // marge de l'anneau
-      var lxIn = logoEl ? (parseFloat(logoEl.style.left) || 0) / 100 : 0;
-      var lyIn = logoEl ? (parseFloat(logoEl.style.top)  || 0) / 100 : 0;
-      var lwIn = logoEl ? (parseFloat(logoEl.style.width) || 100) / 100 : 1;
-
-      var lx = offset + lxIn * INNER;
-      var ly = offset + lyIn * INNER;
-      var lw = lwIn * INNER;
+      // 5) Logo : ses % sont relatifs au canvas = à l'image entière. Aucune
+      //    conversion INNER : plus de cercle intérieur.
+      var lx = logoEl ? (parseFloat(logoEl.style.left) || 0) / 100 : 0;
+      var ly = logoEl ? (parseFloat(logoEl.style.top)  || 0) / 100 : 0;
+      var lw = logoEl ? (parseFloat(logoEl.style.width) || 100) / 100 : 1;
 
       return { background: bgDataUrl, logos: [{ src: logoSrc, x: lx, y: ly, w: lw }] };
     }
@@ -3544,7 +3868,7 @@
       }
 
       // Textile : image multi-vues (face + dos + côté) en une seule image.
-      const views = captureAllViews();
+      const views = await captureAllViews();
       if (views && views.length) {
         return shareMultiView(views, btnEl);
       }
@@ -4047,6 +4371,14 @@
           // Applique l'image dans l'interface (affichage instantané via data URL)
           applyUpload(zone, src);
 
+          // Upload sur une manche : on pivote vers elle pour que le client
+          // voie ce qu'il vient de poser. (Uniquement à l'upload — pas à la
+          // restauration, sinon le vêtement tournerait seul au rechargement.)
+          if ((zone === 'sl' || zone === 'sr') &&
+              typeof window.showSleeve === 'function') {
+            window.showSleeve(zone);
+          }
+
           // En arrière-plan : upload vers Cloudinary via le backend (production).
           // On envoie l'image RÉELLEMENT retenue (détourée si le client a choisi
           // de retirer le fond, sinon l'originale). N'empêche jamais l'affichage.
@@ -4172,11 +4504,7 @@
             const ph = coinsCanvas.querySelector('.coins-placeholder');
             if (ph) ph.style.display = 'none';
           }
-          // Masquer le pointillé du cercle intérieur (zone remplie).
-          const patchInner = document.getElementById('patch-inner');
-          if (patchInner) patchInner.classList.add('filled');
-          
-          // Recap - miniature ronde : patch (fond couleur) + logo positionné.
+          // Recap - miniature : image du patch (forme + couleur) + logo positionné.
           updatePatchRecapThumb();
 
           return;
@@ -4250,22 +4578,19 @@
         const ov = document.getElementById('ov-' + zone);
         if (ov) { ov.setAttribute('href', src); ov.style.display = 'block'; }
 
-        // Logos manches déplaçables.
-        // La vue de côté ne montre qu'UNE manche (la gauche) : seul le logo de la
-        // manche GAUCHE (sl) apparaît en vue de côté. La manche DROITE (sr) n'apparaît
-        // qu'en vue de face (sur le bras droit).
+        // Logos manches déplaçables. Chaque manche a désormais SA vue : le
+        // profil est le même retourné en miroir, et [data-side] n'affiche que
+        // le côté courant. La manche droite n'était pas rendue du tout
+        // auparavant — un upload dessus restait invisible.
         if (zone === 'sl' || zone === 'sr') {
-          // Version vue de côté : uniquement pour la manche gauche
-          if (zone === 'sl') {
-            const logo = document.getElementById('logo-sl');
-            if (logo) {
-              const limg = logo.querySelector('img');
-              if (limg) limg.src = src;
-              logo.style.display = 'block';
-            }
+          const logo = document.getElementById('logo-' + zone);
+          if (logo) {
+            const limg = logo.querySelector('img');
+            if (limg) limg.src = src;
+            logo.style.display = 'block';
           }
-          // Les manches ne s'affichent plus en vue de face. Le logo "-face"
-          // conserve l'asset (compat récap/export) mais reste masqué.
+          // Le logo "-face" conserve l'asset (compat récap/export) mais reste
+          // masqué : les manches ne s'affichent plus en vue de face.
           const logoFace = document.getElementById('logo-' + zone + '-face');
           if (logoFace) {
             const limg2 = logoFace.querySelector('img');
@@ -4275,14 +4600,13 @@
           const rcS = document.getElementById('rc-sleeves');
           if (rcS) rcS.style.display = 'flex';
 
-          // Placement auto dans la zone manche (vue de côté).
-          if (zone === 'sl') placeLogoInZone('sl');
+          // Placement auto dans la zone de la manche concernée.
+          placeLogoInZone(zone);
 
-          // Les manches se visualisent toujours en vue de côté.
-          const viewBtn = document.querySelector('.vt[onclick*="cote"]');
-          if (viewBtn && typeof selView === 'function') {
-            selView(viewBtn, 'cote');
-          }
+          // La rotation vers la bonne manche est déclenchée par doUpload
+          // (showSleeve), qui passe en vue de côté puis pivote. On ne bascule
+          // pas ici : applyUpload sert aussi à la RESTAURATION au rechargement,
+          // et le vêtement se mettrait à tourner tout seul.
         }
 
         // Logo cœur déplaçable sur le produit (vue de face) + bascule auto vers la vue de face
@@ -4371,10 +4695,6 @@
           patchLogo.style.width = '70%';
           patchLogo.style.height = '';
         }
-        // Réafficher le pointillé du cercle intérieur (zone vidée).
-        const patchInner = document.getElementById('patch-inner');
-        if (patchInner) patchInner.classList.remove('filled');
-
         // Réinitialiser la miniature du récap
         const recapThumb = document.getElementById('coins-recap-thumb');
         if (recapThumb) {
@@ -4541,12 +4861,16 @@
       const shapeName = el.querySelector('span').textContent;
       const shape = el.dataset.shape;
 
-      // Applique la forme au canvas (rond / carré / rectangle / blason).
+      // La forme est portée par la CLASSE shape-* (lue par patchShapeName()),
+      // puis rendue par l'IMAGE PNG (updatePatchShapeImg applique aussi le ratio).
       const canvas = document.getElementById('coins-canvas');
       if (canvas && shape) {
         canvas.classList.remove('shape-rond', 'shape-carre', 'shape-rectangle', 'shape-blason');
         canvas.classList.add('shape-' + shape);
       }
+
+      // Recalcule l'image du patch (forme + couleur, repli teinté) + l'aspect-ratio.
+      if (typeof updatePatchShapeImg === 'function') updatePatchShapeImg();
 
       // Mettre à jour le récap
       const recapShape = document.getElementById('coins-recap-shape');
@@ -4561,16 +4885,21 @@
       document.querySelectorAll('.patch-color-sw').forEach(s => s.classList.remove('active'));
       el.classList.add('active');
 
-      // Colorer le fond du patch. La variable --patch-color sert au blason,
-      // dont la forme est peinte par un pseudo-élément (le clip-path du canvas
-      // rognerait le logo, qui doit rester entier).
+      // Couleur courante du patch (hex + slug de fichier). Le rendu se fait via
+      // l'IMAGE PNG patch-{forme}-{slug}.png (ou l'image blanche teintée en repli).
+      window.currentPatchHex = hex;
+      window.currentPatchSlug = (typeof patchHexToSlug === 'function') ? patchHexToSlug(hex) : 'noir';
+
+      // On conserve --patch-color / backgroundColor pour compat (capture lit le hex).
       const canvas = document.getElementById('coins-canvas');
       if (canvas) {
-        canvas.style.backgroundColor = hex;
         canvas.style.setProperty('--patch-color', hex);
       }
 
-      // Met à jour la vignette du récap (cercle coloré + logo positionné).
+      // Recalcule l'image du patch (vraie image colorée sinon blanc teinté).
+      if (typeof updatePatchShapeImg === 'function') updatePatchShapeImg();
+
+      // Met à jour la vignette du récap (image + logo positionné).
       if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
 
       // Ajouter/mettre à jour la ligne "Couleur" dans le récap

@@ -24,9 +24,11 @@
       if (coinDisc) return coinDisc;
       const flagWrap = logo.closest('.flag-img-3d');
       if (flagWrap) return flagWrap;
-      // Patch : le logo est positionné dans le CERCLE INTÉRIEUR (zone d'impression).
-      const patchInner = logo.closest('.patch-inner');
-      if (patchInner) return patchInner;
+      // Patch : le logo est positionné DIRECTEMENT dans #coins-canvas (l'image
+      // du patch). Ses % sont relatifs à ce conteneur ; le clamp le borne à
+      // l'intérieur de la forme (voir PATCH_LOGO_INSET dans onPointerMove).
+      const patchCanvas = logo.closest('#coins-canvas');
+      if (patchCanvas) return patchCanvas;
       const patchStage = logo.closest('.patch-stage');
       if (patchStage) return patchStage;
     }
@@ -111,11 +113,15 @@
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    // Le patch : l'image reste ENTIÈRE (pas de clip) mais BORNÉE au cercle
-    // intérieur — elle ne peut pas dépasser (position 0..100, largeur ≤ 100 %).
-    const MIN_POS = 0;
-    const maxPos = (sizePct) => (100 - sizePct);
-    const maxW = MAX_W;
+    // Le patch : le logo reste ENTIER mais borné à l'INTÉRIEUR de la forme, avec
+    // une marge (inset) pour ne pas déborder sur la couture. Pour les autres
+    // pièces, inset = 0 (bornage 0..100 du canvas de référence).
+    const isPatchLogo = active && active.id === 'patch-logo';
+    const PATCH_LOGO_INSET = 12;                 // marge en % (couture)
+    const inset = isPatchLogo ? PATCH_LOGO_INSET : 0;
+    const MIN_POS = inset;
+    const maxPos = (sizePct) => (100 - inset - sizePct);
+    const maxW = isPatchLogo ? (100 - 2 * inset) : MAX_W;
 
     if (mode === 'resize') {
       // Nouvelle largeur en % selon le déplacement horizontal

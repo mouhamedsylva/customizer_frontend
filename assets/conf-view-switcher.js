@@ -29,6 +29,9 @@ function selView(btn, viewName) {
   const logoLayer = document.getElementById('logo-layer');
   if (logoLayer) logoLayer.setAttribute('data-view', viewName);
 
+  // La bascule gauche/droite n'a de sens qu'en vue de côté.
+  if (typeof window.syncSideToggle === 'function') window.syncSideToggle(viewName);
+
   // Réévalue le bouton « Ajouter un texte » selon la vue (face/dos/côté).
   if (typeof refreshTextButton === 'function') refreshTextButton();
 }

@@ -323,6 +323,11 @@ class DynamicLayoutManager {
       this.loadCoinsSidebar();
       this.loadCoinsCanvas();
       this.loadCoinsRecap();
+      // Initialise l'image du patch (forme + couleur par défaut) après injection.
+      setTimeout(function () {
+        if (typeof window.updatePatchShapeImg === 'function') window.updatePatchShapeImg();
+        if (typeof window.updatePatchRecapThumb === 'function') window.updatePatchRecapThumb();
+      }, 0);
     } else if (category === 'drapeaux') {
       this.loadDrapeauxSidebar();
       this.loadDrapeauxCanvas();
@@ -331,6 +336,12 @@ class DynamicLayoutManager {
       this.loadPatchesSidebar();
       this.loadPatchesCanvas();
       this.loadPatchesRecap();
+      // Filet de sécurité : si ce canvas contient l'image patch, l'initialiser.
+      // (Sans effet si l'élément n'existe pas — la fonction sort d'elle-même.)
+      setTimeout(function () {
+        if (typeof window.updatePatchShapeImg === 'function') window.updatePatchShapeImg();
+        if (typeof window.updatePatchRecapThumb === 'function') window.updatePatchRecapThumb();
+      }, 0);
     } else if (category === 'textile') {
       this.loadTextileSidebar(productType);
     }
@@ -415,15 +426,14 @@ class DynamicLayoutManager {
         <div class="coins-canvas-container">
           <div class="patch-stage" id="patch-stage">
             <div class="coins-canvas-circle shape-rond size-8cm" id="coins-canvas">
-              <!-- Cercle INTÉRIEUR : zone d'impression. Le logo y est rogné et
-                   ne peut pas en sortir. Le grand cercle (fond) prend la couleur. -->
-              <div class="patch-inner" id="patch-inner">
-                <!-- Logo déplaçable/redimensionnable. Reste ENTIER (pas de clip)
-                     mais borné au cercle intérieur (ne dépasse pas). -->
-                <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:15%; top:15%; width:70%;">
-                  <img id="coins-preview-img" src="" alt="Aperçu" draggable="false">
-                  <span class="logo-resize" data-resize="c"></span>
-                </div>
+              <!-- Image PNG du patch entier (forme + couleur). Le logo se pose
+                   PAR-DESSUS. Repli sur l'image blanche si la couleur manque. -->
+              <img id="patch-shape-img" class="patch-shape-img" src="" alt="" draggable="false">
+              <!-- Logo déplaçable/redimensionnable. Reste ENTIER (pas de clip)
+                   mais borné à l'intérieur de la forme (ne dépasse pas la couture). -->
+              <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:15%; top:15%; width:70%;">
+                <img id="coins-preview-img" src="" alt="Aperçu" draggable="false">
+                <span class="logo-resize" data-resize="c"></span>
               </div>
               <div class="coins-placeholder">
                 <svg width="80" height="80" viewBox="0 0 24 24" fill="#ccc">

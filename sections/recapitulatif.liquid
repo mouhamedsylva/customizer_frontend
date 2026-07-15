@@ -107,13 +107,31 @@
   .rcp-total-vat { font-size: 11px; color: var(--muted); font-weight: 400; }
   .rcp-note { font-size: 10px; color: var(--faint); margin-top: 4px; }
 
+  /* Consentement (au-dessus du bouton Commander). */
+  .rcp-consent {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-top: 18px; padding: 12px 14px;
+    background: #f8f8f8; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 12px; line-height: 1.5; color: #444; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .rcp-consent:hover { border-color: #bbb; }
+  .rcp-consent input {
+    flex: none; width: 17px; height: 17px; margin-top: 1px;
+    accent-color: var(--black); cursor: pointer;
+  }
+  .rcp-consent a { color: var(--black); text-decoration: underline; }
+  /* Mise en avant discrète tant que ce n'est pas coché. */
+  .rcp-consent:has(input:not(:checked)) { border-color: #e0c088; background: #fdf8ee; }
+
   .rcp-continue {
-    width: 100%; margin-top: 20px; padding: 14px; background: var(--black); color: #fff;
+    width: 100%; margin-top: 14px; padding: 14px; background: var(--black); color: #fff;
     border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: background .2s;
+    transition: background .2s, opacity .2s;
   }
-  .rcp-continue:hover { background: #333; }
+  .rcp-continue:hover:not(:disabled) { background: #333; }
+  .rcp-continue:disabled { opacity: .45; cursor: not-allowed; }
 
   .rcp-return {
     width: 100%; margin-top: 10px; padding: 12px; background: #fff; color: var(--black);
@@ -190,7 +208,19 @@
       </div>
       <p class="rcp-note">Taxes incluses. Livraison calculée à l'étape suivante.</p>
 
-      <button class="rcp-continue" id="rcp-continue" onclick="goToCheckout(this)">
+      <!-- Consentement : le bouton Commander reste bloqué tant que la case
+           n'est pas cochée. Article personnalisé = pas de retour possible,
+           d'où l'acceptation explicite avant paiement. -->
+      <label class="rcp-consent" for="rcp-consent-chk">
+        <input type="checkbox" id="rcp-consent-chk" onchange="onConsentChange()">
+        <span>
+          J'ai vérifié mon design (texte, couleurs, placement) et j'accepte les
+          <a href="/policies/terms-of-service" target="_blank" rel="noopener">conditions générales de vente</a>.
+          Les articles personnalisés ne sont ni repris ni échangés.
+        </span>
+      </label>
+
+      <button class="rcp-continue" id="rcp-continue" onclick="goToCheckout(this)" disabled>
         Commander
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
       </button>
@@ -423,7 +453,33 @@
 
     /* Synchronise le panier local vers le panier natif Shopify puis redirige
        vers le checkout Shopify (où le client saisit ses coordonnées et paie). */
+    /* Active/désactive le bouton Commander selon la case de consentement.
+       Exposé sur window : l'attribut onchange="..." s'exécute dans le scope
+       GLOBAL, pas dans cette IIFE. Sans ça, la case ne débloquait rien. */
+    function onConsentChange() {
+      var chk = document.getElementById('rcp-consent-chk');
+      var btn = document.getElementById('rcp-continue');
+      if (!btn) return;
+      var ok = !!(chk && chk.checked);
+      btn.disabled = !ok;
+      // render() peut avoir posé ces styles inline pour un panier vide :
+      // on les nettoie pour ne pas laisser le bouton inerte.
+      btn.style.pointerEvents = ok ? '' : 'none';
+      btn.style.opacity = ok ? '' : '';
+    }
+    window.onConsentChange = onConsentChange;
+
     async function goToCheckout(btnEl) {
+      // Garde-fou : consentement obligatoire (au cas où le bouton serait forcé).
+      var consent = document.getElementById('rcp-consent-chk');
+      if (!consent || !consent.checked) {
+        await confAlert(
+          'Merci d\'accepter les conditions avant de commander.',
+          { icon: 'info', title: 'Consentement requis' }
+        );
+        return;
+      }
+
       var cart = getCart();
       if (!cart.length) { await confAlert('Votre panier est vide.', { icon: 'info', title: 'Panier vide' }); return; }
 
@@ -499,6 +555,12 @@
         contBtn.style.pointerEvents = 'none';
         return;
       }
+
+      // Panier non vide : on lève le verrou « panier vide » posé plus haut.
+      // Le bouton reste toutefois soumis à la case de consentement.
+      contBtn.style.opacity = '';
+      contBtn.style.pointerEvents = '';
+      if (typeof onConsentChange === 'function') onConsentChange();
 
       let subtotal = 0;
       itemsEl.innerHTML = items.map((item, idx) => {

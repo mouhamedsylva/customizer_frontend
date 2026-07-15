@@ -318,6 +318,29 @@ function currentFlagColorSlug() {
   return FLAG_COLOR_SLUGS[hex] || 'blanc';
 }
 
+/* Précharge en arrière-plan les images des AUTRES couleurs, pour la variante
+   courante (anneaux + orientation). Le changement de couleur devient alors
+   instantané : l'image est déjà en cache quand l'utilisateur clique.
+   Lancé en tâche de fond, sans bloquer l'affichage. */
+var _flagPreloaded = {};
+function preloadFlagColors() {
+  var URLS = window.FLAG_IMAGE_URLS || {};
+  var anneaux = (window.__flagAnneaux === '4') ? '4an' : '2an';
+  var orient = (window.__flagOrientation === 'portrait') ? 'portrait' : 'paysage';
+
+  Object.keys(FLAG_COLOR_SLUGS).forEach(function (hex) {
+    var color = FLAG_COLOR_SLUGS[hex];
+    ['recto', 'verso'].forEach(function (face) {
+      var key = anneaux + '-' + color + '-' + face + '-' + orient;
+      var url = URLS[key];
+      if (!url || _flagPreloaded[key]) return;
+      _flagPreloaded[key] = true;
+      var img = new Image();
+      img.src = url;                       // le navigateur met en cache
+    });
+  });
+}
+
 /* Choisit et applique les images recto/verso du drapeau selon l'état courant :
    COULEUR + anneaux (2/4) + orientation (paysage/portrait).
    Chaque combinaison a sa propre image : flag-{2an|4an}-{couleur}-{face}-{orientation}.png
@@ -368,6 +391,9 @@ function refreshFlagImages() {
   if (typeof window.updateFlagRecapThumb === 'function') {
     setTimeout(window.updateFlagRecapThumb, 80);
   }
+  // Précharge les autres couleurs en tâche de fond : le prochain clic sur une
+  // pastille affichera l'image instantanément (déjà en cache).
+  setTimeout(preloadFlagColors, 400);
 }
 
 /* La couleur vient désormais des IMAGES elles-mêmes : plus de teinte CSS.
@@ -391,7 +417,9 @@ function selFlagColor(element, hex) {
   // Nom lisible de la couleur (title du bouton) : sert au récap et à la commande.
   var colorName = (element && element.getAttribute('title')) || 'Blanc';
   window.__flagColorName = colorName;
-  applyFlagColorToLayers();
+
+  // La couleur = une IMAGE dédiée. On recharge donc les images du drapeau.
+  refreshFlagImages();
 
   // Récap : affiche le nom de la couleur (repris dans les propriétés de commande).
   var recapColor = document.getElementById('flag-recap-color');
@@ -403,11 +431,7 @@ function selFlagColor(element, hex) {
     sessionStorage.setItem('conf_flag_color_name', colorName);
   } catch (e) {}
 
-  // Vignette récap : la couleur doit s'y refléter aussi.
-  if (typeof window.updateFlagRecapThumb === 'function') {
-    setTimeout(window.updateFlagRecapThumb, 40);
-  }
-  console.log('🎨 Couleur drapeau:', hex);
+  console.log('🎨 Couleur drapeau:', colorName, '->', currentFlagColorSlug());
 }
 
 // Changer l'orientation des drapeaux du canvas
@@ -510,25 +534,70 @@ function selectAnneaux(element) {
 }
 
 // Change l'image d'un drapeau avec une transition (fondu + zoom)
+/* Remplace l'image du drapeau par un CROSSFADE : l'ancienne image reste en place
+   et s'efface pendant que la nouvelle apparaît par-dessus. Le changement de
+   couleur devient imperceptible — aucun clignotement, aucun déplacement.
+   La nouvelle image est préchargée avant tout affichage. */
 function swapFlagImage(imgEl, newSrc) {
   if (!imgEl || !newSrc) return;
 
-  // Déjà la bonne image : ne rien faire
+  // Déjà la bonne image : ne rien faire.
   if (imgEl.src && imgEl.src.indexOf(newSrc) !== -1) return;
 
-  // Fondu sortant
-  imgEl.classList.add('swapping');
-
-  // Précharger la nouvelle image puis l'afficher en fondu entrant
-  const preload = new Image();
-  preload.onload = () => {
+  // Première image (pas encore de src) : on l'affiche directement.
+  if (!imgEl.getAttribute('src')) {
     imgEl.src = newSrc;
-    // Laisser le navigateur appliquer la nouvelle src avant de retirer la classe
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => imgEl.classList.remove('swapping'));
+    return;
+  }
+
+  var preload = new Image();
+  if (imgEl.crossOrigin) preload.crossOrigin = imgEl.crossOrigin;
+
+  preload.onload = function () {
+    var parent = imgEl.parentElement;
+    if (!parent) { imgEl.src = newSrc; return; }
+
+    // Calque de transition : copie exacte de l'image, superposée à l'originale.
+    var ghost = imgEl.cloneNode(false);
+    ghost.removeAttribute('id');
+    ghost.classList.add('flag-fade-in');
+    ghost.src = newSrc;
+
+    // Se cale précisément sur l'image d'origine.
+    var cs = window.getComputedStyle(imgEl);
+    ghost.style.position = 'absolute';
+    ghost.style.top = imgEl.offsetTop + 'px';
+    ghost.style.left = imgEl.offsetLeft + 'px';
+    ghost.style.width = cs.width;
+    ghost.style.height = cs.height;
+    ghost.style.opacity = '0';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.zIndex = '1';
+
+    parent.appendChild(ghost);
+
+    // Fondu entrant du calque.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { ghost.style.opacity = '1'; });
     });
+
+    // Une fois le fondu terminé : l'image d'origine prend la nouvelle source,
+    // et le calque disparaît. Le rendu final est identique — sans coupure.
+    var done = false;
+    var finish = function () {
+      if (done) return;
+      done = true;
+      imgEl.src = newSrc;
+      requestAnimationFrame(function () {
+        if (ghost.parentElement) ghost.parentElement.removeChild(ghost);
+      });
+    };
+    ghost.addEventListener('transitionend', finish, { once: true });
+    setTimeout(finish, 400);   // filet de sécurité si transitionend ne part pas
   };
-  preload.onerror = () => imgEl.classList.remove('swapping');
+
+  // Image indisponible : on bascule sans effet plutôt que de rester bloqué.
+  preload.onerror = function () { imgEl.src = newSrc; };
   preload.src = newSrc;
 }
 
