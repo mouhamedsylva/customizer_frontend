@@ -326,7 +326,6 @@ class DynamicLayoutManager {
       // Initialise l'image du patch (forme + couleur par défaut) après injection.
       setTimeout(function () {
         if (typeof window.updatePatchShapeImg === 'function') window.updatePatchShapeImg();
-        if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
         if (typeof window.updatePatchRecapThumb === 'function') window.updatePatchRecapThumb();
       }, 0);
     } else if (category === 'drapeaux') {
@@ -341,7 +340,6 @@ class DynamicLayoutManager {
       // (Sans effet si l'élément n'existe pas — la fonction sort d'elle-même.)
       setTimeout(function () {
         if (typeof window.updatePatchShapeImg === 'function') window.updatePatchShapeImg();
-        if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
         if (typeof window.updatePatchRecapThumb === 'function') window.updatePatchRecapThumb();
       }, 0);
     } else if (category === 'textile') {
@@ -433,22 +431,6 @@ class DynamicLayoutManager {
               <!-- Image PNG du patch entier (forme + couleur). Le logo se pose
                    PAR-DESSUS. Repli sur l'image blanche si la couleur manque. -->
               <img id="patch-shape-img" class="patch-shape-img" src="" alt="" draggable="false">
-              <!-- Guide de zone de personnalisation (pointillé), dessiné en SVG
-                   avec le MÊME contain que l'image du patch : il se cale donc pile
-                   sur la forme visible, quelle que soit la boîte du canvas. Masqué
-                   quand un logo est présent. -->
-              <svg class="patch-zone-guide" id="patch-zone" viewBox="0 0 100 100"
-                   preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <circle id="patch-zone-shape" cx="50" cy="50" r="44"
-                        fill="rgba(224,36,36,0.04)" stroke="#e02424"
-                        stroke-width="0.8" stroke-dasharray="2 1.6"
-                        vector-effect="non-scaling-stroke"></circle>
-                <text id="patch-zone-label" x="50" y="51" text-anchor="middle"
-                      dominant-baseline="middle" fill="#e02424"
-                      style="font-size:4px;font-weight:700;letter-spacing:.3px;">
-                  ZONE DE PERSONNALISATION
-                </text>
-              </svg>
               <!-- Logo déplaçable/redimensionnable. Reste ENTIER (pas de clip)
                    mais borné à l'intérieur de la forme (ne dépasse pas la couture). -->
               <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:15%; top:15%; width:70%;">
@@ -533,9 +515,10 @@ class DynamicLayoutManager {
       
       <div class="rp-section">
         <div class="rp-unit-title">PRIX UNITAIRE</div>
-        <div class="rp-unit-price-big">2,45 € <span class="rp-unit-ht">HT</span></div>
+        <!-- Prix défini par l'admin : injecté par window.prixUnitaire('patches'). -->
+        <div class="rp-unit-price-big" id="coins-unit-price">${window.formatPrix ? window.formatPrix(window.prixUnitaire('patches')) : '2,45 €'} <span class="rp-unit-ht">HT</span></div>
       </div>
-      
+
       <div class="rp-section rp-total-section">
         <div class="rp-total-title">PRIX TOTAL</div>
         <div class="rp-total-subtitle" id="coins-qty-display">à partir de (20 unités)</div>
@@ -822,9 +805,10 @@ class DynamicLayoutManager {
       
       <div class="rp-section">
         <div class="rp-unit-title">PRIX UNITAIRE</div>
-        <div class="rp-unit-price-big">19,90 € <span class="rp-unit-ht">HT</span></div>
+        <!-- Prix défini par l'admin : injecté par window.prixUnitaire('drapeaux'). -->
+        <div class="rp-unit-price-big" id="flags-unit-price">${window.formatPrix ? window.formatPrix(window.prixUnitaire('drapeaux')) : '19,90 €'} <span class="rp-unit-ht">HT</span></div>
       </div>
-      
+
       <div class="rp-actions-coins">
         <button class="rp-btn-primary" onclick="addCustomToCart(this)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
@@ -1101,17 +1085,6 @@ function changeCanvasShape(shape) {
     window.updatePatchShapeImg();
   }
 
-  // La nouvelle forme a une zone de contrainte différente : re-borne le logo pour
-  // qu'il ne dépasse pas de la nouvelle forme.
-  if (typeof window.clampPatchLogo === 'function') {
-    window.clampPatchLogo();
-  }
-
-  // Le guide en pointillé doit épouser la nouvelle forme (cercle/rectangle).
-  if (typeof window.refreshPatchZoneGuide === 'function') {
-    window.refreshPatchZoneGuide();
-  }
-
   // La vignette du récap doit suivre la nouvelle forme.
   if (typeof window.updatePatchRecapThumb === 'function') {
     window.updatePatchRecapThumb();
@@ -1245,7 +1218,8 @@ function handleQtyInput() {
 
 // Mise à jour du prix
 function updateCoinPrice(qty) {
-  const unitPrice = 2.45;
+  // Prix défini par l'admin (window.PRICES, chargé depuis /api/pricing).
+  const unitPrice = window.prixUnitaire ? window.prixUnitaire('patches') : 2.45;
   const totalHT = (qty * unitPrice).toFixed(2);
   const totalTTC = (totalHT * 1.20).toFixed(2);
   

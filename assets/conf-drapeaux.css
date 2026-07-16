@@ -500,11 +500,13 @@
   flex: 1;
   width: 100%;
   display: flex;
-  align-items: flex-start;
+  /* Centré verticalement + marge autour : les drapeaux ne touchent plus les
+     bords de la zone grise. */
+  align-items: center;
   justify-content: center;
   gap: clamp(16px, 4vw, 60px);
   flex-wrap: nowrap;
-  padding: 10px 0;
+  padding: 28px 24px;
 }
 
 .flag-mock {
@@ -683,7 +685,9 @@
 /* ── Vue 3D : image réelle du drapeau ── */
 .flag-img-3d {
   position: relative;
-  width: clamp(260px, 32vw, 420px);
+  /* Réduit : deux drapeaux côte à côte tenaient toute la largeur et touchaient
+     les bords de la scène. */
+  width: clamp(200px, 24vw, 330px);
   display: flex;
   align-items: center;
   justify-content: center;

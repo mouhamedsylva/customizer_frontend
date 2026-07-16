@@ -286,29 +286,6 @@
   display: none;
 }
 
-/* Guide de zone de personnalisation (pointillé), en SVG qui REMPLIT le canvas
-   avec le même contain que l'image du patch (viewBox 0..100, preserveAspectRatio
-   xMidYMid meet). La forme (cercle/rect) dessinée dedans se cale donc pile sur la
-   forme visible, sans aucun calcul de position. Au-dessus de l'image, sous le
-   logo. N'interfère pas avec le drag. */
-.patch-zone-guide {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 2;
-  overflow: visible;
-  transition: opacity 0.2s ease;
-  /* Zone masquée visuellement : le cercle pointillé rouge n'apparaît plus, mais
-     la contrainte du logo (clampPatchLogo) reste active. */
-  display: none;
-}
-/* Masqué quand un logo est présent (classe posée en JS). */
-.patch-zone-guide.filled {
-  opacity: 0;
-}
-
 /* Anciennes classes de forme : neutralisées (la forme vient de l'image PNG). */
 .coins-canvas-circle.shape-rond,
 .coins-canvas-circle.shape-carre,
@@ -325,42 +302,46 @@
 /* Tailles dynamiques (6cm à 10cm). --patch-max = taille max de l'aperçu ; le
    canvas prend min(hauteur dispo, --patch-max) tout en restant carré (cf. règle
    .patch-stage .coins-canvas-circle). max-width conservé pour les layouts non-patch. */
+/* IMPORTANT : ces valeurs doivent rester SOUS la hauteur disponible de la zone
+   grise (~420 px). Le canvas fait min(hauteur dispo, --patch-max) : au-delà,
+   toutes les tailles seraient plafonnées à la même valeur et 8/9/10 cm
+   rendraient à l'identique. Échelle proportionnelle aux cm réels. */
 .coins-canvas-circle.size-6cm {
+  --patch-max: 240px;
+  max-width: 240px;
+}
+
+.coins-canvas-circle.size-7cm {
+  --patch-max: 280px;
+  max-width: 280px;
+}
+
+.coins-canvas-circle.size-8cm {
+  --patch-max: 320px;
+  max-width: 320px;
+}
+
+.coins-canvas-circle.size-9cm {
   --patch-max: 360px;
   max-width: 360px;
 }
 
-.coins-canvas-circle.size-7cm {
-  --patch-max: 420px;
-  max-width: 420px;
-}
-
-.coins-canvas-circle.size-8cm {
-  --patch-max: 470px;
-  max-width: 470px;
-}
-
-.coins-canvas-circle.size-9cm {
-  --patch-max: 510px;
-  max-width: 510px;
-}
-
 .coins-canvas-circle.size-10cm {
-  --patch-max: 560px;
-  max-width: 560px;
+  --patch-max: 400px;
+  max-width: 400px;
 }
 
 /* Tailles rectangulaires : --patch-max borne la HAUTEUR (le canvas reste piloté
    par la hauteur). Valeurs plus basses car la forme est plus large que haute
    (aspect-ratio ~1.56 appliqué en JS), pour ne pas déborder en largeur. */
 .coins-canvas-circle.size-8x6cm {
-  --patch-max: 360px;
-  max-width: 540px;
+  --patch-max: 240px;
+  max-width: 420px;
 }
 
 .coins-canvas-circle.size-10x7-5cm {
-  --patch-max: 400px;
-  max-width: 600px;
+  --patch-max: 300px;
+  max-width: 500px;
 }
 
 /* (Ancien blason CSS + bordure ::before supprimés : la forme vient de l'image PNG.) */
@@ -1404,10 +1385,10 @@
   max-width: 560px;
   height: 100%;
   max-height: 100%;
-  /* Décalage vers le bas (padding haut > bas) et léger décalage vers la DROITE
-     (padding gauche > droite) pour caler le centre du patch au milieu visuel de
-     la zone grise, en compensant la colonne de zoom à droite. */
-  padding-top: 90px;
+  /* Décalage vers la DROITE (padding gauche > droite) pour caler le centre du
+     patch au milieu visuel de la zone grise, en compensant la colonne de zoom.
+     padding-top réduit : le patch est remonté. */
+  padding-top: 50px;
   padding-bottom: 16px;
   padding-left: 170px;
   padding-right: 16px;

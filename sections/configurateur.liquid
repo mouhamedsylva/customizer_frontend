@@ -13,6 +13,62 @@
       // URL de base du backend NestJS (déployé sur Railway)
       window.API_BASE = "https://customizer-backend-production-6ed2.up.railway.app/api";
 
+      /* ── PRIX UNITAIRES (définis par l'admin) ──────────────────────────────
+         Source de vérité : GET /api/pricing (dashboard admin -> BDD).
+         Les valeurs ci-dessous ne sont qu'un REPLI, utilisé si le backend est
+         injoignable : l'affichage reste correct au lieu de tomber à 0.
+         window.PRICES est renseigné dès la réponse, puis prixUnitaire() l'utilise. */
+      window.PRICES = {
+        sweatshirt: 45, tshirt: 25, tshirt_polyester: 28,
+        coins: 2.45, drapeaux: 19.90, patches: 2.45
+      };
+
+      /** Prix unitaire HT d'un produit (clé de window.PRICES). */
+      window.prixUnitaire = function (key) {
+        var p = window.PRICES || {};
+        var v = Number(p[key]);
+        return isNaN(v) ? 0 : v;
+      };
+
+      /** Formate un prix à la française : 2.45 -> "2,45 €". */
+      window.formatPrix = function (n) {
+        return Number(n || 0).toFixed(2).replace('.', ',') + ' €';
+      };
+
+      /* Charge les prix réels au plus tôt. Quand ils arrivent, on notifie
+         l'interface (les écrans déjà rendus se remettent à jour). */
+      window.PRICES_READY = fetch(window.API_BASE + '/pricing')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (d && d.ok && d.prices) {
+            window.PRICES = Object.assign({}, window.PRICES, d.prices);
+            document.dispatchEvent(new CustomEvent('conf:prices-loaded'));
+          }
+          return window.PRICES;
+        })
+        .catch(function () { return window.PRICES; });   // repli silencieux
+
+      /* Les prix arrivent APRÈS le premier rendu : on rafraîchit ce qui est
+         déjà affiché (prix unitaires + total selon la quantité courante). */
+      document.addEventListener('conf:prices-loaded', function () {
+        var unit = document.getElementById('coins-unit-price');
+        if (unit) {
+          unit.innerHTML = window.formatPrix(window.prixUnitaire('patches')) +
+                           ' <span class="rp-unit-ht">HT</span>';
+        }
+        var flags = document.getElementById('flags-unit-price');
+        if (flags) {
+          flags.innerHTML = window.formatPrix(window.prixUnitaire('drapeaux')) +
+                            ' <span class="rp-unit-ht">HT</span>';
+        }
+        // Recalcule le total avec la quantité affichée.
+        var qtyEl = document.getElementById('coin-qty-input') ||
+                    document.getElementById('coin-recap-qty-input');
+        if (qtyEl && typeof updateCoinPrice === 'function') {
+          updateCoinPrice(parseInt(qtyEl.value, 10) || 20);
+        }
+      });
+
       window.ASSET_URLS = {
         visa: "{{ 'visa.svg' | asset_url }}",
         mastercard: "{{ 'mastercard.svg' | asset_url }}",
@@ -2121,164 +2177,6 @@
     }
     window.updatePatchShapeImg = updatePatchShapeImg;
 
-    /* ═══════════════════ ZONE DE CONTRAINTE DU LOGO PATCH ═══════════════════
-       Zone INVISIBLE (sans pointillés) : le logo ne peut jamais SORTIR de la forme
-       du patch. La contrainte épouse la FORME :
-       - rond   : contrainte CIRCULAIRE — le logo peut aller jusqu'au bord du
-                  cercle (ses 4 coins restent dans le cercle), pas confiné dans un
-                  petit carré central.
-       - carré/rectangle/blason : contrainte rectangulaire (marge de couture).
-       SEAM = marge de couture en % (bord non imprimable). */
-    var PATCH_SEAM = 16  // marge de couture en % (bord de la forme) — cercle guide réduit
-
-    function clampPatchLogo() {
-      var logoEl = document.getElementById('patch-logo');
-      var canvas = document.getElementById('coins-canvas');
-      if (!logoEl || !canvas) return;
-      if (logoEl.style.display === 'none') return;
-
-      var shape = (typeof patchShapeName === 'function') ? patchShapeName() : 'rond';
-
-      // Dimensions du canvas (pour convertir la largeur du logo en hauteur %).
-      var cw = canvas.offsetWidth || 1, ch = canvas.offsetHeight || 1;
-      var img = logoEl.querySelector('img');
-      var imgRatio = (img && img.naturalWidth && img.naturalHeight)
-        ? (img.naturalHeight / img.naturalWidth) : 1;
-
-      // Largeur du logo en % (au moins 4%, au plus la largeur imprimable).
-      var maxW = 100 - 2 * PATCH_SEAM;
-      var w = parseFloat(logoEl.style.width);
-      if (isNaN(w)) w = 50;
-      w = Math.max(4, Math.min(maxW, w));
-
-      // Hauteur du logo en % du canvas (largeur px * ratio -> % de la hauteur).
-      var hPct = w * imgRatio * (cw / ch);
-
-      var left = parseFloat(logoEl.style.left); if (isNaN(left)) left = 50 - w / 2;
-      var top  = parseFloat(logoEl.style.top);  if (isNaN(top))  top  = 50 - hPct / 2;
-
-      if (shape === 'rond') {
-        // ── Contrainte CIRCULAIRE ──
-        // Cercle centré en (50,50), rayon R = 50 - marge de couture. Le logo peut
-        // aller jusqu'au bord du cercle tant que son coin le plus éloigné reste
-        // dedans. Canvas rond = carré (cw≈ch) -> on raisonne en % isotropes.
-        var R = 50 - PATCH_SEAM;
-
-        // Demi-diagonale du logo (centre du logo -> son coin).
-        var halfDiag = Math.sqrt((w / 2) * (w / 2) + (hPct / 2) * (hPct / 2));
-
-        // Si le logo est si grand que même centré il déborde, on le réduit pour
-        // que sa demi-diagonale tienne dans le rayon.
-        if (halfDiag > R) {
-          var scale = R / halfDiag;
-          w = w * scale;
-          hPct = hPct * scale;
-          halfDiag = R;
-        }
-
-        // Centre voulu du logo.
-        var cx = left + w / 2;
-        var cy = top + hPct / 2;
-
-        // Le coin le plus éloigné du centre du cercle est à distance
-        // (distance centre-cercle -> centre-logo) + halfDiag. Pour qu'il reste
-        // dans le cercle : distance-centre-logo <= R - halfDiag. On borne donc le
-        // centre du logo à ce rayon autorisé (formule EXACTE, sans itération).
-        var dx = cx - 50, dy = cy - 50;
-        var dist = Math.sqrt(dx * dx + dy * dy);
-        var maxCenterDist = Math.max(0, R - halfDiag);
-        if (dist > maxCenterDist && dist > 0) {
-          var f = maxCenterDist / dist;
-          cx = 50 + dx * f;
-          cy = 50 + dy * f;
-        }
-
-        left = cx - w / 2;
-        top  = cy - hPct / 2;
-      } else {
-        // ── Contrainte RECTANGULAIRE (carré / rectangle / blason) ──
-        // La forme remplit le cadre : marge de couture égale sur les 4 côtés.
-        if (w > maxW) w = maxW;
-        if (hPct > 100 - 2 * PATCH_SEAM) hPct = 100 - 2 * PATCH_SEAM;
-        left = Math.max(PATCH_SEAM, Math.min(100 - PATCH_SEAM - w, left));
-        top  = Math.max(PATCH_SEAM, Math.min(100 - PATCH_SEAM - hPct, top));
-      }
-
-      logoEl.style.width = w + '%';
-      logoEl.style.left = left + '%';
-      logoEl.style.top  = top + '%';
-    }
-    window.clampPatchLogo = clampPatchLogo;
-
-    /* Positionne et dimensionne le guide en pointillé (#patch-zone) pour épouser
-       EXACTEMENT la zone de contrainte, selon la forme :
-       - rond   : CERCLE (border-radius:50%) de diamètre = 2*(50-SEAM) ;
-       - autres : rectangle inséré de SEAM sur les 4 côtés.
-       Le guide se masque dès qu'un logo est présent. */
-    function refreshPatchZoneGuide() {
-      var guide = document.getElementById('patch-zone');
-      if (!guide) return;
-
-      var shape = (typeof patchShapeName === 'function') ? patchShapeName() : 'rond';
-      var seam = (typeof PATCH_SEAM === 'number') ? PATCH_SEAM : 6;
-
-      // Le SVG doit avoir le MÊME ratio que l'image du patch, sinon (rectangle/
-      // blason) son "meet" ne se calerait pas comme le object-fit:contain de
-      // l'image. viewBox = (100*ratio) x 100 pour un patch large, etc.
-      var ratio = (window.PATCH_SHAPE_RATIO && window.PATCH_SHAPE_RATIO[shape]) || 1;
-      var vbW = ratio >= 1 ? 100 * ratio : 100;
-      var vbH = ratio >= 1 ? 100 : 100 / ratio;
-      guide.setAttribute('viewBox', '0 0 ' + vbW + ' ' + vbH);
-
-      // Le guide est un SVG qui remplit le canvas avec le MÊME contain que l'image :
-      // on dessine la forme aux bonnes coordonnées du viewBox, elle se cale
-      // automatiquement sur le patch visible (aucun calcul de position).
-      var shapeEl = document.getElementById('patch-zone-shape');
-      if (shapeEl) {
-        var ns = 'http://www.w3.org/2000/svg';
-        var parent = shapeEl.parentNode;
-        var newEl;
-        // Marge de couture en unités viewBox (proportionnelle à chaque dimension).
-        var mX = vbW * (seam / 100), mY = vbH * (seam / 100);
-
-        if (shape === 'rond') {
-          newEl = document.createElementNS(ns, 'circle');
-          newEl.setAttribute('cx', String(vbW / 2));
-          newEl.setAttribute('cy', String(vbH / 2));
-          newEl.setAttribute('r', String(Math.min(vbW, vbH) / 2 - Math.min(mX, mY)));
-        } else {
-          // carré / rectangle / blason : rectangle inséré de SEAM sur les 4 côtés.
-          newEl = document.createElementNS(ns, 'rect');
-          newEl.setAttribute('x', String(mX));
-          newEl.setAttribute('y', String(mY));
-          newEl.setAttribute('width', String(vbW - 2 * mX));
-          newEl.setAttribute('height', String(vbH - 2 * mY));
-          newEl.setAttribute('rx', '3');
-        }
-        newEl.setAttribute('id', 'patch-zone-shape');
-        newEl.setAttribute('fill', 'rgba(224,36,36,0.04)');
-        newEl.setAttribute('stroke', '#e02424');
-        newEl.setAttribute('stroke-width', '0.8');
-        newEl.setAttribute('stroke-dasharray', '2 1.6');
-        newEl.setAttribute('vector-effect', 'non-scaling-stroke');
-        parent.replaceChild(newEl, shapeEl);
-      }
-
-      // Recentre le libellé dans le nouveau viewBox.
-      var label = document.getElementById('patch-zone-label');
-      if (label) { label.setAttribute('x', String(vbW / 2)); label.setAttribute('y', String(vbH / 2 + 1)); }
-
-      // Le SVG remplit le canvas (inset:0) avec le MÊME contain que l'image
-      // (preserveAspectRatio="xMidYMid meet" = object-fit:contain). Aucune mesure
-      // n'est nécessaire : le cercle dessiné se cale sur le patch par construction.
-
-      // Masque le guide si un logo est déjà déposé.
-      var logoEl = document.getElementById('patch-logo');
-      var logoImg = logoEl ? logoEl.querySelector('img') : null;
-      var hasLogo = logoEl && logoEl.style.display !== 'none' && logoImg && logoImg.getAttribute('src');
-      guide.classList.toggle('filled', !!hasLogo);
-    }
-    window.refreshPatchZoneGuide = refreshPatchZoneGuide;
 
     function updateProductImages() {
       const prefix = PRODUCT_SLUGS[currentProductKey];
@@ -2486,11 +2384,21 @@
 
       var html = '';
       if (imgSrc) {
-        html += '<img src="' + imgSrc + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;">';
+        // MÊME padding que #patch-shape-img dans le canevas (voir .patch-shape-img
+        // dans conf-coins.css) : sans lui, le patch serait plus grand ici que dans
+        // l'aperçu et le logo (positionné en % du canevas) ne coïnciderait pas.
+        html += '<img src="' + imgSrc + '" alt="" style="position:absolute;inset:0;' +
+                'width:100%;height:100%;box-sizing:border-box;padding:13%;' +
+                'object-fit:contain;pointer-events:none;">';
       }
       if (logoSrc) {
+        // height:auto !important : la règle `.rp-patch-thumb img { height:100% }`
+        // étirait le logo sur toute la hauteur puis le recentrait (object-fit),
+        // ce qui ANNULAIT son `top` -> logo mal placé dans la miniature.
+        // object-fit:fill (défaut) : la boîte fait déjà le bon ratio via height:auto.
         html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
-                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;z-index:2;">';
+                '%;width:' + width + '%;height:auto !important;object-fit:fill;' +
+                'pointer-events:none;z-index:2;">';
       }
       thumb.innerHTML = html;
     }
@@ -4745,20 +4653,15 @@
             const ph = coinsCanvas.querySelector('.coins-placeholder');
             if (ph) ph.style.display = 'none';
           }
-          // Borne le logo dans la zone dès l'upload (et une fois l'image chargée,
-          // pour connaître son vrai ratio et affiner la contrainte).
-          if (typeof window.clampPatchLogo === 'function') {
-            window.clampPatchLogo();
-            if (coinsPreviewImg) {
-              coinsPreviewImg.addEventListener('load', function onceLoaded() {
-                coinsPreviewImg.removeEventListener('load', onceLoaded);
-                window.clampPatchLogo();
-                if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
-              });
-            }
+          // Aucune contrainte de zone sur le patch : le client place son logo
+          // librement. On rafraîchit juste la miniature du récap une fois
+          // l'image chargée (ses dimensions sont alors connues).
+          if (coinsPreviewImg) {
+            coinsPreviewImg.addEventListener('load', function onceLoaded() {
+              coinsPreviewImg.removeEventListener('load', onceLoaded);
+              if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
+            });
           }
-          // Masque le guide en pointillé (un logo est maintenant présent).
-          if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
           // Recap - miniature : image du patch (forme + couleur) + logo positionné.
           updatePatchRecapThumb();
 
@@ -4950,8 +4853,6 @@
           patchLogo.style.width = '70%';
           patchLogo.style.height = '';
         }
-        // Le logo est retiré : on réaffiche le guide de zone en pointillé.
-        if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
         // Réinitialiser la miniature du récap
         const recapThumb = document.getElementById('coins-recap-thumb');
         if (recapThumb) {
@@ -5300,7 +5201,8 @@
     }
 
     function updateCoinPrice(qty) {
-      const pricePerUnit = 2.45; // Prix unitaire HT
+      // Prix défini par l'admin (dashboard) ; repli sur window.PRICES.
+      const pricePerUnit = window.prixUnitaire('patches');
       const totalHT = pricePerUnit * qty;
       const totalTTC = totalHT * 1.20; // TVA 20%
       

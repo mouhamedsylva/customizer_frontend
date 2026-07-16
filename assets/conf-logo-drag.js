@@ -25,8 +25,8 @@
       const flagWrap = logo.closest('.flag-img-3d');
       if (flagWrap) return flagWrap;
       // Patch : le logo est positionné DIRECTEMENT dans #coins-canvas (l'image
-      // du patch). Ses % sont relatifs à ce conteneur ; le clamp le borne à
-      // l'intérieur de la forme (voir PATCH_LOGO_INSET dans onPointerMove).
+      // du patch). Ses % sont relatifs à ce conteneur. Aucune contrainte de zone :
+      // le client le place librement (voir onPointerMove).
       const patchCanvas = logo.closest('#coins-canvas');
       if (patchCanvas) return patchCanvas;
       const patchStage = logo.closest('.patch-stage');
@@ -113,13 +113,14 @@
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    // Le patch : le logo reste ENTIER mais borné à l'INTÉRIEUR de la forme via la
-    // zone invisible gérée par window.clampPatchLogo (appelée après coup, plus bas).
-    // Ici on laisse un bornage large ; le clamp final affine selon la forme.
+    // PATCH : aucune contrainte de zone — le client place et dimensionne son logo
+    // librement (il peut même déborder du patch). Les autres pièces restent
+    // bornées à leur canvas (0..100 %).
     const isPatchLogo = active && active.id === 'patch-logo';
     const inset = 0;
-    const MIN_POS = inset;
-    const maxPos = (sizePct) => (100 - inset - sizePct);
+    const MIN_POS = isPatchLogo ? -Infinity : inset;
+    const maxPos = (sizePct) =>
+      isPatchLogo ? Infinity : (100 - inset - sizePct);
     const maxW = MAX_W;
 
     if (mode === 'resize') {
@@ -167,11 +168,6 @@
     };
     if (TEXTILE_ZONE[active.id] && typeof window.clampLogoToZone === 'function') {
       window.clampLogoToZone(TEXTILE_ZONE[active.id]);
-    }
-    // Contrainte : le logo PATCH reste DANS la zone invisible du patch (couture),
-    // aussi bien au déplacement qu'au redimensionnement.
-    if (isPatchLogo && typeof window.clampPatchLogo === 'function') {
-      window.clampPatchLogo();
     }
     // Le texte reste DANS sa zone horizontale (pas de sortie).
     if (active.classList.contains('design-text') && typeof window.clampTextToZone === 'function') {
