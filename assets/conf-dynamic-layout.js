@@ -326,6 +326,7 @@ class DynamicLayoutManager {
       // Initialise l'image du patch (forme + couleur par défaut) après injection.
       setTimeout(function () {
         if (typeof window.updatePatchShapeImg === 'function') window.updatePatchShapeImg();
+        if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
         if (typeof window.updatePatchRecapThumb === 'function') window.updatePatchRecapThumb();
       }, 0);
     } else if (category === 'drapeaux') {
@@ -340,6 +341,7 @@ class DynamicLayoutManager {
       // (Sans effet si l'élément n'existe pas — la fonction sort d'elle-même.)
       setTimeout(function () {
         if (typeof window.updatePatchShapeImg === 'function') window.updatePatchShapeImg();
+        if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
         if (typeof window.updatePatchRecapThumb === 'function') window.updatePatchRecapThumb();
       }, 0);
     } else if (category === 'textile') {
@@ -423,12 +425,30 @@ class DynamicLayoutManager {
       </div>
       
       <div class="cv-wrap">
-        <div class="coins-canvas-container">
+        <!-- Même structure que le textile : image + colonne de zoom côte à côte,
+             centrées dans la zone grise (.cv-canvas-row + .cv-ctrl). -->
+        <div class="cv-canvas-row">
           <div class="patch-stage" id="patch-stage">
             <div class="coins-canvas-circle shape-rond size-8cm" id="coins-canvas">
               <!-- Image PNG du patch entier (forme + couleur). Le logo se pose
                    PAR-DESSUS. Repli sur l'image blanche si la couleur manque. -->
               <img id="patch-shape-img" class="patch-shape-img" src="" alt="" draggable="false">
+              <!-- Guide de zone de personnalisation (pointillé), dessiné en SVG
+                   avec le MÊME contain que l'image du patch : il se cale donc pile
+                   sur la forme visible, quelle que soit la boîte du canvas. Masqué
+                   quand un logo est présent. -->
+              <svg class="patch-zone-guide" id="patch-zone" viewBox="0 0 100 100"
+                   preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <circle id="patch-zone-shape" cx="50" cy="50" r="44"
+                        fill="rgba(224,36,36,0.04)" stroke="#e02424"
+                        stroke-width="0.8" stroke-dasharray="2 1.6"
+                        vector-effect="non-scaling-stroke"></circle>
+                <text id="patch-zone-label" x="50" y="51" text-anchor="middle"
+                      dominant-baseline="middle" fill="#e02424"
+                      style="font-size:4px;font-weight:700;letter-spacing:.3px;">
+                  ZONE DE PERSONNALISATION
+                </text>
+              </svg>
               <!-- Logo déplaçable/redimensionnable. Reste ENTIER (pas de clip)
                    mais borné à l'intérieur de la forme (ne dépasse pas la couture). -->
               <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:15%; top:15%; width:70%;">
@@ -443,8 +463,9 @@ class DynamicLayoutManager {
               </div>
             </div>
           </div>
-          
-          <div class="coins-canvas-controls">
+
+          <!-- Colonne de zoom (identique au textile : .cv-ctrl). -->
+          <div class="cv-ctrl">
             <button class="cbtn" onclick="zoom(-10)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13H5v-2h14v2z"/></svg>
             </button>
@@ -457,11 +478,11 @@ class DynamicLayoutManager {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
             </button>
           </div>
-          
-          <div class="cv-info">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            Le rendu est une approximation. Les couleurs et proportions peuvent légèrement varier sur le produit final.
-          </div>
+        </div>
+
+        <div class="cv-info">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          Le rendu est une approximation. Les couleurs et proportions peuvent légèrement varier sur le produit final.
         </div>
       </div>
     `;
@@ -1072,6 +1093,24 @@ function changeCanvasShape(shape) {
 
   // Ajouter la nouvelle classe
   canvas.classList.add('shape-' + shape);
+
+  // Charger l'IMAGE PNG correspondant à la nouvelle forme (+ couleur courante) et
+  // appliquer son aspect-ratio. Sans cet appel, l'image du patch ne changeait pas
+  // quand on cliquait sur Carré / Rectangle / Blason.
+  if (typeof window.updatePatchShapeImg === 'function') {
+    window.updatePatchShapeImg();
+  }
+
+  // La nouvelle forme a une zone de contrainte différente : re-borne le logo pour
+  // qu'il ne dépasse pas de la nouvelle forme.
+  if (typeof window.clampPatchLogo === 'function') {
+    window.clampPatchLogo();
+  }
+
+  // Le guide en pointillé doit épouser la nouvelle forme (cercle/rectangle).
+  if (typeof window.refreshPatchZoneGuide === 'function') {
+    window.refreshPatchZoneGuide();
+  }
 
   // La vignette du récap doit suivre la nouvelle forme.
   if (typeof window.updatePatchRecapThumb === 'function') {

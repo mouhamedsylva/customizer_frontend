@@ -435,9 +435,11 @@
     .design-text:hover, .design-text.dragging, .design-text.resizing { border-color: #1a1a1a; }
     .design-text.dragging { cursor: grabbing; }
 
-    /* Contenu texte : centré, sur une ligne, occupe la largeur du conteneur. */
+    /* Contenu texte : centré, sur une ligne, occupe la largeur du conteneur.
+       overflow hidden : filet de sécurité, le texte ne déborde jamais la zone
+       (la taille est déjà ajustée par clampTextToZone pour qu'il tienne). */
     .design-text .dt-content { display: block; width: 100%; text-align: center;
-      white-space: nowrap; overflow: visible; line-height: 1.1; }
+      white-space: nowrap; overflow: hidden; line-height: 1.1; }
     /* Texte courbé (SVG) : occupe la largeur de son conteneur. */
     .design-text.is-shaped { padding: 0; white-space: normal; }
     .design-text.is-shaped .dt-content { white-space: normal; }
@@ -483,6 +485,23 @@
       border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 14px;
     }
     .txt-panel-input:focus { border-color: #14181c; }
+    /* Compteur de caractères sous le champ texte. */
+    .txt-panel-count { font-size: 11px; color: #9aa0a6; text-align: right;
+      margin: -10px 2px 14px; }
+    /* Ligne Style : boutons B / I / U. */
+    .txt-style-row, .txt-size-row { cursor: default; }
+    .txt-style-btns { flex: 1; display: flex; justify-content: flex-end; gap: 6px; }
+    .txt-style-btn {
+      width: 34px; height: 34px; border: 1.5px solid #e5e7ea; border-radius: 8px;
+      background: #fff; color: var(--black); font-size: 15px; cursor: pointer;
+      transition: .15s; line-height: 1;
+    }
+    .txt-style-btn:hover { border-color: #b8c0c8; }
+    .txt-style-btn.on { background: var(--black); color: #fff; border-color: var(--black); }
+    /* Ligne Taille : slider. */
+    .txt-size-range { flex: 1; accent-color: var(--black); cursor: pointer; }
+    .txt-size-val { min-width: 26px; text-align: right; font-weight: 700;
+      font-size: 13px; color: var(--black); }
     .txt-panel-row {
       display: flex; align-items: center; gap: 10px; padding: 13px 12px;
       border: 1.5px solid #e5e7ea; border-radius: 10px; margin-bottom: 10px;
@@ -683,13 +702,18 @@
     .mline::after { bottom: 0; }
     .mlbl-r { left: auto; right: -36px; }
 
-    /* Canvas row : image + zoom côte à côte */
+    /* Canvas row : image + zoom côte à côte.
+       align-self:stretch + height:100% => la ligne occupe TOUTE la hauteur de la
+       zone grise, ce qui permet de centrer verticalement l'aperçu (et de borner
+       un grand patch par la hauteur au lieu de le rogner en haut). */
     .cv-canvas-row {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
       flex: 1;
+      align-self: stretch;
+      height: 100%;
       min-height: 0;
       width: 100%;
     }
@@ -1380,9 +1404,31 @@
         </div>
 
         <div class="txt-panel-body">
-          <!-- Champ texte -->
-          <input type="text" class="txt-panel-input" id="txt-panel-input" maxlength="40"
+          <!-- Champ texte (limité : un texte trop long déborde du vêtement) -->
+          <input type="text" class="txt-panel-input" id="txt-panel-input" maxlength="25"
                  placeholder="Votre texte" oninput="onPanelTextChange()">
+          <div class="txt-panel-count"><span id="txt-panel-count">0</span>/25 caractères</div>
+
+          <!-- Style : gras / italique / souligné -->
+          <div class="txt-panel-row txt-style-row">
+            <span class="txt-panel-lbl">Style</span>
+            <div class="txt-style-btns">
+              <button type="button" class="txt-style-btn" id="txt-style-b" title="Gras"
+                      onclick="toggleTextStyle('bold')" style="font-weight:800">B</button>
+              <button type="button" class="txt-style-btn" id="txt-style-i" title="Italique"
+                      onclick="toggleTextStyle('italic')" style="font-style:italic">I</button>
+              <button type="button" class="txt-style-btn" id="txt-style-u" title="Souligné"
+                      onclick="toggleTextStyle('underline')" style="text-decoration:underline">U</button>
+            </div>
+          </div>
+
+          <!-- Taille du texte -->
+          <div class="txt-panel-row txt-size-row">
+            <span class="txt-panel-lbl">Taille</span>
+            <input type="range" class="txt-size-range" id="txt-size-range"
+                   min="12" max="48" step="1" value="20" oninput="onTextSizeChange()">
+            <span class="txt-size-val" id="txt-size-val">20</span>
+          </div>
 
           <!-- Change Font -->
           <div class="txt-panel-row" onclick="toggleFontPicker()">
@@ -2019,25 +2065,220 @@
       var whiteUrl = patchWhiteUrl(shape);
       var colorUrl = patchColorUrl(shape, slug);
 
-      // On affiche TOUJOURS l'image blanche d'abord : elle existe et s'affiche
-      // immédiatement. (asset_url renvoie une URL même pour un fichier absent,
-      // donc on ne peut pas se fier à "colorUrl vide" pour détecter l'absence —
-      // il faut charger et voir si ça réussit.)
-      console.log('[PATCH] shape:', shape, 'whiteUrl:', whiteUrl, 'colorUrl:', colorUrl);
-      if (whiteUrl) img.src = whiteUrl;
-      img.onload = function () { console.log('[PATCH] image CHARGÉE', img.naturalWidth + 'x' + img.naturalHeight, 'affichée', img.offsetWidth + 'x' + img.offsetHeight); };
+      /* Fondu au changement (couleur ou forme) : on PRÉCHARGE d'abord l'image
+         cible (la vraie image colorée si elle se charge, sinon le blanc de repli),
+         PUIS on fait un fondu sortant -> swap du src -> fondu entrant. Le client
+         ne perçoit qu'une transition de couleur douce, pas un remplacement d'image. */
+
+      // Applique une nouvelle image à #patch-shape-img avec fondu.
+      function fadeSwap(newUrl) {
+        if (!newUrl) return;
+        // Si c'est déjà l'image affichée, ne rien faire (évite un clignotement).
+        if (img.getAttribute('src') === newUrl) return;
+
+        img.classList.add('is-swapping');           // fondu sortant (opacity -> 0)
+        // Attend la fin du fondu sortant avant de remplacer l'image.
+        window.setTimeout(function () {
+          img.src = newUrl;                          // swap invisible (image opacity 0)
+          var reveal = function () {
+            // Petit délai (setTimeout) : laisse le navigateur PEINDRE l'état
+            // opacity:0 avant de retirer .is-swapping, sinon add+remove sont
+            // fusionnés et le fondu entrant ne se déclenche pas.
+            window.setTimeout(function () {
+              img.classList.remove('is-swapping');
+              // La vignette du récap suit la nouvelle image (src async).
+              if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
+            }, 30);
+          };
+          // Une fois la nouvelle image chargée, on la fait réapparaître en fondu.
+          if (img.complete) reveal();
+          else img.onload = reveal;
+        }, 200);                                     // ~ durée de la transition CSS (fondu sortant)
+      }
+
+      // Premier affichage (src encore vide) : on pose l'image sans fondu pour
+      // qu'elle apparaisse immédiatement au chargement de la page.
+      var firstPaint = !img.getAttribute('src');
+
+      console.log('[PATCH] shape:', shape, 'whiteUrl:', whiteUrl, 'colorUrl:', colorUrl, 'firstPaint:', firstPaint);
       img.onerror = function () { console.error('[PATCH] ÉCHEC chargement:', img.src); };
 
-      // Puis, si une VRAIE image colorée existe pour cette couleur, on la
-      // substitue une fois chargée. Sinon (404), on garde le blanc.
+      // Précharge la vraie image colorée ; si elle se charge, c'est la cible,
+      // sinon on retombe sur le blanc. Puis on applique (avec ou sans fondu).
+      function applyTarget(targetUrl) {
+        if (firstPaint) { img.src = targetUrl; return; }
+        fadeSwap(targetUrl);
+      }
+
       if (colorUrl && colorUrl !== whiteUrl) {
         var test = new Image();
-        test.onload = function () { img.src = colorUrl; };
-        // onerror : on ne touche à rien, le blanc reste affiché.
+        test.onload = function () { applyTarget(colorUrl); };
+        test.onerror = function () { applyTarget(whiteUrl); };   // 404 -> blanc
         test.src = colorUrl;
+      } else {
+        applyTarget(whiteUrl);
       }
     }
     window.updatePatchShapeImg = updatePatchShapeImg;
+
+    /* ═══════════════════ ZONE DE CONTRAINTE DU LOGO PATCH ═══════════════════
+       Zone INVISIBLE (sans pointillés) : le logo ne peut jamais SORTIR de la forme
+       du patch. La contrainte épouse la FORME :
+       - rond   : contrainte CIRCULAIRE — le logo peut aller jusqu'au bord du
+                  cercle (ses 4 coins restent dans le cercle), pas confiné dans un
+                  petit carré central.
+       - carré/rectangle/blason : contrainte rectangulaire (marge de couture).
+       SEAM = marge de couture en % (bord non imprimable). */
+    var PATCH_SEAM = 16  // marge de couture en % (bord de la forme) — cercle guide réduit
+
+    function clampPatchLogo() {
+      var logoEl = document.getElementById('patch-logo');
+      var canvas = document.getElementById('coins-canvas');
+      if (!logoEl || !canvas) return;
+      if (logoEl.style.display === 'none') return;
+
+      var shape = (typeof patchShapeName === 'function') ? patchShapeName() : 'rond';
+
+      // Dimensions du canvas (pour convertir la largeur du logo en hauteur %).
+      var cw = canvas.offsetWidth || 1, ch = canvas.offsetHeight || 1;
+      var img = logoEl.querySelector('img');
+      var imgRatio = (img && img.naturalWidth && img.naturalHeight)
+        ? (img.naturalHeight / img.naturalWidth) : 1;
+
+      // Largeur du logo en % (au moins 4%, au plus la largeur imprimable).
+      var maxW = 100 - 2 * PATCH_SEAM;
+      var w = parseFloat(logoEl.style.width);
+      if (isNaN(w)) w = 50;
+      w = Math.max(4, Math.min(maxW, w));
+
+      // Hauteur du logo en % du canvas (largeur px * ratio -> % de la hauteur).
+      var hPct = w * imgRatio * (cw / ch);
+
+      var left = parseFloat(logoEl.style.left); if (isNaN(left)) left = 50 - w / 2;
+      var top  = parseFloat(logoEl.style.top);  if (isNaN(top))  top  = 50 - hPct / 2;
+
+      if (shape === 'rond') {
+        // ── Contrainte CIRCULAIRE ──
+        // Cercle centré en (50,50), rayon R = 50 - marge de couture. Le logo peut
+        // aller jusqu'au bord du cercle tant que son coin le plus éloigné reste
+        // dedans. Canvas rond = carré (cw≈ch) -> on raisonne en % isotropes.
+        var R = 50 - PATCH_SEAM;
+
+        // Demi-diagonale du logo (centre du logo -> son coin).
+        var halfDiag = Math.sqrt((w / 2) * (w / 2) + (hPct / 2) * (hPct / 2));
+
+        // Si le logo est si grand que même centré il déborde, on le réduit pour
+        // que sa demi-diagonale tienne dans le rayon.
+        if (halfDiag > R) {
+          var scale = R / halfDiag;
+          w = w * scale;
+          hPct = hPct * scale;
+          halfDiag = R;
+        }
+
+        // Centre voulu du logo.
+        var cx = left + w / 2;
+        var cy = top + hPct / 2;
+
+        // Le coin le plus éloigné du centre du cercle est à distance
+        // (distance centre-cercle -> centre-logo) + halfDiag. Pour qu'il reste
+        // dans le cercle : distance-centre-logo <= R - halfDiag. On borne donc le
+        // centre du logo à ce rayon autorisé (formule EXACTE, sans itération).
+        var dx = cx - 50, dy = cy - 50;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var maxCenterDist = Math.max(0, R - halfDiag);
+        if (dist > maxCenterDist && dist > 0) {
+          var f = maxCenterDist / dist;
+          cx = 50 + dx * f;
+          cy = 50 + dy * f;
+        }
+
+        left = cx - w / 2;
+        top  = cy - hPct / 2;
+      } else {
+        // ── Contrainte RECTANGULAIRE (carré / rectangle / blason) ──
+        // La forme remplit le cadre : marge de couture égale sur les 4 côtés.
+        if (w > maxW) w = maxW;
+        if (hPct > 100 - 2 * PATCH_SEAM) hPct = 100 - 2 * PATCH_SEAM;
+        left = Math.max(PATCH_SEAM, Math.min(100 - PATCH_SEAM - w, left));
+        top  = Math.max(PATCH_SEAM, Math.min(100 - PATCH_SEAM - hPct, top));
+      }
+
+      logoEl.style.width = w + '%';
+      logoEl.style.left = left + '%';
+      logoEl.style.top  = top + '%';
+    }
+    window.clampPatchLogo = clampPatchLogo;
+
+    /* Positionne et dimensionne le guide en pointillé (#patch-zone) pour épouser
+       EXACTEMENT la zone de contrainte, selon la forme :
+       - rond   : CERCLE (border-radius:50%) de diamètre = 2*(50-SEAM) ;
+       - autres : rectangle inséré de SEAM sur les 4 côtés.
+       Le guide se masque dès qu'un logo est présent. */
+    function refreshPatchZoneGuide() {
+      var guide = document.getElementById('patch-zone');
+      if (!guide) return;
+
+      var shape = (typeof patchShapeName === 'function') ? patchShapeName() : 'rond';
+      var seam = (typeof PATCH_SEAM === 'number') ? PATCH_SEAM : 6;
+
+      // Le SVG doit avoir le MÊME ratio que l'image du patch, sinon (rectangle/
+      // blason) son "meet" ne se calerait pas comme le object-fit:contain de
+      // l'image. viewBox = (100*ratio) x 100 pour un patch large, etc.
+      var ratio = (window.PATCH_SHAPE_RATIO && window.PATCH_SHAPE_RATIO[shape]) || 1;
+      var vbW = ratio >= 1 ? 100 * ratio : 100;
+      var vbH = ratio >= 1 ? 100 : 100 / ratio;
+      guide.setAttribute('viewBox', '0 0 ' + vbW + ' ' + vbH);
+
+      // Le guide est un SVG qui remplit le canvas avec le MÊME contain que l'image :
+      // on dessine la forme aux bonnes coordonnées du viewBox, elle se cale
+      // automatiquement sur le patch visible (aucun calcul de position).
+      var shapeEl = document.getElementById('patch-zone-shape');
+      if (shapeEl) {
+        var ns = 'http://www.w3.org/2000/svg';
+        var parent = shapeEl.parentNode;
+        var newEl;
+        // Marge de couture en unités viewBox (proportionnelle à chaque dimension).
+        var mX = vbW * (seam / 100), mY = vbH * (seam / 100);
+
+        if (shape === 'rond') {
+          newEl = document.createElementNS(ns, 'circle');
+          newEl.setAttribute('cx', String(vbW / 2));
+          newEl.setAttribute('cy', String(vbH / 2));
+          newEl.setAttribute('r', String(Math.min(vbW, vbH) / 2 - Math.min(mX, mY)));
+        } else {
+          // carré / rectangle / blason : rectangle inséré de SEAM sur les 4 côtés.
+          newEl = document.createElementNS(ns, 'rect');
+          newEl.setAttribute('x', String(mX));
+          newEl.setAttribute('y', String(mY));
+          newEl.setAttribute('width', String(vbW - 2 * mX));
+          newEl.setAttribute('height', String(vbH - 2 * mY));
+          newEl.setAttribute('rx', '3');
+        }
+        newEl.setAttribute('id', 'patch-zone-shape');
+        newEl.setAttribute('fill', 'rgba(224,36,36,0.04)');
+        newEl.setAttribute('stroke', '#e02424');
+        newEl.setAttribute('stroke-width', '0.8');
+        newEl.setAttribute('stroke-dasharray', '2 1.6');
+        newEl.setAttribute('vector-effect', 'non-scaling-stroke');
+        parent.replaceChild(newEl, shapeEl);
+      }
+
+      // Recentre le libellé dans le nouveau viewBox.
+      var label = document.getElementById('patch-zone-label');
+      if (label) { label.setAttribute('x', String(vbW / 2)); label.setAttribute('y', String(vbH / 2 + 1)); }
+
+      // Le SVG remplit le canvas (inset:0) avec le MÊME contain que l'image
+      // (preserveAspectRatio="xMidYMid meet" = object-fit:contain). Aucune mesure
+      // n'est nécessaire : le cercle dessiné se cale sur le patch par construction.
+
+      // Masque le guide si un logo est déjà déposé.
+      var logoEl = document.getElementById('patch-logo');
+      var logoImg = logoEl ? logoEl.querySelector('img') : null;
+      var hasLogo = logoEl && logoEl.style.display !== 'none' && logoImg && logoImg.getAttribute('src');
+      guide.classList.toggle('filled', !!hasLogo);
+    }
+    window.refreshPatchZoneGuide = refreshPatchZoneGuide;
 
     function updateProductImages() {
       const prefix = PRODUCT_SLUGS[currentProductKey];
@@ -4504,6 +4745,20 @@
             const ph = coinsCanvas.querySelector('.coins-placeholder');
             if (ph) ph.style.display = 'none';
           }
+          // Borne le logo dans la zone dès l'upload (et une fois l'image chargée,
+          // pour connaître son vrai ratio et affiner la contrainte).
+          if (typeof window.clampPatchLogo === 'function') {
+            window.clampPatchLogo();
+            if (coinsPreviewImg) {
+              coinsPreviewImg.addEventListener('load', function onceLoaded() {
+                coinsPreviewImg.removeEventListener('load', onceLoaded);
+                window.clampPatchLogo();
+                if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
+              });
+            }
+          }
+          // Masque le guide en pointillé (un logo est maintenant présent).
+          if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
           // Recap - miniature : image du patch (forme + couleur) + logo positionné.
           updatePatchRecapThumb();
 
@@ -4695,6 +4950,8 @@
           patchLogo.style.width = '70%';
           patchLogo.style.height = '';
         }
+        // Le logo est retiré : on réaffiche le guide de zone en pointillé.
+        if (typeof window.refreshPatchZoneGuide === 'function') window.refreshPatchZoneGuide();
         // Réinitialiser la miniature du récap
         const recapThumb = document.getElementById('coins-recap-thumb');
         if (recapThumb) {
@@ -4829,28 +5086,56 @@
     }
     window.setTextZoneMode = setTextZoneMode;
 
-    /* Contraint le texte à rester DANS sa zone horizontale (pas de sortie). */
+    /* Contraint le texte à rester DANS sa zone horizontale.
+       1) RÉDUIT la police si le texte est plus large/haut que la zone (il ne
+          déborde donc jamais, comme sur CustomInk : le texte rapetisse au lieu
+          de sortir). 2) BORNE ensuite la position dans la zone. */
     function clampTextToZone(zone) {
       var h = TEXT_ZONE_HORIZ[zone];
       var el = document.getElementById('text-' + zone);
       var layer = document.getElementById('logo-layer');
       if (!h || !el || !layer) return;
+
       var lb = layer.getBoundingClientRect();
-      var eb = el.getBoundingClientRect();
-      // Largeur/hauteur du texte en % du layer.
-      var wPct = lb.width ? (eb.width / lb.width) * 100 : 0;
-      var hPct = lb.height ? (eb.height / lb.height) * 100 : 0;
+      if (!lb.width || !lb.height) return;
+
+      // Dimensions de la zone en pixels écran.
+      var zoneW = (h.width / 100) * lb.width;
+      var zoneH = (h.height / 100) * lb.height;
+
+      // 1) Ajuste la taille de police pour tenir dans la zone (largeur ET
+      //    hauteur). On part de la taille demandée et on réduit si nécessaire.
+      var cur = parseFloat(window.getComputedStyle(el).fontSize) || 20;
+      var guard = 0;
+      // Réduction : tant que le texte déborde, on rapetisse (min 8px).
+      while (guard++ < 40) {
+        var eb = el.getBoundingClientRect();
+        if ((eb.width <= zoneW && eb.height <= zoneH) || cur <= 8) break;
+        cur = Math.max(8, cur - 1);
+        el.style.fontSize = cur + 'px';
+      }
+      // Agrandissement : si on avait trop réduit et qu'il reste de la place,
+      // on regrossit jusqu'à la taille voulue (sans jamais déborder).
+      var wanted = parseFloat(el.getAttribute('data-wanted-size')) || cur;
+      while (guard++ < 80 && cur < wanted) {
+        el.style.fontSize = (cur + 1) + 'px';
+        var eb2 = el.getBoundingClientRect();
+        if (eb2.width > zoneW || eb2.height > zoneH) { el.style.fontSize = cur + 'px'; break; }
+        cur += 1;
+      }
+
+      // 2) Borne la position dans la zone.
+      var ebf = el.getBoundingClientRect();
+      var wPct = (ebf.width / lb.width) * 100;
+      var hPct = (ebf.height / lb.height) * 100;
       var left = parseFloat(el.style.left); if (isNaN(left)) left = h.left;
       var top = parseFloat(el.style.top); if (isNaN(top)) top = h.top;
-      // Bornes de la zone.
       var minL = h.left, maxL = h.left + h.width - wPct;
       var minT = h.top, maxT = h.top + h.height - hPct;
       if (maxL < minL) maxL = minL;
       if (maxT < minT) maxT = minT;
-      left = Math.max(minL, Math.min(maxL, left));
-      top = Math.max(minT, Math.min(maxT, top));
-      el.style.left = left + '%';
-      el.style.top = top + '%';
+      el.style.left = Math.max(minL, Math.min(maxL, left)) + '%';
+      el.style.top = Math.max(minT, Math.min(maxT, top)) + '%';
     }
     window.clampTextToZone = clampTextToZone;
 

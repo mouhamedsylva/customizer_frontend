@@ -132,6 +132,10 @@
     state.fontName = prev ? prev.fontName : 'Arial';
     state.color = prev ? prev.color : '#ffffff';
     state.shape = prev ? prev.shape : 'normal';
+    state.bold = prev ? !!prev.bold : false;
+    state.italic = prev ? !!prev.italic : false;
+    state.underline = prev ? !!prev.underline : false;
+    state.size = prev && prev.size ? prev.size : 20;
     window.cancelTextInline();
     openPanel();
   };
@@ -142,6 +146,8 @@
     if (!st) return;
     state.zone = zone; state.text = st.text; state.font = st.font;
     state.fontName = st.fontName || 'Police'; state.color = st.color; state.shape = st.shape || 'normal';
+    state.bold = !!st.bold; state.italic = !!st.italic; state.underline = !!st.underline;
+    state.size = st.size || 20;
     openPanel();
   };
 
@@ -168,6 +174,14 @@
     document.getElementById('txt-panel-shape-val').textContent =
       (SHAPES.filter(function (s) { return s.id === state.shape; })[0] || SHAPES[0]).name;
 
+    // Compteur, taille, et boutons de style (reflètent l'état courant).
+    syncTextCount();
+    var range = document.getElementById('txt-size-range');
+    if (range) range.value = state.size;
+    var sizeVal = document.getElementById('txt-size-val');
+    if (sizeVal) sizeVal.textContent = state.size;
+    syncStyleButtons();
+
     buildColorSwatches();
     buildFontList();
     buildShapeGrid();
@@ -191,7 +205,9 @@
     if (save) {
       saveState(state.zone, {
         text: state.text, font: state.font, fontName: state.fontName,
-        color: state.color, shape: state.shape
+        color: state.color, shape: state.shape,
+        bold: state.bold, italic: state.italic, underline: state.underline,
+        size: state.size
       });
       // Chip récap dans le sidebar.
       var chip = document.getElementById('txt-chip-' + state.zone);
@@ -209,7 +225,45 @@
 
   window.onPanelTextChange = function () {
     state.text = document.getElementById('txt-panel-input').value;
+    syncTextCount();
     buildFontList();  // les aperçus suivent le texte
+    renderLive();
+  };
+
+  // Compteur de caractères (limite pour éviter le débordement du vêtement).
+  function syncTextCount() {
+    var input = document.getElementById('txt-panel-input');
+    var out = document.getElementById('txt-panel-count');
+    if (input && out) out.textContent = (input.value || '').length;
+  }
+
+  // ── Style : gras / italique / souligné ──
+  window.toggleTextStyle = function (kind) {
+    if (kind === 'bold') state.bold = !state.bold;
+    else if (kind === 'italic') state.italic = !state.italic;
+    else if (kind === 'underline') state.underline = !state.underline;
+    syncStyleButtons();
+    renderLive();
+  };
+  function syncStyleButtons() {
+    var b = document.getElementById('txt-style-b');
+    var i = document.getElementById('txt-style-i');
+    var u = document.getElementById('txt-style-u');
+    if (b) b.classList.toggle('on', !!state.bold);
+    if (i) i.classList.toggle('on', !!state.italic);
+    if (u) u.classList.toggle('on', !!state.underline);
+  }
+
+  // ── Taille du texte ──
+  window.onTextSizeChange = function () {
+    var range = document.getElementById('txt-size-range');
+    if (!range) return;
+    state.size = parseInt(range.value, 10) || 20;
+    // La taille choisie au panneau prime : on efface une taille figée par un
+    // ancien redimensionnement manuel, sinon le slider n'aurait aucun effet.
+    state.fontSize = null;
+    var out = document.getElementById('txt-size-val');
+    if (out) out.textContent = state.size;
     renderLive();
   };
 
@@ -335,9 +389,23 @@
     el.style.display = 'block';
     el.style.color = data.color;
     el.style.fontFamily = data.font;
-    // Applique la géométrie mémorisée si présente (taille/position).
+    // Style : gras / italique / souligné.
+    el.style.fontWeight = data.bold ? '800' : '400';
+    el.style.fontStyle = data.italic ? 'italic' : 'normal';
+    el.style.textDecoration = data.underline ? 'underline' : 'none';
+    // Taille : priorité à une géométrie mémorisée (drag/resize), sinon la
+    // taille choisie au panneau (data.size, en px).
+    // data-wanted-size = taille SOUHAITÉE : clampTextToZone réduit si le texte
+    // déborde, puis regrossit jusqu'à cette valeur si la place le permet.
+    if (data.fontSize) {
+      el.style.fontSize = data.fontSize;
+      el.setAttribute('data-wanted-size', parseFloat(data.fontSize) || 20);
+    } else if (data.size) {
+      el.style.fontSize = data.size + 'px';
+      el.setAttribute('data-wanted-size', data.size);
+    }
+    // Autres géométries mémorisées (largeur/position).
     if (data.width) el.style.width = data.width;
-    if (data.fontSize) el.style.fontSize = data.fontSize;
     if (data.left) el.style.left = data.left;
     if (data.top) el.style.top = data.top;
 
@@ -358,9 +426,13 @@
     var W = 300, H = 90;
     var path = shapePath(data.shape, W, H);
     var id = 'shp-' + Math.abs(hash(data.text + data.shape));
+    var weight = data.bold ? '800' : '700';
+    var fstyle = data.italic ? 'italic' : 'normal';
+    var deco = data.underline ? 'underline' : 'none';
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="overflow:visible">'
       + '<defs><path id="' + id + '" d="' + path + '"/></defs>'
-      + '<text font-size="42" font-weight="700" fill="' + data.color + '" '
+      + '<text font-size="42" font-weight="' + weight + '" fill="' + data.color + '" '
+      + 'font-style="' + fstyle + '" text-decoration="' + deco + '" '
       + 'style="font-family:' + esc(data.font) + '">'
       + '<textPath href="#' + id + '" startOffset="50%" text-anchor="middle">'
       + esc(data.text) + '</textPath></text></svg>';

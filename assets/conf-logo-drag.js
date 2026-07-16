@@ -113,15 +113,14 @@
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    // Le patch : le logo reste ENTIER mais borné à l'INTÉRIEUR de la forme, avec
-    // une marge (inset) pour ne pas déborder sur la couture. Pour les autres
-    // pièces, inset = 0 (bornage 0..100 du canvas de référence).
+    // Le patch : le logo reste ENTIER mais borné à l'INTÉRIEUR de la forme via la
+    // zone invisible gérée par window.clampPatchLogo (appelée après coup, plus bas).
+    // Ici on laisse un bornage large ; le clamp final affine selon la forme.
     const isPatchLogo = active && active.id === 'patch-logo';
-    const PATCH_LOGO_INSET = 12;                 // marge en % (couture)
-    const inset = isPatchLogo ? PATCH_LOGO_INSET : 0;
+    const inset = 0;
     const MIN_POS = inset;
     const maxPos = (sizePct) => (100 - inset - sizePct);
-    const maxW = isPatchLogo ? (100 - 2 * inset) : MAX_W;
+    const maxW = MAX_W;
 
     if (mode === 'resize') {
       // Nouvelle largeur en % selon le déplacement horizontal
@@ -134,6 +133,11 @@
         if (!startFont) startFont = parseFloat(getComputedStyle(active).fontSize) || 20;
         var newFont = Math.max(8, Math.min(120, startFont * ratio));
         active.style.fontSize = newFont + 'px';
+        // La taille visée par l'utilisateur = ce qu'il tire ; clampTextToZone
+        // la respecte tant qu'elle tient dans la zone, sinon la borne.
+        active.setAttribute('data-wanted-size', newFont);
+        var tz = active.id === 'text-f' ? 'f' : (active.id === 'text-b' ? 'b' : null);
+        if (tz && typeof window.clampTextToZone === 'function') window.clampTextToZone(tz);
       }
     } else {
       // Déplacement
@@ -163,6 +167,11 @@
     };
     if (TEXTILE_ZONE[active.id] && typeof window.clampLogoToZone === 'function') {
       window.clampLogoToZone(TEXTILE_ZONE[active.id]);
+    }
+    // Contrainte : le logo PATCH reste DANS la zone invisible du patch (couture),
+    // aussi bien au déplacement qu'au redimensionnement.
+    if (isPatchLogo && typeof window.clampPatchLogo === 'function') {
+      window.clampPatchLogo();
     }
     // Le texte reste DANS sa zone horizontale (pas de sortie).
     if (active.classList.contains('design-text') && typeof window.clampTextToZone === 'function') {
