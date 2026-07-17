@@ -5,9 +5,10 @@
  */
 (function () {
   let mode = null;       // 'drag' ou 'resize'
+  let grip = null;       // poignée saisie : 'nw','n','ne','e','se','s','sw','w'
   let active = null;     // logo manipulé
   let startX = 0, startY = 0;
-  let startLeft = 0, startTop = 0, startW = 0;
+  let startLeft = 0, startTop = 0, startW = 0, startH = 0;
   let startFont = 0;     // taille de police au début d'un resize de texte
   let bounds = null;
 
@@ -95,13 +96,21 @@
     startLeft = parseFloat(logo.style.left) || 0;
     startTop = parseFloat(logo.style.top) || 0;
     startW = parseFloat(logo.style.width) || 18;
+    // Hauteur en % du canvas (height:auto -> on la mesure), pour que les poignées
+    // du HAUT puissent garder le bord bas en place.
+    startH = bounds.height
+      ? (logo.getBoundingClientRect().height / bounds.height) * 100
+      : startW;
     startFont = parseFloat(logo.style.fontSize) || parseFloat(getComputedStyle(logo).fontSize) || 20;
 
     if (handle) {
       mode = 'resize';
+      // Quelle poignée ? 'se' par défaut (ancien comportement : coin bas-droit).
+      grip = handle.getAttribute('data-pos') || 'se';
       logo.classList.add('resizing');
     } else {
       mode = 'drag';
+      grip = null;
       logo.classList.add('dragging');
     }
     e.preventDefault();
@@ -124,9 +133,38 @@
     const maxW = MAX_W;
 
     if (mode === 'resize') {
-      // Nouvelle largeur en % selon le déplacement horizontal
-      let newW = startW + (dx / bounds.width) * 100;
+      /* Redimensionnement depuis les 8 poignées (4 coins + 4 côtés).
+         Le logo garde son ratio (height:auto) : c'est donc la LARGEUR qui pilote.
+         - poignées est (e, ne, se)  : tirer à droite agrandit  -> +dx
+         - poignées ouest (w, nw, sw): tirer à gauche agrandit  -> -dx
+         - poignée sud (s)           : tirer vers le bas agrandit -> +dy
+         - poignée nord (n)          : tirer vers le haut agrandit -> -dy
+         Les poignées ouest/nord déplacent aussi le logo, sinon son bord opposé
+         « fuirait » au lieu de rester en place. */
+      var g = grip || 'se';
+      var delta;
+      if (g === 'n' || g === 's') {
+        // Côtés haut/bas : le geste vertical pilote la taille.
+        delta = (g === 's' ? dy : -dy) / bounds.height * 100 * (bounds.height / bounds.width);
+      } else {
+        // Coins et côtés gauche/droite : le geste horizontal pilote la taille.
+        delta = (g.indexOf('w') !== -1 ? -dx : dx) / bounds.width * 100;
+      }
+
+      let newW = startW + delta;
       newW = Math.max(MIN_W, Math.min(maxW, newW));
+
+      // Bord opposé fixe : on compense le décalage de largeur/hauteur.
+      var grown = newW - startW;                       // variation en % de largeur
+      if (g.indexOf('w') !== -1) {
+        active.style.left = (startLeft - grown) + '%';  // le bord droit ne bouge pas
+      }
+      if (g === 'n' || g === 'nw' || g === 'ne') {
+        // Hauteur en % du canvas : la largeur % est relative à la LARGEUR du canvas.
+        var ratioH = (startH || 0) / (startW || 1);     // hauteur/largeur du logo
+        active.style.top = (startTop - grown * ratioH) + '%'; // le bord bas ne bouge pas
+      }
+
       active.style.width = newW + '%';
       // Pour un TEXTE simple : la taille de police suit la largeur (proportionnel).
       if (active.classList.contains('design-text') && !active.classList.contains('is-shaped')) {
@@ -229,6 +267,48 @@
       mode = null;
     }
   }
+
+  /* ── Poignées : 4 coins + 4 côtés ──────────────────────────────────────
+     Les templates ne posent qu'UNE poignée (coin bas-droit historique). On
+     complète ici pour tous les éléments manipulables, y compris ceux injectés
+     dynamiquement (voir l'observateur plus bas). */
+  const GRIPS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+
+  function ensureGrips(el) {
+    if (!el) return;
+    const existing = el.querySelectorAll('.logo-resize');
+    // Déjà complété ? (on marque l'élément pour ne pas repasser dessus)
+    if (el.dataset.gripsReady === '1') return;
+
+    // Récupère le data-resize d'origine (utilisé ailleurs dans le code).
+    const zone =
+      (existing[0] && existing[0].getAttribute('data-resize')) ||
+      el.getAttribute('data-zone') ||
+      '';
+
+    existing.forEach((h) => h.remove());
+    GRIPS.forEach((pos) => {
+      const h = document.createElement('span');
+      h.className = 'logo-resize pos-' + pos;
+      h.setAttribute('data-pos', pos);
+      if (zone) h.setAttribute('data-resize', zone);
+      el.appendChild(h);
+    });
+    el.dataset.gripsReady = '1';
+  }
+
+  function refreshGrips() {
+    document
+      .querySelectorAll('.design-logo, .design-text')
+      .forEach(ensureGrips);
+  }
+
+  // Au chargement, puis à chaque injection de layout (produit, vue, upload…).
+  document.addEventListener('DOMContentLoaded', refreshGrips);
+  refreshGrips();
+  new MutationObserver(function () {
+    refreshGrips();
+  }).observe(document.documentElement, { childList: true, subtree: true });
 
   // Souris
   document.addEventListener('mousedown', onPointerDown);

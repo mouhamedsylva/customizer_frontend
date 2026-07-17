@@ -166,7 +166,9 @@
   pointer-events: none;
 }
 
-/* Poignée de redimensionnement (coin bas-droit) */
+/* Poignées de redimensionnement : 4 coins + 4 côtés.
+   La position et le curseur dépendent de la classe `pos-*` (voir plus bas).
+   Sans classe, on retombe sur le coin bas-droit (compatibilité). */
 .logo-resize {
   position: absolute;
   right: -7px;
@@ -180,7 +182,33 @@
   display: none;
   touch-action: none;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  z-index: 6;
 }
+
+/* ── Coins ── (redimensionnement proportionnel) */
+.logo-resize.pos-nw { left: -7px;  top: -7px;    right: auto; bottom: auto; cursor: nwse-resize; }
+.logo-resize.pos-ne { right: -7px; top: -7px;    left: auto;  bottom: auto; cursor: nesw-resize; }
+.logo-resize.pos-sw { left: -7px;  bottom: -7px; right: auto; top: auto;    cursor: nesw-resize; }
+.logo-resize.pos-se { right: -7px; bottom: -7px; left: auto;  top: auto;    cursor: nwse-resize; }
+
+/* ── Côtés ── (poignées allongées, plus faciles à saisir) */
+.logo-resize.pos-n,
+.logo-resize.pos-s {
+  left: 50%; transform: translateX(-50%);
+  right: auto; width: 18px; height: 10px; border-radius: 6px;
+  cursor: ns-resize;
+}
+.logo-resize.pos-n { top: -6px;    bottom: auto; }
+.logo-resize.pos-s { bottom: -6px; top: auto; }
+
+.logo-resize.pos-w,
+.logo-resize.pos-e {
+  top: 50%; transform: translateY(-50%);
+  bottom: auto; width: 10px; height: 18px; border-radius: 6px;
+  cursor: ew-resize;
+}
+.logo-resize.pos-w { left: -6px;  right: auto; }
+.logo-resize.pos-e { right: -6px; left: auto; }
 
 /* Poignée visible au survol ou pendant manipulation */
 .design-logo:hover .logo-resize,
