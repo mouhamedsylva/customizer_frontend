@@ -416,10 +416,6 @@ class DynamicLayoutManager {
       <div class="cv-hdr">
         <h2 class="cv-title">Aperçu de votre patch</h2>
         <p class="cv-sub">Visualisez votre patch personnalisé</p>
-        <div class="vtabs">
-          <button class="vt on" onclick="switchCoinsView('2d')">Aperçu 2D</button>
-          <button class="vt" onclick="switchCoinsView('3d')">Aperçu réel</button>
-        </div>
       </div>
       
       <div class="cv-wrap">
@@ -567,7 +563,10 @@ class DynamicLayoutManager {
         </div>
       </div>
     `;
-    
+
+    // Réinsère la poignée/écouteurs du panneau récap mobile (innerHTML les a effacés).
+    if (typeof window.setupRecapPanel === 'function') window.setupRecapPanel();
+
     // Mettre à jour le prix initial
     if (window.updateCoinPrice) {
       window.updateCoinPrice(20);
@@ -608,10 +607,6 @@ class DynamicLayoutManager {
       <div class="cv-hdr">
         <h2 class="cv-title">Visualisez votre drapeau</h2>
         <p class="cv-sub">Aperçu 3D interactif de votre design</p>
-        <div class="flag-view-tabs">
-          <button class="flag-view-btn active" onclick="switchFlagView('3d')">Aperçu 3D</button>
-          <button class="flag-view-btn" onclick="switchFlagView('2d')">Aperçu 2D</button>
-        </div>
       </div>
       
       <div class="cv-wrap">
@@ -860,6 +855,7 @@ class DynamicLayoutManager {
       </div>
     `;
 
+    if (typeof window.setupRecapPanel === 'function') window.setupRecapPanel();
     console.log('✅ Récap Drapeaux chargé');
   }
 
@@ -887,10 +883,6 @@ class DynamicLayoutManager {
       <div class="cv-hdr">
         <h2 class="cv-title">Visualisez votre coin</h2>
         <p class="cv-sub">Aperçu 3D interactif de votre design</p>
-        <div class="coin-view-tabs">
-          <button class="coin-view-btn active" onclick="switchCoinView('3d')">Aperçu 3D</button>
-          <button class="coin-view-btn" onclick="switchCoinView('2d')">Aperçu 2D</button>
-        </div>
       </div>
 
       <div class="cv-wrap">
@@ -1039,6 +1031,7 @@ class DynamicLayoutManager {
       </div>
     `;
 
+    if (typeof window.setupRecapPanel === 'function') window.setupRecapPanel();
     console.log('✅ Récap Patchs chargé');
   }
 }

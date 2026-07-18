@@ -881,6 +881,119 @@
     }
     .btn-save:hover { border-color: var(--black); }
 
+    /* ── Bouton « Commander pour un groupe » (textiles) ── */
+    .btn-group {
+      width: 100%; padding: 9px;
+      background: #fff; color: var(--black);
+      border: 1.5px solid var(--black); border-radius: 6px;
+      font-size: 11px; font-weight: 700; cursor: pointer; letter-spacing: .2px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background .15s, color .15s;
+    }
+    .btn-group:hover { background: var(--black); color: #fff; }
+
+    /* ── Modale commande de groupe ── */
+    .grp-overlay, .grp-preview-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(15,17,20,.55); backdrop-filter: blur(2px);
+      display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .grp-overlay.open, .grp-preview-overlay.open { display: flex; }
+    .grp-modal {
+      background: #fff; border-radius: 14px; width: min(760px, 96vw);
+      max-height: 90vh; display: flex; flex-direction: column;
+      box-shadow: 0 24px 60px rgba(0,0,0,.3); overflow: hidden;
+    }
+    .grp-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; padding: 18px 20px 12px; border-bottom: 1px solid var(--border);
+    }
+    .grp-head h3 { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+    .grp-sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    .grp-x {
+      flex: none; width: 30px; height: 30px; border: none; background: #f2f2f2;
+      border-radius: 8px; cursor: pointer; font-size: 15px; color: #555;
+    }
+    .grp-x:hover { background: #e6e6e6; }
+    .grp-body { padding: 16px 20px; overflow-y: auto; }
+
+    .grp-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+    .grp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 560px; }
+    .grp-table th {
+      text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .4px; color: var(--muted); padding: 9px 8px;
+      background: #fafafa; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .grp-opt { font-weight: 500; text-transform: none; letter-spacing: 0; }
+    .grp-table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .grp-table tr:last-child td { border-bottom: none; }
+    .grp-c-qty { width: 76px; }
+    .grp-c-act { width: 66px; }
+
+    .grp-inp, .grp-sel {
+      width: 100%; padding: 7px 8px; border: 1px solid var(--border);
+      border-radius: 7px; font: inherit; font-size: 12.5px; background: #fff; outline: none;
+    }
+    .grp-inp:focus, .grp-sel:focus { border-color: var(--black); }
+    .grp-qty { display: flex; align-items: center; gap: 2px; }
+    .grp-qty input {
+      width: 40px; text-align: center; padding: 6px 2px; border: 1px solid var(--border);
+      border-radius: 6px; font: inherit; font-size: 12.5px;
+    }
+    /* Pastille de couleur devant le select. */
+    .grp-color-cell { display: flex; align-items: center; gap: 6px; }
+    .grp-color-dot { width: 16px; height: 16px; border-radius: 4px; flex: none; border: 1px solid rgba(0,0,0,.15); }
+    .grp-row-btn {
+      border: none; background: none; cursor: pointer; padding: 5px; border-radius: 6px;
+      color: #888; line-height: 0;
+    }
+    .grp-row-btn:hover { background: #f2f2f2; color: var(--black); }
+    .grp-row-btn.danger:hover { color: #d33; }
+
+    .grp-add {
+      margin-top: 12px; padding: 9px 14px; background: #fff; color: var(--black);
+      border: 1.5px dashed var(--border); border-radius: 8px; font: inherit;
+      font-size: 12.5px; font-weight: 600; cursor: pointer; width: 100%;
+    }
+    .grp-add:hover { border-color: var(--black); }
+
+    .grp-summary {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 14px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px;
+      font-size: 13px;
+    }
+    .grp-summary strong { font-size: 15px; font-weight: 800; }
+    .grp-note {
+      margin-top: 12px; font-size: 11.5px; color: var(--muted); line-height: 1.55;
+      background: #fbf7ee; border: 1px solid #f0e6cf; border-radius: 8px; padding: 10px 12px;
+    }
+
+    .grp-foot {
+      display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border);
+    }
+    .grp-btn-secondary {
+      flex: 1; padding: 12px; background: #fff; border: 1.5px solid var(--border);
+      border-radius: 9px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .grp-btn-primary {
+      flex: 2; padding: 12px; background: var(--black); color: #fff; border: none;
+      border-radius: 9px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .grp-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Aperçu d'une ligne */
+    .grp-preview-box {
+      position: relative; background: #fff; border-radius: 14px; padding: 18px;
+      width: min(420px, 94vw); box-shadow: 0 24px 60px rgba(0,0,0,.3);
+    }
+    .grp-preview-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; padding-right: 32px; }
+    .grp-preview-stage {
+      position: relative; background: var(--stage, #f5f5f5); border-radius: 10px;
+      min-height: 300px; display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .grp-preview-stage img { max-width: 100%; max-height: 340px; object-fit: contain; }
+
     .rp-trust {
       padding: 10px 16px 24px;
       display: flex; flex-direction: column; gap: 8px;
@@ -1151,6 +1264,202 @@
   }
   .cd-continue:hover { border-color: var(--black); }
 
+
+  /* ══════════════════════════ MOBILE (≤ 768px) ══════════════════════════
+     Refonte en COLONNE UNIQUE : aperçu en haut, options empilées dessous,
+     récapitulatif transformé en panneau fixe repliable en bas de l'écran. */
+  @media (max-width: 768px) {
+    /* La structure est à DEUX niveaux :
+         .conf-app-root (grille)  ->  .hdr + .type-bar + .app
+         .app (flex ligne)        ->  .sidebar + .canvas + .recap
+       On aplatit tout en une colonne. */
+
+    /* Niveau racine : colonne qui DÉFILE avec la page.
+       Sur desktop, .conf-app-root est `position:fixed; inset:0` (2e déclaration
+       plus haut) : la page ne peut alors pas défiler. On l'annule ici, sinon les
+       sections du bas restent inaccessibles au doigt. */
+    .conf-app-root {
+      position: static;
+      inset: auto;
+      display: flex;
+      flex-direction: column;
+      grid-template-columns: none;
+      grid-template-rows: none;
+      height: auto;
+      min-height: 100vh;
+      overflow: visible;
+      padding-bottom: 132px;                  /* place à la barre récap repliée */
+    }
+    /* Autorise le défilement vertical de la page sur mobile. */
+    html, body { height: auto; overflow-y: auto; }
+    .hdr { order: 0; border-right: none; padding: 0 14px; }
+    .type-bar { order: 1; }
+    .app { order: 2; }
+
+    /* Niveau .app : colonne, aperçu (canvas) AVANT les options (sidebar). */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      overflow: visible;
+    }
+    .canvas  { order: 1; padding: 12px 14px; min-height: 0; }
+    .sidebar { order: 2; }
+    /* .recap sort du flux (panneau fixe, voir plus bas) — order sans effet. */
+
+    /* — Header : titre + actions sur une ligne ; le stepper passe DESSOUS,
+         sur sa propre ligne, comme sur les maquettes. — */
+    .hdr {
+      flex-wrap: wrap;
+      height: auto;
+      row-gap: 8px;
+      padding: 10px 14px;
+    }
+    .hdr-brand { min-width: 0; flex: 1; }
+    .hdr-name { font-size: 13px; }
+    .hdr-sub { display: none; }               /* sous-titre superflu sur mobile */
+    .hdr-btns { min-width: 0; gap: 6px; }
+    .obtn { padding: 7px 9px; font-size: 11px; }
+    .obtn svg { margin: 0; }
+    /* Le stepper : pleine largeur, sous le titre, défilable si besoin. */
+    .hdr-steps {
+      order: 3;
+      flex: 1 0 100%;
+      justify-content: center;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-top: 4px;
+    }
+    .hdr-steps::-webkit-scrollbar { display: none; }
+    .step-lbl { font-size: 11px; }
+
+    .sidebar {
+      width: 100%;                            /* pleine largeur */
+      border-right: none;
+      overflow: visible;                      /* le scroll est celui de la page */
+      padding: 4px 14px 14px;
+    }
+
+    /* — Aperçu : hauteur raisonnable, ne mange pas tout l'écran — */
+    .cv-wrap { min-height: 300px; max-height: 46vh; }
+
+    /* — Barre de types de produit : défilement horizontal — */
+    .type-bar {
+      height: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 10px 14px;
+    }
+    .type-bar::-webkit-scrollbar { display: none; }
+    /* Les 6 cartes produit défilent horizontalement (elles ne tiennent pas). */
+    .type-bar-cards {
+      display: flex;
+      gap: 8px;
+      grid-template-columns: none;
+      min-width: min-content;
+    }
+    .type-bar-cards > .pt { flex: 0 0 auto; }
+    /* L'en-tête « 1. Type de produit » reste au-dessus, sur sa ligne. */
+    .type-bar-inner { flex-wrap: wrap; }
+
+    /* — Sélecteurs d'options : grilles plus compactes — */
+    .txt-shape-grid,
+    .conf-shape-grid,
+    .coins-shape-row { grid-template-columns: repeat(4, 1fr) !important; }
+
+    /* — Récapitulatif : panneau FIXE repliable en bas —
+         REPLIÉ  : on voit la poignée + le bloc prix + les boutons d'action.
+         DÉPLIÉ  : le détail (produit, options, confiance) apparaît en défilant.
+         Deux structures de récap coexistent :
+           • textile : .rp-hdr / .rp-items / .rp-price / .rp-acts / .rp-trust
+           • coins/drapeaux/patchs : .rp-section… / .rp-actions-coins / .rp-trust-coins
+         D'où les sélecteurs doublés ci-dessous. */
+    .recap {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      width: 100%;
+      height: 88vh;                            /* hauteur du panneau déployé */
+      background: var(--white);
+      border-left: none;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -6px 24px rgba(0,0,0,.14);
+      border-radius: 16px 16px 0 0;
+      z-index: 40;
+      /* Replié : on remonte le panneau juste assez pour voir poignée + prix +
+         boutons. --recap-peek dimensionne cette hauteur visible ; elle est
+         ajustée en JS selon le nombre de boutons (textile : 2, patch/coin : 3). */
+      transform: translateY(calc(88vh - var(--recap-peek, 260px)));
+      transition: transform .28s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .recap.open { transform: translateY(0); }
+
+    /* Poignée de tirage (ajoutée en JS) tout en haut du panneau. */
+    .recap-handle {
+      flex: none;
+      display: flex; align-items: center; justify-content: center;
+      padding: 8px 0 4px; cursor: pointer;
+    }
+    .recap-handle::before {
+      content: ''; width: 40px; height: 4px; border-radius: 3px;
+      background: #d0d0d0;
+    }
+
+    /* Ordre d'empilement du panneau, indépendant du DOM (grâce à `order`) :
+         1) poignée
+         2) tout le DÉTAIL qui défile (récap produit, options, ET la zone de
+            confiance) — order:1
+         3) prix — order:2
+         4) boutons d'action — order:3   ← calés tout en bas = la « barre »
+       La zone de confiance passe ainsi DANS la partie déroulante, au-dessus du
+       bloc prix+boutons, comme demandé. */
+    .recap-handle { order: 0; }
+    .rp-hdr, .rp-items, .rp-content,
+    .rp-section, .rp-qty-section,
+    .rp-trust, .rp-trust-coins { order: 1; }
+
+    .rp-hdr { flex: none; padding: 4px 16px 8px; }
+    .rp-items,
+    .rp-content { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+    /* Le détail des produits coins/drapeaux/patchs (plusieurs .rp-section) doit
+       aussi pouvoir défiler : on les regroupe visuellement dans la zone 1. */
+    .rp-section, .rp-qty-section { flex: none; }
+
+    /* Zones de confiance : dans le flux déroulant, au-dessus du bloc d'action. */
+    .rp-trust, .rp-trust-coins { flex: none; }
+
+    /* Prix : juste au-dessus des boutons. */
+    .rp-price, .rp-total-section {
+      order: 2; flex: none; background: var(--white);
+      border-top: 1px solid var(--border);
+    }
+
+    /* Boutons : tout en bas, toujours visibles (= la barre en position repliée). */
+    .rp-acts, .rp-actions-coins {
+      order: 3; flex: none; background: var(--white);
+      padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    /* Boutons pleine largeur, faciles au doigt. */
+    .rp-btn-primary, .rp-btn-secondary,
+    .btn-cart, .btn-save {
+      width: 100%; min-height: 46px; justify-content: center; font-size: 14px;
+    }
+    .rp-acts { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+    /* Boutons plus grands, faciles au doigt. */
+    .btn-cart, .btn-save { min-height: 46px; font-size: 14px; }
+  }
+
+  /* Très petits écrans : sélecteurs de forme sur 4 colonnes serrées. */
+  @media (max-width: 380px) {
+    .txt-shape-grid,
+    .conf-shape-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  }
 
   </style>
   </head>
@@ -1706,6 +2015,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
           Ajouter au panier
         </button>
+        <!-- Commande de groupe : uniquement pour les textiles (masqué sinon en JS). -->
+        <button class="btn-group" id="btn-group-order" onclick="openGroupOrder()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          Commander pour un groupe
+        </button>
         <button class="btn-save" onclick="saveDesign(this)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
           Sauvegarder le design
@@ -1764,7 +2078,349 @@
       </div>
     </div>
 
+    <!-- MODALE : Commande de groupe (textiles) -->
+    <div class="grp-overlay" id="grp-overlay" onclick="if(event.target===this)closeGroupOrder()">
+      <div class="grp-modal" role="dialog" aria-label="Commande pour un groupe">
+        <div class="grp-head">
+          <div>
+            <h3>Commande pour un groupe</h3>
+            <p class="grp-sub">Même design pour tous. Ajoutez une ligne par personne : taille, couleur et, si besoin, un nom/numéro floqué.</p>
+          </div>
+          <button class="grp-x" onclick="closeGroupOrder()" title="Fermer" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="grp-body">
+          <div class="grp-table-wrap">
+            <table class="grp-table">
+              <thead>
+                <tr>
+                  <th class="grp-c-name">Nom / réf.</th>
+                  <th class="grp-c-size">Taille</th>
+                  <th class="grp-c-color">Couleur</th>
+                  <th class="grp-c-flock">Nom floqué <span class="grp-opt">(option)</span></th>
+                  <th class="grp-c-qty">Qté</th>
+                  <th class="grp-c-act"></th>
+                </tr>
+              </thead>
+              <tbody id="grp-rows"><!-- lignes injectées en JS --></tbody>
+            </table>
+          </div>
+
+          <button class="grp-add" onclick="grpAddRow()">＋ Ajouter une ligne</button>
+
+          <div class="grp-summary">
+            <span id="grp-total-lines">0 personne</span>
+            <strong id="grp-total-qty">0 pièce</strong>
+          </div>
+
+          <p class="grp-note">
+            💡 Le flocage d'un nom/numéro est un supplément chiffré à la main : votre
+            commande de groupe part en <strong>demande de devis</strong>. Nous vous
+            envoyons un prix précis sous 24–48 h.
+          </p>
+        </div>
+
+        <div class="grp-foot">
+          <button class="grp-btn-secondary" onclick="closeGroupOrder()">Annuler</button>
+          <button class="grp-btn-primary" id="grp-submit" onclick="submitGroupOrder(this)">
+            Demander un devis groupe
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aperçu d'une ligne (couleur + design) -->
+    <div class="grp-preview-overlay" id="grp-preview-overlay" onclick="if(event.target===this)closeGroupPreview()">
+      <div class="grp-preview-box">
+        <button class="grp-x" onclick="closeGroupPreview()" title="Fermer">✕</button>
+        <div class="grp-preview-title" id="grp-preview-title">Aperçu</div>
+        <div class="grp-preview-stage" id="grp-preview-stage"></div>
+      </div>
+    </div>
+
   <script>
+    /* ═══════════════════ COMMANDE DE GROUPE (textiles) ═══════════════════
+       Design commun (créé dans le configurateur) + une ligne par personne :
+       taille, couleur, nom floqué optionnel. Sortie = demande de devis. */
+
+    /* Tailles disponibles : lues depuis le sidebar (.sb) pour rester synchronisées
+       si on modifie la liste. Repli sur les tailles standard. */
+    function grpSizes() {
+      var btns = document.querySelectorAll('.sb');
+      var out = [];
+      btns.forEach(function (b) {
+        var t = (b.textContent || '').trim();
+        if (t) out.push(t);
+      });
+      return out.length ? out : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    }
+
+    /* Couleurs disponibles : lues depuis les swatches (.cs) — nom (title) + hex. */
+    function grpColors() {
+      var sw = document.querySelectorAll('.txt-color-swatches .cs, .cs');
+      var out = [];
+      sw.forEach(function (s) {
+        var name = s.getAttribute('title');
+        var hex = (s.style.background || s.style.backgroundColor || '').trim();
+        if (name && hex) out.push({ name: name, hex: hex });
+      });
+      // Dé-doublonne par nom.
+      var seen = {}, uniq = [];
+      out.forEach(function (c) { if (!seen[c.name]) { seen[c.name] = 1; uniq.push(c); } });
+      return uniq.length ? uniq : [{ name: 'Black', hex: '#0a0a0a' }];
+    }
+
+    /* Taille / couleur actuellement sélectionnées dans le sidebar (valeurs par
+       défaut d'une nouvelle ligne). */
+    function grpCurrentSize() {
+      var on = document.querySelector('.sb.on');
+      return on ? on.textContent.trim() : 'M';
+    }
+    function grpCurrentColor() {
+      return (typeof currentColorName !== 'undefined' && currentColorName) || 'Black';
+    }
+
+    var grpRowSeq = 0;
+
+    function openGroupOrder() {
+      var ov = document.getElementById('grp-overlay');
+      if (!ov) return;
+      var tbody = document.getElementById('grp-rows');
+      if (tbody && !tbody.children.length) {
+        grpAddRow(); grpAddRow();          // deux lignes pour démarrer
+      }
+      ov.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      grpUpdateTotals();
+    }
+    function closeGroupOrder() {
+      var ov = document.getElementById('grp-overlay');
+      if (ov) ov.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    /* Construit une ligne du tableau. */
+    function grpAddRow(preset) {
+      var tbody = document.getElementById('grp-rows');
+      if (!tbody) return;
+      preset = preset || {};
+      var id = 'grp-r-' + (++grpRowSeq);
+
+      var sizes = grpSizes();
+      var colors = grpColors();
+      var selSize = preset.size || grpCurrentSize();
+      var selColorName = preset.color || grpCurrentColor();
+
+      var sizeOpts = sizes.map(function (s) {
+        return '<option value="' + s + '"' + (s === selSize ? ' selected' : '') + '>' + s + '</option>';
+      }).join('');
+      var colorOpts = colors.map(function (c) {
+        return '<option value="' + c.name + '" data-hex="' + c.hex + '"' +
+               (c.name === selColorName ? ' selected' : '') + '>' + c.name + '</option>';
+      }).join('');
+
+      var tr = document.createElement('tr');
+      tr.id = id;
+      tr.innerHTML =
+        '<td><input class="grp-inp grp-f-name" type="text" placeholder="Nom / réf." value="' + (preset.name || '') + '"></td>' +
+        '<td><select class="grp-sel grp-f-size" onchange="grpUpdateTotals()">' + sizeOpts + '</select></td>' +
+        '<td><div class="grp-color-cell">' +
+          '<span class="grp-color-dot" data-dot="1"></span>' +
+          '<select class="grp-sel grp-f-color" onchange="grpSyncDot(this)">' + colorOpts + '</select>' +
+        '</div></td>' +
+        '<td><input class="grp-inp grp-f-flock" type="text" placeholder="ex. JEAN 10" value="' + (preset.flock || '') + '"></td>' +
+        '<td><div class="grp-qty">' +
+          '<input class="grp-f-qty" type="number" min="1" value="' + (preset.qty || 1) + '" onchange="grpUpdateTotals()">' +
+        '</div></td>' +
+        '<td>' +
+          '<button class="grp-row-btn" title="Aperçu" onclick="grpPreviewRow(this)">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          '</button>' +
+          '<button class="grp-row-btn" title="Dupliquer" onclick="grpDupRow(this)">' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>' +
+          '</button>' +
+          '<button class="grp-row-btn danger" title="Supprimer" onclick="grpDelRow(this)">' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>' +
+          '</button>' +
+        '</td>';
+      tbody.appendChild(tr);
+      grpSyncDot(tr.querySelector('.grp-f-color'));
+      grpUpdateTotals();
+    }
+
+    /* Met la pastille de couleur à jour d'après le select. */
+    function grpSyncDot(sel) {
+      if (!sel) return;
+      var opt = sel.options[sel.selectedIndex];
+      var dot = sel.closest('.grp-color-cell').querySelector('.grp-color-dot');
+      if (dot && opt) dot.style.background = opt.getAttribute('data-hex') || '#ccc';
+    }
+
+    function grpDelRow(btn) {
+      var tr = btn.closest('tr');
+      if (tr) tr.remove();
+      grpUpdateTotals();
+    }
+
+    function grpDupRow(btn) {
+      var tr = btn.closest('tr');
+      if (!tr) return;
+      grpAddRow({
+        name: tr.querySelector('.grp-f-name').value,
+        size: tr.querySelector('.grp-f-size').value,
+        color: tr.querySelector('.grp-f-color').value,
+        flock: tr.querySelector('.grp-f-flock').value,
+        qty: tr.querySelector('.grp-f-qty').value
+      });
+    }
+
+    /* Lit toutes les lignes en objets. */
+    function grpCollect() {
+      var rows = [];
+      document.querySelectorAll('#grp-rows tr').forEach(function (tr) {
+        var qty = parseInt(tr.querySelector('.grp-f-qty').value, 10) || 0;
+        if (qty < 1) return;
+        rows.push({
+          name: tr.querySelector('.grp-f-name').value.trim(),
+          size: tr.querySelector('.grp-f-size').value,
+          color: tr.querySelector('.grp-f-color').value,
+          flock: tr.querySelector('.grp-f-flock').value.trim(),
+          qty: qty
+        });
+      });
+      return rows;
+    }
+
+    function grpUpdateTotals() {
+      var rows = grpCollect();
+      var persons = document.querySelectorAll('#grp-rows tr').length;
+      var pieces = rows.reduce(function (s, r) { return s + r.qty; }, 0);
+      var l = document.getElementById('grp-total-lines');
+      var q = document.getElementById('grp-total-qty');
+      if (l) l.textContent = persons + ' ligne' + (persons > 1 ? 's' : '');
+      if (q) q.textContent = pieces + ' pièce' + (pieces > 1 ? 's' : '');
+      var submit = document.getElementById('grp-submit');
+      if (submit) submit.disabled = pieces < 1;
+    }
+
+    /* Aperçu d'une ligne : produit à la couleur choisie + design commun (logos
+       cœur/dos) superposé aux mêmes positions que dans le configurateur. */
+    function grpPreviewRow(btn) {
+      var tr = btn.closest('tr');
+      if (!tr) return;
+      var colorName = tr.querySelector('.grp-f-color').value;
+      var size = tr.querySelector('.grp-f-size').value;
+      var flock = tr.querySelector('.grp-f-flock').value.trim();
+      var name = tr.querySelector('.grp-f-name').value.trim();
+
+      var slug = (window.COLOR_SLUGS_MAP && window.COLOR_SLUGS_MAP[colorName]) ||
+                 (typeof COLOR_SLUGS !== 'undefined' && COLOR_SLUGS[colorName]) || '';
+      var prefix = (typeof PRODUCT_SLUGS !== 'undefined') ? PRODUCT_SLUGS[currentProductKey] : '';
+
+      // Image de face à la bonne couleur (mêmes candidats que le configurateur).
+      var candidates = (typeof colorImageCandidates === 'function')
+        ? colorImageCandidates(prefix, slug, 'face') : [];
+      var baseUrl = candidates[0] || '';
+
+      var stage = document.getElementById('grp-preview-stage');
+      var title = document.getElementById('grp-preview-title');
+      if (title) {
+        title.textContent = 'Aperçu — ' + (name ? name + ' · ' : '') +
+                            colorName + ' · ' + size + (flock ? ' · « ' + flock + ' »' : '');
+      }
+
+      // Logo cœur (design commun) : on réutilise sa position/taille du canvas.
+      var logoEl = document.getElementById('logo-f');
+      var logoImg = logoEl ? logoEl.querySelector('img') : null;
+      var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
+      var lLeft = logoEl ? (parseFloat(logoEl.style.left) || 38) : 38;
+      var lTop  = logoEl ? (parseFloat(logoEl.style.top)  || 34) : 34;
+      var lW    = logoEl ? (parseFloat(logoEl.style.width) || 18) : 18;
+
+      var html = '';
+      html += '<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">';
+      if (baseUrl) {
+        html += '<img src="' + baseUrl + '" alt="" style="max-width:100%;max-height:340px;object-fit:contain;">';
+        // Overlay logo, calé en % (mêmes repères que le canvas face).
+        if (logoSrc) {
+          html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + lLeft +
+                  '%;top:' + lTop + '%;width:' + lW + '%;object-fit:contain;pointer-events:none;">';
+        }
+      } else {
+        html += '<div style="color:#999;font-size:12px;padding:24px;text-align:center;">' +
+                'Image indisponible pour « ' + colorName +' ». Le rendu réel sera fourni au devis.</div>';
+      }
+      html += '</div>';
+      if (stage) stage.innerHTML = html;
+
+      var ov = document.getElementById('grp-preview-overlay');
+      if (ov) ov.classList.add('open');
+    }
+    function closeGroupPreview() {
+      var ov = document.getElementById('grp-preview-overlay');
+      if (ov) ov.classList.remove('open');
+    }
+
+    /* Envoi de la commande de groupe : on RÉUTILISE le formulaire de devis
+       existant (coordonnées client) en lui passant la liste + le design commun.
+       La sortie est donc un draft order / devis, comme pour les coins. */
+    async function submitGroupOrder(btnEl) {
+      var rows = grpCollect();
+      if (!rows.length) {
+        confAlert('Ajoutez au moins une personne à votre liste.', { icon: 'info', title: 'Liste vide' });
+        return;
+      }
+
+      var pieces = rows.reduce(function (s, r) { return s + r.qty; }, 0);
+      var hasFlock = rows.some(function (r) { return r.flock; });
+
+      // Type de produit lisible (Sweatshirt / T-shirt coton / T-shirt polyester).
+      var rcProd = document.getElementById('rc-prod');
+      var productLabel = rcProd ? rcProd.textContent.trim() : 'Textile personnalisé';
+
+      // Design commun : on capture la planche multi-vues (face/dos/côté) + la
+      // vignette, comme pour l'ajout au panier. Réutilise resolveDesignImage.
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Préparation…'; }
+      var previews = [];
+      try {
+        var fallback = (typeof currentProductImageURL === 'function') ? currentProductImageURL('face') : '';
+        var design = (typeof resolveDesignImage === 'function')
+          ? await resolveDesignImage(fallback, btnEl) : { thumb: fallback, sheet: null };
+        if (design.sheet) previews.push({ label: 'Design (toutes vues)', base: design.sheet });
+        else if (design.thumb) previews.push({ label: 'Design', base: design.thumb });
+      } catch (e) { /* aperçu best-effort */ }
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Demander un devis groupe'; }
+
+      // Récapitulatif texte de la liste (pour l'atelier), + les lignes en données.
+      var detailLines = rows.map(function (r) {
+        return (r.name ? r.name + ' — ' : '') + r.qty + '× ' + r.size + ' / ' + r.color +
+               (r.flock ? ' — floqué « ' + r.flock + ' »' : '');
+      });
+
+      closeGroupOrder();
+
+      // Ouvre le modal de devis commun avec les données du groupe.
+      openQuoteModal({
+        name: 'Commande de groupe — ' + productLabel,
+        subtitle: 'Recevez un devis pour votre commande de groupe (' + pieces +
+                  ' pièce' + (pieces > 1 ? 's' : '') + (hasFlock ? ', avec flocage' : '') + ').',
+        details: [
+          'Produit : ' + productLabel,
+          'Total : ' + pieces + ' pièce' + (pieces > 1 ? 's' : '') + ' · ' + rows.length + ' ligne(s)',
+          hasFlock ? 'Flocage nom/numéro : oui (chiffré au devis)' : 'Flocage : non'
+        ].concat(detailLines),
+        previews: previews,
+        // Données structurées transmises telles quelles au backend (voir submitQuote).
+        group: {
+          productType: currentProductType,
+          productLabel: productLabel,
+          pieces: pieces,
+          hasFlock: hasFlock,
+          rows: rows
+        }
+      });
+    }
+
     /* ── Guide des tailles ── */
     function openSizeGuide(e) {
       if (e && e.preventDefault) e.preventDefault();
@@ -2553,6 +3209,13 @@
       const productType = el.dataset.product;
       // Mémorise le type courant pour TOUS les produits (utilisé au checkout).
       if (productType) currentProductType = productType;
+
+      // « Commander pour un groupe » : uniquement pour les textiles.
+      var grpBtn = document.getElementById('btn-group-order');
+      if (grpBtn) {
+        var isTx = ['sweatshirt', 'tshirt', 'tshirt_polyester'].indexOf(productType) !== -1;
+        grpBtn.style.display = isTx ? '' : 'none';
+      }
       // Persiste le produit choisi : au reload (F5), on revient sur CE produit
       // au lieu de repartir sur le sweatshirt par défaut.
       try { if (productType) sessionStorage.setItem('conf_current_product', productType); } catch (e) {}
@@ -3259,10 +3922,14 @@
           coin: {
             name: d.name || 'Coin métal personnalisé',
             details: d.details || [],
-            qty: d.qty || 1,
+            qty: d.qty || (d.group ? d.group.pieces : 1) || 1,
             previews: previews
           }
         };
+
+        // Commande de groupe (textiles) : la liste des personnes part avec le
+        // devis. Le backend la retrouve sous quoteData.group.
+        if (d.group) payload.group = d.group;
 
         await window.ConfAPI.createQuote(payload);
         showQuoteSuccess(client);
@@ -5237,6 +5904,97 @@
     document.addEventListener('DOMContentLoaded', () => {
       updateProductImages();
     });
+
+    /* ═══════════ Récapitulatif mobile : panneau repliable ═══════════
+       Sur ≤768px, .recap est un panneau fixe en bas. Une poignée (barre) permet
+       de le déplier pour voir le détail, puis de le replier. Repliée, seule la
+       barre prix + « Ajouter au panier » reste visible. */
+    (function () {
+      var MOBILE = window.matchMedia('(max-width: 768px)');
+
+      function toggleRecap() {
+        var recap = document.querySelector('.recap');
+        if (!recap || !MOBILE.matches) return;
+        recap.classList.toggle('open');
+      }
+      // Exposé : le layout dynamique le rappelle après avoir réécrit le récap.
+      window.toggleRecap = toggleRecap;
+
+      /* (Ré)insère la poignée + les écouteurs. À rappeler après CHAQUE réécriture
+         du récap (les produits coins/drapeaux/patchs remplacent recap.innerHTML,
+         ce qui effaçait la poignée). */
+      function setupRecapPanel() {
+        var recap = document.querySelector('.recap');
+        if (!recap) return;
+
+        // Poignée : une seule, en tête du panneau.
+        if (!recap.querySelector('.recap-handle')) {
+          var handle = document.createElement('div');
+          handle.className = 'recap-handle';
+          handle.setAttribute('role', 'button');
+          handle.setAttribute('aria-label', 'Afficher le récapitulatif');
+          handle.addEventListener('click', toggleRecap);
+          recap.insertBefore(handle, recap.firstChild);
+        }
+
+        // Un tap sur le bloc prix (replié) déplie le panneau. Vaut pour les deux
+        // structures de récap (textile et coins/drapeaux/patchs).
+        recap.querySelectorAll('.rp-price, .rp-total-section').forEach(function (p) {
+          if (p.dataset.recapToggle === '1') return;
+          p.dataset.recapToggle = '1';
+          p.addEventListener('click', function () {
+            if (MOBILE.matches && !recap.classList.contains('open')) toggleRecap();
+          });
+        });
+
+        // Hauteur visible en position repliée = poignée + prix + boutons.
+        // On la MESURE (le nb de boutons varie selon le produit) pour que rien
+        // ne soit coupé sous le bas de l'écran.
+        adjustRecapPeek(recap);
+      }
+
+      function adjustRecapPeek(recap) {
+        if (!MOBILE.matches) return;
+        var handle = recap.querySelector('.recap-handle');
+        var price = recap.querySelector('.rp-price, .rp-total-section');
+        var acts = recap.querySelector('.rp-acts, .rp-actions-coins');
+        var peek = 0;
+        [handle, price, acts].forEach(function (el) {
+          if (el) peek += el.getBoundingClientRect().height;
+        });
+        peek += 14;                          // marge de sécurité
+
+        // Si le bloc d'action est trop haut (3 boutons empilés) pour tenir dans
+        // ~55% de l'écran, on ne garde en visible que le PREMIER bouton
+        // (« Ajouter au panier ») ; les autres apparaîtront au déploiement.
+        var maxPeek = window.innerHeight * 0.55;
+        if (peek > maxPeek && acts) {
+          var btns = acts.querySelectorAll('button');
+          if (btns.length > 1) {
+            var hHandle = handle ? handle.getBoundingClientRect().height : 0;
+            var hPrice = price ? price.getBoundingClientRect().height : 0;
+            var hFirst = btns[0].getBoundingClientRect().height;
+            // padding vertical du conteneur d'actions (approx).
+            peek = hHandle + hPrice + hFirst + 40;
+          }
+        }
+        peek = Math.min(peek, maxPeek);
+        if (peek > 0) recap.style.setProperty('--recap-peek', Math.round(peek) + 'px');
+      }
+      window.adjustRecapPeek = function () {
+        var r = document.querySelector('.recap');
+        if (r) adjustRecapPeek(r);
+      };
+      window.setupRecapPanel = setupRecapPanel;
+
+      setupRecapPanel();
+
+      // Repli au retour en desktop.
+      MOBILE.addEventListener('change', function (e) {
+        var recap = document.querySelector('.recap');
+        if (!e.matches && recap) recap.classList.remove('open');
+      });
+    })();
   </script>
   </div><!-- /conf-app-root -->
 
