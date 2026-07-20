@@ -546,21 +546,21 @@ class Configurateur {
   /**
    * Partager le design
    */
-  shareDesign() {
-    console.log('📤 Partage du design');
+  // shareDesign() {
+  //   console.log('📤 Partage du design');
     
-    if (navigator.share) {
-      navigator.share({
-        title: 'Mon design personnalisé',
-        text: 'Découvrez mon design créé avec le configurateur',
-        url: window.location.href
-      });
-    } else {
-      // Copier le lien
-      navigator.clipboard.writeText(window.location.href);
-      alert('Lien copié dans le presse-papier !');
-    }
-  }
+  //   if (navigator.share) {
+  //     navigator.share({
+  //       title: 'Mon design personnalisé',
+  //       text: 'Découvrez mon design créé avec le configurateur',
+  //       url: window.location.href
+  //     });
+  //   } else {
+  //     // Copier le lien
+  //     navigator.clipboard.writeText(window.location.href);
+  //     alert('Lien copié dans le presse-papier !');
+  //   }
+  // }
   
   /**
    * Réinitialiser le design
