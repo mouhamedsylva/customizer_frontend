@@ -60,7 +60,11 @@
   {% if template.suffix == 'configurateur' %}
     <script>
       window.CONF_API_ENDPOINT = "{{ settings.api_endpoint | default: 'http://localhost:3000/api' }}";
-      window.CONF_API_KEY = "{{ settings.api_key | default: '' }}";
+      /* window.CONF_API_KEY VOLONTAIREMENT SUPPRIMÉ.
+         Templater settings.api_key ici la rendait lisible par tout visiteur
+         dans le source de la page. Une clé publiée est une clé compromise :
+         si le backend doit être authentifié, cela se fait serveur-à-serveur
+         ou via un jeton court à portée limitée, jamais dans le HTML. */
     </script>
     <script src="{{ 'configurateur.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-canvas.js' | asset_url }}" defer></script>

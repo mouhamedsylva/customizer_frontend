@@ -10,8 +10,18 @@
     {{ 'conf-drapeaux.css' | asset_url | stylesheet_tag }}
     {{ 'conf-patches.css' | asset_url | stylesheet_tag }}
     <script>
-      // URL de base du backend NestJS (déployé sur Railway)
-      window.API_BASE = "https://customizer-backend-production-4c83.up.railway.app/api";
+      /* URL de base du backend NestJS (déployé sur Railway).
+         Pilotée par le réglage de thème « API Endpoint » (settings.api_endpoint),
+         modifiable dans Personnaliser > Paramètres du thème sans toucher au code.
+         La valeur en dur ne sert que de repli si le réglage est vide ou resté sur
+         le localhost par défaut — une URL codée en dur ici avait déjà provoqué
+         l'envoi des devis vers une ancienne instance pendant plusieurs jours. */
+      {%- assign api_setting = settings.api_endpoint | default: '' -%}
+      {%- if api_setting == '' or api_setting contains 'localhost' -%}
+        window.API_BASE = "https://customizer-backend-production-4c83.up.railway.app/api";
+      {%- else -%}
+        window.API_BASE = {{ api_setting | json }};
+      {%- endif -%}
 
       /* ── PRIX UNITAIRES (définis par l'admin) ──────────────────────────────
          Source de vérité : GET /api/pricing (dashboard admin -> BDD).
