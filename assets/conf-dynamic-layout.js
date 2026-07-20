@@ -262,11 +262,25 @@ const COINS_SIDEBAR_TEMPLATE = `
 class DynamicLayoutManager {
   constructor() {
     this.currentCategory = 'textile';
+    // HTML d'origine du récap TEXTILE : les récaps coins/drapeaux/patchs
+    // remplacent recap.innerHTML, ce qui efface le récap textile (et son bouton
+    // « Commander pour un groupe »). On le mémorise pour le restaurer au retour.
+    this.textileRecapHTML = null;
     this.init();
   }
-  
+
   init() {
     console.log('🎨 DynamicLayoutManager initialisé');
+    // Sauvegarde le récap textile d'origine dès que le DOM est prêt.
+    var self = this;
+    var save = function () {
+      var recap = document.querySelector('.recap');
+      if (recap && self.textileRecapHTML == null) {
+        self.textileRecapHTML = recap.innerHTML;
+      }
+    };
+    if (document.readyState !== 'loading') save();
+    else document.addEventListener('DOMContentLoaded', save);
     this.restorePendingProduct();
   }
 
@@ -344,6 +358,16 @@ class DynamicLayoutManager {
       }, 0);
     } else if (category === 'textile') {
       this.loadTextileSidebar(productType);
+      // Restaure le récap textile si un produit non-textile l'avait remplacé.
+      var recap = document.querySelector('.recap');
+      if (recap && this.textileRecapHTML != null &&
+          !recap.querySelector('#main-add-to-cart')) {
+        recap.innerHTML = this.textileRecapHTML;
+      }
+      // Le bouton « groupe » n'est visible que pour les textiles : on l'affiche
+      // (selProd le gère aussi, mais on s'assure de l'état après restauration).
+      var grpBtn = document.getElementById('btn-group-order');
+      if (grpBtn) grpBtn.style.display = '';
     }
 
     // Restaurer les designs sauvegardés pour cette catégorie (après chargement du DOM)
