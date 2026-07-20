@@ -102,8 +102,17 @@
   }
 
   // ─────────────── Champ inline (bouton -> saisie) ───────────────
-  window.startTextInline = function () {
-    document.getElementById('txt-add-btn').style.display = 'none';
+  /* Zone visée par la saisie en cours. Renseignée par startTextInline() quand
+     l'appelant la précise (boutons « texte gauche / droite » en vue de face) ;
+     null = on retombe sur la déduction par la vue courante. */
+  var pendingZone = null;
+
+  window.startTextInline = function (zone) {
+    pendingZone = zone || null;
+    var addBtns = document.getElementById('txt-add-btns');
+    if (addBtns) addBtns.style.display = 'none';
+    var single = document.getElementById('txt-add-btn');
+    if (single) single.style.display = 'none';
     var box = document.getElementById('txt-inline');
     box.style.display = 'block';
     var input = document.getElementById('txt-inline-input');
@@ -113,17 +122,25 @@
   };
   window.cancelTextInline = function () {
     document.getElementById('txt-inline').style.display = 'none';
-    document.getElementById('txt-add-btn').style.display = '';
+    var addBtns = document.getElementById('txt-add-btns');
+    if (addBtns) addBtns.style.display = '';
+    var single = document.getElementById('txt-add-btn');
+    if (single) single.style.display = '';
+    pendingZone = null;
   };
   window.confirmTextInline = function () {
     var text = (document.getElementById('txt-inline-input').value || '').trim();
     if (!text) { window.cancelTextInline(); return; }
-    // Détermine la zone selon la vue courante.
-    var layer = document.getElementById('logo-layer');
-    var view = layer ? layer.getAttribute('data-view') : 'face';
-    var zone = (view === 'dos') ? 'b' : 'f';
-    // En face : exclusif avec le logo cœur.
-    if (zone === 'f' && typeof window.rmUp === 'function') window.rmUp('f');
+    // Zone explicite (bouton gauche/droite) sinon déduite de la vue courante.
+    var zone = pendingZone;
+    if (!zone) {
+      var layer = document.getElementById('logo-layer');
+      var view = layer ? layer.getAttribute('data-view') : 'face';
+      zone = (view === 'dos') ? 'b' : 'f';
+    }
+    // Chaque emplacement porte SOIT un logo SOIT un texte : poser un texte
+    // retire le logo de la même zone (et pas des autres).
+    if (zone !== 'b' && typeof window.rmUp === 'function') window.rmUp(zone);
     // Prépare l'état et ouvre le panneau d'édition.
     var prev = getState(zone);
     state.zone = zone;
@@ -135,7 +152,7 @@
     state.bold = prev ? !!prev.bold : false;
     state.italic = prev ? !!prev.italic : false;
     state.underline = prev ? !!prev.underline : false;
-    state.size = prev && prev.size ? prev.size : 20;
+    state.size = Math.min(prev && prev.size ? prev.size : 20, maxSize());
     window.cancelTextInline();
     openPanel();
   };
@@ -147,7 +164,9 @@
     state.zone = zone; state.text = st.text; state.font = st.font;
     state.fontName = st.fontName || 'Police'; state.color = st.color; state.shape = st.shape || 'normal';
     state.bold = !!st.bold; state.italic = !!st.italic; state.underline = !!st.underline;
-    state.size = st.size || 20;
+    // Borne aussi à la réouverture : un design sauvegardé avant l'ajout du
+    // plafond peut porter une taille supérieure.
+    state.size = Math.min(st.size || 20, maxSize());
     openPanel();
   };
 
@@ -254,11 +273,15 @@
     if (u) u.classList.toggle('on', !!state.underline);
   }
 
+  /* Plafond de taille (px). Défini par configurateur.liquid ; la valeur ici
+     n'est qu'un repli si le script est chargé hors du configurateur. */
+  function maxSize() { return window.MAX_TEXT_SIZE || 28; }
+
   // ── Taille du texte ──
   window.onTextSizeChange = function () {
     var range = document.getElementById('txt-size-range');
     if (!range) return;
-    state.size = parseInt(range.value, 10) || 20;
+    state.size = Math.min(parseInt(range.value, 10) || 20, maxSize());
     // La taille choisie au panneau prime : on efface une taille figée par un
     // ancien redimensionnement manuel, sinon le slider n'aurait aucun effet.
     state.fontSize = null;
@@ -441,7 +464,7 @@
 
   // ─────────────── Restauration (reload / switch produit) ───────────────
   window.restoreTexts = function () {
-    ['f', 'b'].forEach(function (zone) {
+    ['f', 'fr', 'b'].forEach(function (zone) {
       var st = getState(zone);
       var chip = document.getElementById('txt-chip-' + zone);
       var val = document.getElementById('txt-chip-val-' + zone);

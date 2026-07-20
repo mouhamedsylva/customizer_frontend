@@ -453,8 +453,14 @@
           <div class="sec-title">4. Texte personnalisé</div>
           <div class="sec-sub">Ajoutez un texte sur la vue affichée (face ou dos)</div>
 
-          <!-- État 1 : bouton -->
-          <button class="txt-add-btn" id="txt-add-btn" onclick="startTextInline()">✏️ Ajouter un texte</button>
+          <!-- État 1 : boutons. En vue de face, deux emplacements (cœur gauche
+               et poitrine droite du porteur) ; en vue de dos, un seul. La zone
+               est transmise explicitement à startTextInline(). -->
+          <div id="txt-add-btns" class="txt-add-btns">
+            <button class="txt-add-btn" onclick="startTextInline('f')">✏️ Texte cœur (gauche)</button>
+            <button class="txt-add-btn" onclick="startTextInline('fr')">✏️ Texte poitrine droite</button>
+            <button class="txt-add-btn" onclick="startTextInline('b')">✏️ Texte dos</button>
+          </div>
 
           <!-- État 2 : champ de saisie inline (remplace le bouton) -->
           <div class="txt-inline" id="txt-inline" style="display:none">
@@ -470,6 +476,11 @@
             <span class="txt-chip-val" id="txt-chip-val-f"></span>
             <button class="rmv" title="Modifier" onclick="editText('f')">✎</button>
             <button class="rmv" title="Supprimer" onclick="removeText('f')">🗑</button>
+          </div>
+          <div class="txt-chip" id="txt-chip-fr">
+            <span class="txt-chip-val" id="txt-chip-val-fr"></span>
+            <button class="rmv" title="Modifier" onclick="editText('fr')">✎</button>
+            <button class="rmv" title="Supprimer" onclick="removeText('fr')">🗑</button>
           </div>
           <div class="txt-chip" id="txt-chip-b">
             <span class="txt-chip-val" id="txt-chip-val-b"></span>
@@ -492,13 +503,37 @@
           </div>
           <div class="uprev-lbl" id="lf">
             <span>Aperçu du logo</span>
-            <button class="rmv" onclick="rmUp('f')">🗑 Supprimer</button>
+            <span class="uprev-actions">
+              <button class="ctr" onclick="centerLogo('f')" title="Recentrer le logo dans sa zone">⊹ Centrer</button>
+              <button class="rmv" onclick="rmUp('f')">🗑 Supprimer</button>
+            </span>
           </div>
         </div>
 
-        <!-- 5. Logo dos -->
+        <!-- 5 bis. Logo poitrine droite (du porteur) -->
         <div class="sec">
-          <div class="sec-title">6. Logo Dos</div>
+          <div class="sec-title">6. Logo Poitrine droite</div>
+          <div class="sec-sub">Ajoutez un second logo, côté droit du porteur</div>
+          <div class="uz" id="uz-fr" onclick="document.getElementById('ufr').click()">
+            <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
+            <p><strong>Cliquez ou glissez votre logo ici</strong><br>PNG, JPG, SVG (max. 5Mo)</p>
+          </div>
+          <input type="file" id="ufr" style="display:none" accept="image/*" onchange="doUpload(event,'fr')">
+          <div class="uprev" id="pfr">
+            <img id="ifr" src="" alt="" style="height:28px">
+          </div>
+          <div class="uprev-lbl" id="lfr">
+            <span>Aperçu du logo</span>
+            <span class="uprev-actions">
+              <button class="ctr" onclick="centerLogo('fr')" title="Recentrer le logo dans sa zone">⊹ Centrer</button>
+              <button class="rmv" onclick="rmUp('fr')">🗑 Supprimer</button>
+            </span>
+          </div>
+        </div>
+
+        <!-- 6. Logo dos -->
+        <div class="sec">
+          <div class="sec-title">7. Logo Dos</div>
           <div class="sec-sub">Ajoutez un logo au dos de l'article</div>
           <div class="uz" onclick="document.getElementById('ub').click()">
             <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
@@ -510,7 +545,10 @@
           </div>
           <div class="uprev-lbl" id="lb">
             <span>Aperçu du logo</span>
-            <button class="rmv" onclick="rmUp('b')">🗑 Supprimer</button>
+            <span class="uprev-actions">
+              <button class="ctr" onclick="centerLogo('b')" title="Recentrer le logo dans sa zone">⊹ Centrer</button>
+              <button class="rmv" onclick="rmUp('b')">🗑 Supprimer</button>
+            </span>
           </div>
         </div>
 
@@ -584,8 +622,9 @@
           <!-- Taille du texte -->
           <div class="txt-panel-row txt-size-row">
             <span class="txt-panel-lbl">Taille</span>
+            <!-- max = MAX_TEXT_SIZE (28) : plafond imposé par l'atelier. -->
             <input type="range" class="txt-size-range" id="txt-size-range"
-                   min="12" max="48" step="1" value="20" oninput="onTextSizeChange()">
+                   min="12" max="28" step="1" value="20" oninput="onTextSizeChange()">
             <span class="txt-size-val" id="txt-size-val">20</span>
           </div>
 
@@ -680,6 +719,9 @@
                    VUE FACE : uniquement le LOGO CŒUR (poitrine, côté cœur = droite
                    de l'image). VUE CÔTÉ : la manche. VUE DOS : le grand logo. -->
               <div class="logo-zone for-face" id="zone-f"  data-zone="f"  style="left:53.5%; top:28%; width:6%; height:14%;"></div>
+              <!-- Poitrine DROITE du porteur = GAUCHE de l'image (vue de face).
+                   Miroir de la zone cœur : left = 100 - left(f) - width. -->
+              <div class="logo-zone for-face" id="zone-fr" data-zone="fr" style="left:40.5%; top:28%; width:6%; height:14%;"></div>
               <div class="logo-zone for-dos"  id="zone-b"  data-zone="b"  style="left:38%; top:23%; width:24%; height:46%;"></div>
               <!-- Manches : une zone par côté. L'image de profil est la même,
                    retournée en miroir pour la droite : la zone l'est aussi
@@ -689,12 +731,18 @@
 
               <!-- Textes déplaçables + redimensionnables (face / dos) -->
               <div class="design-text for-face" id="text-f" style="display:none; left:44%; top:31%; width:22%; font-size:20px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-f"></span></div>
+              <div class="design-text for-face" id="text-fr" style="display:none; left:34%; top:31%; width:22%; font-size:20px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-fr"></span></div>
               <div class="design-text for-dos"  id="text-b" style="display:none; left:36%; top:27%; width:28%; font-size:26px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-b"></span></div>
 
               <!-- Logo cœur : visible sur la vue de face -->
               <div class="design-logo for-face" id="logo-f" data-zone="f" style="display:none; left:38%; top:34%; width:18%;">
                 <img src="" alt="Logo cœur" draggable="false">
                 <span class="logo-resize" data-resize="f"></span>
+              </div>
+              <!-- Logo poitrine droite (du porteur) : visible sur la vue de face -->
+              <div class="design-logo for-face" id="logo-fr" data-zone="fr" style="display:none; left:44%; top:34%; width:18%;">
+                <img src="" alt="Logo poitrine droite" draggable="false">
+                <span class="logo-resize" data-resize="fr"></span>
               </div>
               <!-- Logo dos : visible sur la vue de dos -->
               <div class="design-logo for-dos" id="logo-b" data-zone="b" style="display:none; left:32%; top:30%; width:34%;">
@@ -1458,7 +1506,13 @@
         // d'abord (invitation à éditer), sinon on restaure l'état local.
         loadSharedDesignThenRestore();
         // Affiche les zones guides vides dès l'ouverture.
-        if (typeof refreshZoneGuides === 'function') setTimeout(refreshZoneGuides, 300);
+        // Applique les zones du produit restauré (échelle sweat ≠ t-shirt),
+        // ce qui rafraîchit aussi les guides.
+        if (typeof applyZonesForProduct === 'function') {
+          setTimeout(function () { applyZonesForProduct(currentProductType); }, 300);
+        } else if (typeof refreshZoneGuides === 'function') {
+          setTimeout(refreshZoneGuides, 300);
+        }
       });
     });
 
@@ -1869,17 +1923,104 @@
        Chaque zone : bornes (left/top/width/height) = le rectangle pointillé, et
        maxW = largeur max du logo dans cette zone (contraintes cm converties en %).
        logoId = le logo déplaçable ; zoneId = le rectangle guide. */
-    const LOGO_ZONES = {
-      // Logo cœur : petite zone poitrine, côté cœur (vue face). Portrait.
-      'f':       { zoneId: 'zone-f',       logoId: 'logo-f',       left: 53.5, top: 28, width: 6, height: 14, maxW: 6 },
-      // Logo dos : zone centrale du dos (H39xL30 -> plus haute que large).
-      'b':       { zoneId: 'zone-b',       logoId: 'logo-b',       left: 38, top: 23, width: 24, height: 46, maxW: 24 },
-      // Manches : vue de côté uniquement, une zone par côté. L'image du profil
-      // droit est le profil gauche en miroir, d'où la zone symétrique
-      // (46 = 100 - 48 - 6, où 6 est la largeur de la zone).
-      'sl':      { zoneId: 'zone-sl',      logoId: 'logo-sl',      left: 48, top: 29, width: 6, height: 11, maxW: 6 },
-      'sr':      { zoneId: 'zone-sr',      logoId: 'logo-sr',      left: 46, top: 29, width: 6, height: 11, maxW: 6 }
+    /* ÉCHELLE cm -> % du cadre, mesurée sur les PNG RÉELLEMENT AFFICHÉS.
+       Référence : largeur du buste (sous les emmanchures) = 53 cm (taille M,
+       cf. guide des tailles).
+
+       ATTENTION : mesurer sur sweatshirt-face.png (443x564, buste 91 %) est
+       une erreur — ce fichier n'est plus affiché. Les visuels servis sont les
+       déclinaisons couleur (sweatshirt-<couleur>-face.png), toutes en 500x500
+       avec un buste à ~65 %. Même cadrage 500x500 que les t-shirts, donc un
+       seul facteur par axe suffit ici. */
+    const CM = {
+      tshirt:     { w: 30.2 / 53, h: 70.2 / 53 },
+      sweatshirt: { w: 30.0 / 53, h: 70.0 / 53 }
     };
+
+    /* Zone dos : bornes verticales relevées sur les repères atelier.
+       DOS_TOP_PCT  = sous la couture d'épaule (au-dessus, l'impression
+                      passerait sur l'épaule / la capuche).
+       DOS_H_MAX_PCT = hauteur imprimable ; plafonne les 39 cm théoriques, qui
+                      descendaient jusqu'aux hanches sur le rendu. */
+    const DOS_TOP_PCT   = 25;
+    const DOS_H_MAX_PCT = 39;
+
+    /* Contraintes atelier (en cm) :
+         Dos     : L30 x H39 max
+         Cœur    : 8 cm (logo rond/autre) — le pseudo monte à 12 cm, mais la
+                   zone reste à 8 : au-delà, le placement n'est plus « cœur ».
+         Manches : rectangle 8x6, ou rond/autre 8x8 -> zone 8x8.
+       Positions (left/top) relevées sur les visuels de référence de l'atelier. */
+    function buildZones(cm) {
+      // Dos : 30 cm de large. La hauteur théorique (39 cm) descendait trop bas
+      // sur le visuel — la zone dépassait la couture d'épaule en haut et
+      // atteignait les hanches en bas. Bornée à la surface réellement
+      // imprimable relevée sur les repères atelier (voir DOS_H_MAX_PCT).
+      var dosW = 30 * cm.w, dosH = Math.min(39 * cm.h, DOS_H_MAX_PCT);
+      var couW = 8 * cm.w,  couH = 8 * cm.h;
+      var manW = 8 * cm.w,  manH = 8 * cm.h;
+      return {
+        // Cœur : côté cœur du porteur = DROITE de l'image en vue face.
+        'f':  { zoneId: 'zone-f',  logoId: 'logo-f',
+                left: 53.6, top: 28.6, width: couW, height: couH, maxW: couW },
+        // Poitrine DROITE du porteur = GAUCHE de l'image. Miroir exact de 'f'
+        // par rapport à l'axe du vêtement (X ≈ 49.8 %), même gabarit 8x8.
+        'fr': { zoneId: 'zone-fr', logoId: 'logo-fr',
+                left: 2 * 49.8 - 53.6 - couW, top: 28.6, width: couW, height: couH, maxW: couW },
+        // Dos : centré (X≈49.8 %), haut de zone sous le col.
+        'b':  { zoneId: 'zone-b',  logoId: 'logo-b',
+                left: 49.8 - dosW / 2, top: DOS_TOP_PCT, width: dosW, height: dosH, maxW: dosW },
+        // Manches : vue de côté. Le profil droit est le gauche en miroir,
+        // d'où la zone symétrique (100 - left - width).
+        'sl': { zoneId: 'zone-sl', logoId: 'logo-sl',
+                left: 48, top: 29, width: manW, height: manH, maxW: manW },
+        'sr': { zoneId: 'zone-sr', logoId: 'logo-sr',
+                left: 100 - 48 - manW, top: 29, width: manW, height: manH, maxW: manW }
+      };
+    }
+
+    /* Zones du produit courant. Réaffecté par applyZonesForProduct(). */
+    var LOGO_ZONES = buildZones(CM.tshirt);
+
+    /* Recentre un logo dans sa zone (bouton « Centrer » des panneaux Logo).
+       Réutilise placeLogoInZone(), qui centre déjà à l'upload : le bouton ne
+       fait que le rejouer après un déplacement manuel. */
+    function centerLogo(zone) {
+      var z = LOGO_ZONES[zone];
+      var logo = z && document.getElementById(z.logoId);
+      var img = logo && logo.querySelector('img');
+      // Rien à recentrer tant qu'aucun visuel n'est chargé.
+      if (!img || !img.getAttribute('src')) {
+        confAlert('Ajoutez d’abord un logo, puis vous pourrez le recentrer.',
+                  { icon: 'info', title: 'Aucun logo' });
+        return;
+      }
+      placeLogoInZone(zone);
+      // Le récap (colonne de droite) rejoue la position du logo : on le rafraîchit.
+      if (typeof updateRecap === 'function') updateRecap();
+    }
+
+    /* Recalcule les zones pour le produit courant et repositionne les guides.
+       Appelé au changement de produit : sweat et t-shirt n'ont pas la même
+       échelle, les bornes en % doivent donc être recalculées. */
+    function applyZonesForProduct(productType) {
+      var isSweat = String(productType || '').indexOf('sweat') === 0;
+      LOGO_ZONES = buildZones(isSweat ? CM.sweatshirt : CM.tshirt);
+
+      // Reporte les bornes sur les rectangles guides du DOM.
+      Object.keys(LOGO_ZONES).forEach(function (k) {
+        var z = LOGO_ZONES[k];
+        var el = document.getElementById(z.zoneId);
+        if (!el) return;
+        el.style.left   = z.left + '%';
+        el.style.top    = z.top + '%';
+        el.style.width  = z.width + '%';
+        el.style.height = z.height + '%';
+        // Un logo déjà posé peut dépasser la nouvelle zone : on le recontraint.
+        clampLogoToZone(k);
+      });
+      refreshZoneGuides();
+    }
 
     /* Place un logo AU CENTRE de sa zone, à une largeur adaptée (bornée à maxW),
        puis contraint sa position dans la zone. */
@@ -2190,6 +2331,10 @@
       const productType = el.dataset.product;
       // Mémorise le type courant pour TOUS les produits (utilisé au checkout).
       if (productType) currentProductType = productType;
+
+      // Les zones d'impression sont en % du cadre, et sweat / t-shirt n'ont
+      // pas la même échelle d'image : on les recalcule à chaque changement.
+      if (typeof applyZonesForProduct === 'function') applyZonesForProduct(productType);
 
       // « Commander pour un groupe » : uniquement pour les textiles.
       var grpBtn = document.getElementById('btn-group-order');
@@ -4013,7 +4158,7 @@
     }
 
     function saveLogosForProduct(productKey) {
-      const zones = ['f', 'b', 'sl', 'sr'];
+      const zones = ['f', 'fr', 'b', 'sl', 'sr'];
       LOGO_STORE[productKey] = {};
       zones.forEach(zone => {
         const img = document.getElementById('i' + zone);
@@ -4025,7 +4170,7 @@
 
 
     function restoreLogosForProduct(productKey) {
-      const zones = ['f', 'b', 'sl', 'sr'];
+      const zones = ['f', 'fr', 'b', 'sl', 'sr'];
       const saved = LOGO_STORE[productKey] || {};
 
       zones.forEach(zone => {
@@ -4258,6 +4403,7 @@
       // Map zone -> id(s) du/des logo(s) déplaçable(s)
       const ids = {
         'f': ['logo-f'],
+        'fr': ['logo-fr'],
         'b': ['logo-b'],
         'sl': ['logo-sl', 'logo-sl-face'],
         'sr': ['logo-sr', 'logo-sr-face'],
@@ -4597,11 +4743,20 @@
 
     /* Passe la zone pointillée en mode HORIZONTAL (bandeau) pour le texte, ou
        la remet dans sa forme d'origine. Mémorise le style d'origine. */
+    /* Taille de police maximale du texte personnalisé (px CSS).
+       Plafond atelier : au-delà, le rendu d'impression n'est plus garanti.
+       Exposée sur window : conf-text-editor.js s'en sert pour borner l'état
+       du panneau, et le curseur #txt-size-range porte la même valeur en max. */
+    var MAX_TEXT_SIZE = 28;
+    window.MAX_TEXT_SIZE = MAX_TEXT_SIZE;
+
     var _zoneOrigStyle = {};
     var TEXT_ZONE_HORIZ = {
       // Bandeau horizontal centré, adapté au texte (plus étroit).
-      'f': { left: 44, top: 31, width: 22, height: 9 },
-      'b': { left: 36, top: 27, width: 28, height: 11 }
+      'f':  { left: 44, top: 31, width: 22, height: 9 },
+      // Poitrine droite du porteur : miroir de 'f' (44 -> 100-44-22 = 34).
+      'fr': { left: 34, top: 31, width: 22, height: 9 },
+      'b':  { left: 36, top: 27, width: 28, height: 11 }
     };
     function setTextZoneMode(zone, on) {
       var zid = (zone === 'f') ? 'zone-f' : (zone === 'b' ? 'zone-b' : null);
@@ -4663,9 +4818,21 @@
         cur = Math.max(8, cur - 1);
         el.style.fontSize = cur + 'px';
       }
+      // Plafond atelier : quelle que soit la place disponible dans la zone, la
+      // police ne dépasse pas MAX_TEXT_SIZE. Appliqué ici car cette fonction
+      // est le passage obligé du panneau ET du redimensionnement à la souris —
+      // borner le seul curseur laisserait la poignée de resize le contourner.
+      if (cur > MAX_TEXT_SIZE) {
+        cur = MAX_TEXT_SIZE;
+        el.style.fontSize = cur + 'px';
+      }
+
       // Agrandissement : si on avait trop réduit et qu'il reste de la place,
       // on regrossit jusqu'à la taille voulue (sans jamais déborder).
-      var wanted = parseFloat(el.getAttribute('data-wanted-size')) || cur;
+      var wanted = Math.min(
+        parseFloat(el.getAttribute('data-wanted-size')) || cur,
+        MAX_TEXT_SIZE
+      );
       while (guard++ < 80 && cur < wanted) {
         el.style.fontSize = (cur + 1) + 'px';
         var eb2 = el.getBoundingClientRect();

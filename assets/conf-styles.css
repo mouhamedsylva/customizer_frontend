@@ -221,6 +221,10 @@
       display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .txt-add-btn:hover { background: var(--black); color: #fff; }
+    /* Trois emplacements de texte (cœur gauche / poitrine droite / dos) :
+       empilés, avec un léger espacement. */
+    .txt-add-btns { display: flex; flex-direction: column; gap: 5px; }
+    .txt-add-btns .txt-add-btn { font-size: 9.5px; padding: 7px 8px; }
     .txt-add-btn:disabled { opacity: .45; cursor: not-allowed; }
     .txt-add-btn:disabled:hover { background: #fff; color: var(--black); }
     /* Aperçu du texte ajouté (chip) dans le sidebar */
@@ -425,6 +429,14 @@
       margin-top: 2px; font-size: 9px; color: var(--muted);
     }
     .rmv { color: #e33; font-size: 10px; cursor: pointer; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 2px; }
+    /* Actions du logo (Centrer / Supprimer) : groupées à droite de l'aperçu. */
+    .uprev-actions { display: flex; align-items: center; gap: 8px; }
+    .ctr {
+      color: var(--muted); font-size: 10px; cursor: pointer; border: none;
+      background: none; font-family: inherit;
+      display: flex; align-items: center; gap: 2px;
+    }
+    .ctr:hover { color: #111; }
 
     /* Sleeve grid */
     .slvg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
