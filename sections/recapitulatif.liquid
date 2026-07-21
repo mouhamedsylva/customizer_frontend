@@ -442,11 +442,28 @@
           });
         }
 
+        var qty = Math.max(1, parseInt(it.qty, 10) || 1);
         items.push({
           id: variantId,
-          quantity: Math.max(1, parseInt(it.qty, 10) || 1),
+          quantity: qty,
           properties: Object.keys(properties).length ? properties : undefined
         });
+
+        // Supplément « personnalisation manches » : ligne de panier distincte.
+        // Le variant textile a un prix fixe et une line item property ne porte
+        // aucun prix — le supplément doit donc être un vrai article (produit
+        // add-on masqué). Quantité = nb de manches × quantité de l'article.
+        var sleeves = Math.max(0, parseInt(it.sleeveCount, 10) || 0);
+        if (sleeves > 0 && window.CONF_SLEEVE_VARIANT) {
+          items.push({
+            id: window.CONF_SLEEVE_VARIANT,
+            quantity: sleeves * qty,
+            properties: {
+              'Article': (it.name || 'Textile') + (it.size ? ' — ' + it.size : ''),
+              'Manches': sleeves > 1 ? 'Gauche + droite' : 'Une manche'
+            }
+          });
+        }
       });
       return { items: items, skipped: skipped };
     }

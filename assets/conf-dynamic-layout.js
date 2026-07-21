@@ -144,32 +144,9 @@ const COINS_SIDEBAR_TEMPLATE = `
     <p class="coins-size-note"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg> Les dimensions indiquées sont approximatives</p>
   </div>
 
-  <!-- 4. Couleur du patch -->
+  <!-- 4. Fabrication -->
   <div class="sec">
-    <div class="sec-title">4. Couleur du patch</div>
-    <div class="sec-sub">Choisissez la couleur de fond de votre patch</div>
-    <div class="patch-color-grid">
-      <div class="patch-color-sw active" style="background:#1a1a1a" title="Noir" onclick="selectPatchColor(this,'#1a1a1a','Noir')"></div>
-      <div class="patch-color-sw" style="background:#f5f2ed;border:1.5px solid #ddd" title="Blanc cassé" onclick="selectPatchColor(this,'#f5f2ed','Blanc cassé')"></div>
-      <div class="patch-color-sw" style="background:#9e9e9e" title="Gris" onclick="selectPatchColor(this,'#9e9e9e','Gris')"></div>
-      <div class="patch-color-sw" style="background:#555555" title="Gris foncé" onclick="selectPatchColor(this,'#555555','Gris foncé')"></div>
-      <div class="patch-color-sw" style="background:#607d8b" title="Gris ardoise" onclick="selectPatchColor(this,'#607d8b','Gris ardoise')"></div>
-      <div class="patch-color-sw" style="background:#1e3a5f" title="Bleu marine" onclick="selectPatchColor(this,'#1e3a5f','Bleu marine')"></div>
-      <div class="patch-color-sw" style="background:#5bb8e8" title="Bleu ciel" onclick="selectPatchColor(this,'#5bb8e8','Bleu ciel')"></div>
-      <div class="patch-color-sw" style="background:#2e6b45" title="Vert foncé" onclick="selectPatchColor(this,'#2e6b45','Vert foncé')"></div>
-      <div class="patch-color-sw" style="background:#f0c8d8;border:1.5px solid #e0afc4" title="Rose clair" onclick="selectPatchColor(this,'#f0c8d8','Rose clair')"></div>
-      <div class="patch-color-sw" style="background:#e8729a" title="Rose" onclick="selectPatchColor(this,'#e8729a','Rose')"></div>
-      <div class="patch-color-sw" style="background:#c0392b" title="Rouge" onclick="selectPatchColor(this,'#c0392b','Rouge')"></div>
-      <div class="patch-color-sw" style="background:#e8842a" title="Orange" onclick="selectPatchColor(this,'#e8842a','Orange')"></div>
-      <div class="patch-color-sw" style="background:#f5c842;border:1.5px solid #d4aa20" title="Jaune" onclick="selectPatchColor(this,'#f5c842','Jaune')"></div>
-      <div class="patch-color-sw" style="background:#9b6bb5" title="Violet" onclick="selectPatchColor(this,'#9b6bb5','Violet')"></div>
-      <div class="patch-color-sw" style="background:#7d4e2d" title="Marron" onclick="selectPatchColor(this,'#7d4e2d','Marron')"></div>
-    </div>
-  </div>
-
-  <!-- 5. Fabrication -->
-  <div class="sec">
-    <div class="sec-title">5. Options de fabrication</div>
+    <div class="sec-title">4. Options de fabrication</div>
     <div class="sec-sub">Choisissez le type de patch</div>
     <div class="conf-fabrication-options">
       
@@ -448,15 +425,18 @@ class DynamicLayoutManager {
         <div class="cv-canvas-row">
           <div class="patch-stage" id="patch-stage">
             <div class="coins-canvas-circle shape-rond size-8cm" id="coins-canvas">
-              <!-- Image PNG du patch entier (forme + couleur). Le logo se pose
-                   PAR-DESSUS. Repli sur l'image blanche si la couleur manque. -->
-              <img id="patch-shape-img" class="patch-shape-img" src="" alt="" draggable="false">
-              <!-- Logo déplaçable/redimensionnable. Reste ENTIER (pas de clip)
-                   mais borné à l'intérieur de la forme (ne dépasse pas la couture). -->
-              <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:15%; top:15%; width:70%;">
-                <img id="coins-preview-img" src="" alt="Aperçu" draggable="false">
-                <span class="logo-resize" data-resize="c"></span>
+              <!-- Corps du patch : forme VECTORIELLE (plus d'image PNG).
+                   Porte le fond ET rogne le design à la silhouette : tout ce qui
+                   dépasse est coupé, comme une photo dans un cadre. -->
+              <div class="patch-body" id="patch-body">
+                <!-- Logo : remplit toute la forme, rogné par .patch-body. -->
+                <div class="design-logo patch-logo" id="patch-logo" data-zone="c" style="display:none; left:0%; top:0%; width:100%;">
+                  <img id="coins-preview-img" src="" alt="Aperçu" draggable="false">
+                  <span class="logo-resize" data-resize="c"></span>
+                </div>
               </div>
+              <!-- Zone imprimable : contour de la forme (voir .patch-safe-zone). -->
+              <div class="patch-safe-zone"></div>
               <div class="coins-placeholder">
                 <svg width="80" height="80" viewBox="0 0 24 24" fill="#ccc">
                   <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -514,7 +494,6 @@ class DynamicLayoutManager {
               <p>Face : Une seule face (sublimé)</p>
               <p>Taille : <span id="coins-recap-size">8 cm</span></p>
               <p>Format : <span id="coins-recap-shape">Rond</span></p>
-              <p>Couleur : <span id="coins-recap-color">Noir</span></p>
               <p>Type : <span id="coins-recap-type">Sublimé</span></p>
             </div>
           </div>
@@ -524,11 +503,11 @@ class DynamicLayoutManager {
       <div class="rp-section">
         <div class="rp-qty-section">
           <div class="rp-qty-title">QUANTITÉ</div>
-          <div class="rp-qty-subtitle">Minimum de commande : 20 unités</div>
+          <div class="rp-qty-subtitle">Minimum de commande : 10 unités</div>
           <div class="rp-qty-controls">
-            <button class="rp-qty-btn" onclick="changeQty(-5)">−</button>
-            <input type="number" id="coin-qty-input" class="rp-qty-input" value="20" min="20" onchange="handleQtyInput()">
-            <button class="rp-qty-btn" onclick="changeQty(5)">+</button>
+            <button class="rp-qty-btn" onclick="changeQty(-1)">−</button>
+            <input type="number" id="coin-qty-input" class="rp-qty-input" value="10" min="10" onchange="handleQtyInput()">
+            <button class="rp-qty-btn" onclick="changeQty(1)">+</button>
           </div>
         </div>
       </div>
@@ -569,13 +548,6 @@ class DynamicLayoutManager {
           <div>
             <strong>Fabrication de qualité</strong>
             <p>Matériaux durables et finitions soignées</p>
-          </div>
-        </div>
-        <div class="rp-trust-item">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#666"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm13.5-9l1.96 2.5H17V9h2.5zm-1.5 9c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>
-          <div>
-            <strong>Livraison rapide</strong>
-            <p>Expédition sous 5 à 7 jours ouvrés</p>
           </div>
         </div>
         <div class="rp-trust-item">
@@ -645,6 +617,9 @@ class DynamicLayoutManager {
               <div class="flag-img-3d" data-face="recto">
                 <img class="flag-base-img" id="flag-base-recto" crossorigin="anonymous" src="${(window.ASSET_URLS && window.ASSET_URLS.flagRecto) || ''}" alt="Drapeau recto">
                 <div class="flag-color-layer" data-face="recto"></div>
+                <!-- Zone imprimable nette : marge de securite (ourlet + oeillets).
+                     Bornes alignees sur FLAG_INSET (conf-logo-drag.js). -->
+                <div class="flag-safe-zone" data-face="recto"></div>
                 <div class="flag-canvas-placeholder flag-ph-recto">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
                     <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
@@ -689,6 +664,9 @@ class DynamicLayoutManager {
               <div class="flag-img-3d" data-face="verso">
                 <img class="flag-base-img" id="flag-base-verso" crossorigin="anonymous" src="${(window.ASSET_URLS && window.ASSET_URLS.flagVerso) || ''}" alt="Drapeau verso">
                 <div class="flag-color-layer" data-face="verso"></div>
+                <!-- Zone imprimable nette : marge de securite (ourlet + oeillets).
+                     Bornes alignees sur FLAG_INSET (conf-logo-drag.js). -->
+                <div class="flag-safe-zone" data-face="verso"></div>
                 <div class="flag-canvas-placeholder flag-ph-verso">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="#dfe3ea">
                     <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>
@@ -751,7 +729,7 @@ class DynamicLayoutManager {
 
     // Initialise l'état par défaut + applique les images/taille au chargement.
     window.__flagOrientation = window.__flagOrientation || 'paysage';
-    window.__flagAnneaux = window.__flagAnneaux || '2';
+    window.__flagAnneaux = window.__flagAnneaux || '0';   // sans anneaux par défaut
     window.__flagSize = window.__flagSize || '90x150';
     // Restaure la couleur de fond mémorisée (sinon blanc).
     try {
@@ -862,20 +840,6 @@ class DynamicLayoutManager {
             <p>Sublimation haute définition</p>
           </div>
         </div>
-        <div class="rp-trust-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#666"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
-          <div>
-            <strong>Couleurs éclatantes</strong>
-            <p>Rendu durable et résistant aux UV</p>
-          </div>
-        </div>
-        <div class="rp-trust-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#666"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm13.5-9l1.96 2.5H17V9h2.5zm-1.5 9c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>
-          <div>
-            <strong>Livraison rapide</strong>
-            <p>Expédition sous 5 à 7 jours ouvrés</p>
-          </div>
-        </div>
       </div>
     `;
 
@@ -918,6 +882,8 @@ class DynamicLayoutManager {
               <div class="coin-view-label">RECTO</div>
               <div class="coin-disc" id="coin-disc-recto">
                 <img class="coin-base-img" id="coin-base-recto" src="${A.patchRecto || ''}" alt="Pièce recto">
+                <!-- Zone imprimable : repère de placement du design. -->
+                <div class="coin-safe-zone" data-face="recto"></div>
                 <div class="design-logo coin-logo" id="coin-logo-recto" data-zone="coin-recto" style="display:none; left:28%; top:28%; width:44%;">
                   <img src="" alt="Logo recto" draggable="false">
                   <span class="logo-resize" data-resize="coin-recto"></span>
@@ -930,6 +896,8 @@ class DynamicLayoutManager {
               <div class="coin-view-label">VERSO</div>
               <div class="coin-disc" id="coin-disc-verso">
                 <img class="coin-base-img" id="coin-base-verso" src="${A.patchVerso || ''}" alt="Pièce verso">
+                <!-- Zone imprimable : repère de placement du design. -->
+                <div class="coin-safe-zone" data-face="verso"></div>
                 <div class="design-logo coin-logo" id="coin-logo-verso" data-zone="coin-verso" style="display:none; left:28%; top:28%; width:44%;">
                   <img src="" alt="Logo verso" draggable="false">
                   <span class="logo-resize" data-resize="coin-verso"></span>
@@ -1079,6 +1047,12 @@ function selectShape(element) {
   
   // Changer la forme du canvas
   changeCanvasShape(shape);
+
+  // Les bornes de la zone imprimable dependent de la forme : on recontraint
+  // le logo, sinon il resterait hors de la nouvelle silhouette.
+  setTimeout(function () {
+    if (typeof window.clampPatchLogo === 'function') window.clampPatchLogo(true);
+  }, 60);
   
   // Mettre à jour le récap
   updateCoinsRecapShape(shape);
@@ -1202,17 +1176,25 @@ function contactForCustom() {
   else alert('Contactez-nous pour les options PVC et Tissé.\n' + msg);
 }
 
+/* Quantité — minimum LU sur l'attribut `min` du champ.
+   Ces fonctions écrasent celles de configurateur.liquid (ce fichier est chargé
+   après) : coder le minimum en dur ici rendait sans effet la valeur déclarée
+   dans le markup, et le champ repassait à 20 malgré un min="10". */
+function coinMinQty() {
+  const input = document.getElementById('coin-qty-input');
+  const m = input ? parseInt(input.getAttribute('min'), 10) : NaN;
+  return isNaN(m) || m < 1 ? 1 : m;
+}
+
 // Changement de quantité
 function changeQty(delta) {
   const input = document.getElementById('coin-qty-input');
   if (!input) return;
-  
-  let qty = parseInt(input.value) || 20;
-  qty += delta;
-  
-  // Minimum 20
-  if (qty < 20) qty = 20;
-  
+
+  const min = coinMinQty();
+  let qty = (parseInt(input.value) || min) + delta;
+  if (qty < min) qty = min;
+
   input.value = qty;
   updateCoinPrice(qty);
 }
@@ -1221,15 +1203,14 @@ function changeQty(delta) {
 function handleQtyInput() {
   const input = document.getElementById('coin-qty-input');
   if (!input) return;
-  
-  let qty = parseInt(input.value) || 20;
-  
-  // Minimum 20
-  if (qty < 20) {
-    qty = 20;
+
+  const min = coinMinQty();
+  let qty = parseInt(input.value) || min;
+  if (qty < min) {
+    qty = min;
     input.value = qty;
   }
-  
+
   updateCoinPrice(qty);
 }
 

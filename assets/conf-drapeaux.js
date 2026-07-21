@@ -88,20 +88,8 @@ const DRAPEAUX_SIDEBAR_TEMPLATE = `
     <div class="flag-color-grid">
       <button class="flag-color-swatch active" title="Blanc" style="background:#ffffff;border:1.5px solid #ddd" onclick="selFlagColor(this,'#ffffff')"></button>
       <button class="flag-color-swatch" title="Noir" style="background:#1a1a1a" onclick="selFlagColor(this,'#1a1a1a')"></button>
-      <button class="flag-color-swatch" title="Blanc cassé" style="background:#f5f2ed;border:1.5px solid #ddd" onclick="selFlagColor(this,'#f5f2ed')"></button>
-      <button class="flag-color-swatch" title="Gris" style="background:#9e9e9e" onclick="selFlagColor(this,'#9e9e9e')"></button>
-      <button class="flag-color-swatch" title="Gris foncé" style="background:#555555" onclick="selFlagColor(this,'#555555')"></button>
-      <button class="flag-color-swatch" title="Gris ardoise" style="background:#607d8b" onclick="selFlagColor(this,'#607d8b')"></button>
-      <button class="flag-color-swatch" title="Bleu marine" style="background:#1e3a5f" onclick="selFlagColor(this,'#1e3a5f')"></button>
-      <button class="flag-color-swatch" title="Bleu ciel" style="background:#5bb8e8" onclick="selFlagColor(this,'#5bb8e8')"></button>
-      <button class="flag-color-swatch" title="Vert foncé" style="background:#2e6b45" onclick="selFlagColor(this,'#2e6b45')"></button>
-      <button class="flag-color-swatch" title="Rose clair" style="background:#f0c8d8;border:1.5px solid #e0afc4" onclick="selFlagColor(this,'#f0c8d8')"></button>
-      <button class="flag-color-swatch" title="Rose" style="background:#e8729a" onclick="selFlagColor(this,'#e8729a')"></button>
       <button class="flag-color-swatch" title="Rouge" style="background:#c0392b" onclick="selFlagColor(this,'#c0392b')"></button>
-      <button class="flag-color-swatch" title="Orange" style="background:#e8842a" onclick="selFlagColor(this,'#e8842a')"></button>
-      <button class="flag-color-swatch" title="Jaune" style="background:#f5c842;border:1.5px solid #d4aa20" onclick="selFlagColor(this,'#f5c842')"></button>
-      <button class="flag-color-swatch" title="Violet" style="background:#9b6bb5" onclick="selFlagColor(this,'#9b6bb5')"></button>
-      <button class="flag-color-swatch" title="Marron" style="background:#7d4e2d" onclick="selFlagColor(this,'#7d4e2d')"></button>
+      <button class="flag-color-swatch" title="Bleu" style="background:#1e3a5f" onclick="selFlagColor(this,'#1e3a5f')"></button>
     </div>
   </div>
 
@@ -114,18 +102,6 @@ const DRAPEAUX_SIDEBAR_TEMPLATE = `
       <div class="flag-size-card active" data-size="90x150" onclick="selectFlagSize(this)">
         <strong>90 x 150 cm</strong>
         <span>Format standard</span>
-        <div class="flag-size-check">✓</div>
-      </div>
-      
-      <div class="flag-size-card" data-size="100x100" onclick="selectFlagSize(this)">
-        <strong>1 x 1 m</strong>
-        <span>Format carré</span>
-        <div class="flag-size-check">✓</div>
-      </div>
-      
-      <div class="flag-size-card" data-size="custom" onclick="selectFlagSize(this)">
-        <strong>Personnalisé</strong>
-        <span>Sur mesure</span>
         <div class="flag-size-check">✓</div>
       </div>
     </div>
@@ -191,7 +167,19 @@ const DRAPEAUX_SIDEBAR_TEMPLATE = `
     <div class="sec-sub">Personnalisez la finition de votre drapeau</div>
     
     <div class="flag-options-section">
-      <div class="flag-option-item active" data-anneaux="2" onclick="selectAnneaux(this)">
+      <!-- Sans anneaux : finition par défaut (fichiers flag-0an-*.png). -->
+      <div class="flag-option-item active" data-anneaux="0" onclick="selectAnneaux(this)">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="4" y="6" width="16" height="12" rx="1.5"/>
+        </svg>
+        <div>
+          <strong>Sans anneaux</strong>
+          <span>Bord simple, sans œillet</span>
+        </div>
+        <div class="flag-option-check">✓</div>
+      </div>
+
+      <div class="flag-option-item" data-anneaux="2" onclick="selectAnneaux(this)">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="8" cy="12" r="2.6"/>
           <circle cx="16" cy="12" r="2.6"/>
@@ -289,6 +277,11 @@ function selectFlagOrientation(element) {
   }
 
   console.log('🔄 Orientation:', orientation);
+  // La géométrie du drapeau change : recale la zone imprimable après repaint.
+  setTimeout(function () {
+    if (window.syncFlagSafeZones) window.syncFlagSafeZones();
+    if (window.clampFlagLogo) window.clampFlagLogo();
+  }, 60);
 }
 
 /* Couleur (hex du bouton) -> slug utilisé dans le nom de fichier.
@@ -296,20 +289,8 @@ function selectFlagOrientation(element) {
 var FLAG_COLOR_SLUGS = {
   '#ffffff': 'blanc',
   '#1a1a1a': 'noir',
-  '#f5f2ed': 'blanc-casse',
-  '#9e9e9e': 'gris',
-  '#555555': 'gris-fonce',
-  '#607d8b': 'gris-ardoise',
-  '#1e3a5f': 'bleu-marine',
-  '#5bb8e8': 'bleu-ciel',
-  '#2e6b45': 'vert-fonce',
-  '#f0c8d8': 'rose-clair',
-  '#e8729a': 'rose',
   '#c0392b': 'rouge',
-  '#e8842a': 'orange',
-  '#f5c842': 'jaune',
-  '#9b6bb5': 'violet',
-  '#7d4e2d': 'marron'
+  '#1e3a5f': 'bleu-marine'
 };
 
 /** Slug de la couleur de drapeau courante (par défaut : blanc). */
@@ -322,10 +303,19 @@ function currentFlagColorSlug() {
    courante (anneaux + orientation). Le changement de couleur devient alors
    instantané : l'image est déjà en cache quand l'utilisateur clique.
    Lancé en tâche de fond, sans bloquer l'affichage. */
+/* Finition courante -> préfixe de fichier.
+   '0' = sans anneaux (défaut), '2' = 2 anneaux, '4' = 4 anneaux.
+   Fichiers attendus : flag-{0an|2an|4an}-{couleur}-{face}-{orientation}.png */
+function flagRingsKey() {
+  var v = String(window.__flagAnneaux == null ? '0' : window.__flagAnneaux);
+  return (v === '4') ? '4an' : (v === '2') ? '2an' : '0an';
+}
+window.flagRingsKey = flagRingsKey;
+
 var _flagPreloaded = {};
 function preloadFlagColors() {
   var URLS = window.FLAG_IMAGE_URLS || {};
-  var anneaux = (window.__flagAnneaux === '4') ? '4an' : '2an';
+  var anneaux = flagRingsKey();
   var orient = (window.__flagOrientation === 'portrait') ? 'portrait' : 'paysage';
 
   Object.keys(FLAG_COLOR_SLUGS).forEach(function (hex) {
@@ -349,7 +339,7 @@ function refreshFlagImages() {
   var A = window.ASSET_URLS || {};
   var URLS = window.FLAG_IMAGE_URLS || {};
 
-  var anneaux = (window.__flagAnneaux === '4') ? '4an' : '2an';
+  var anneaux = flagRingsKey();
   var orient = (window.__flagOrientation === 'portrait') ? 'portrait' : 'paysage';
   var color = currentFlagColorSlug();
 
@@ -361,6 +351,17 @@ function refreshFlagImages() {
     // Repli 1 : même variante en blanc.
     var white = anneaux + '-blanc-' + face + '-' + orient;
     if (URLS[white]) return URLS[white];
+
+    // Repli 2 : les images « sans anneaux » (0an) ne sont pas encore fournies
+    // pour toutes les couleurs — on retombe sur la finition 2 anneaux plutôt
+    // que sur un drapeau blanc générique, qui perdrait la couleur choisie.
+    // À retirer quand la série flag-0an-*.png sera complète.
+    if (anneaux === '0an') {
+      var alt = '2an-' + color + '-' + face + '-' + orient;
+      if (URLS[alt]) return URLS[alt];
+      var altWhite = '2an-blanc-' + face + '-' + orient;
+      if (URLS[altWhite]) return URLS[altWhite];
+    }
 
     // Repli 2 : anciennes images génériques (sécurité).
     var is4 = (anneaux === '4an');
@@ -471,6 +472,11 @@ function selectFlagSize(element) {
   changeFlagSize(size);
 
   console.log('📏 Taille:', size);
+  // La géométrie du drapeau change : recale la zone imprimable après repaint.
+  setTimeout(function () {
+    if (window.syncFlagSafeZones) window.syncFlagSafeZones();
+    if (window.clampFlagLogo) window.clampFlagLogo();
+  }, 60);
 }
 
 // Changer le format/ratio des drapeaux du canvas
@@ -521,6 +527,8 @@ function selectAnneaux(element) {
   // Afficher 2 ou 4 anneaux sur les drapeaux codés (vue 2D)
   document.querySelectorAll('.flag-wave').forEach(wave => {
     wave.classList.toggle('grommets-4', anneaux === '4');
+    // Sans anneaux : aucun œillet dessiné sur le drapeau codé (vue 2D).
+    wave.classList.toggle('grommets-0', anneaux === '0');
   });
 
   // Échanger les images réelles selon anneaux + orientation courante.
@@ -529,7 +537,8 @@ function selectAnneaux(element) {
   // Mettre à jour le récap
   const recapAnneaux = document.getElementById('flag-recap-anneaux');
   if (recapAnneaux) {
-    recapAnneaux.textContent = anneaux + ' anneaux';
+    // '0 anneaux' n'aurait aucun sens pour le client.
+    recapAnneaux.textContent = (anneaux === '0') ? 'Sans anneaux' : (anneaux + ' anneaux');
   }
 }
 
@@ -686,3 +695,90 @@ function removeFlagDesign(face) {
     }
   }
 }
+
+/* ── Zone imprimable : calage sur l'image réelle ────────────────────────────
+   .flag-img-3d est un conteneur flex plus large que le drapeau (l'image y est
+   centrée, et en portrait elle est contrainte par la hauteur). Un cadre en
+   inset:0 serait donc plus grand que le drapeau. On mesure l'image affichée et
+   on pose la zone exactement dessus — juste dans les trois formats (paysage,
+   portrait, carré) et à tout niveau de zoom. */
+function syncFlagSafeZones() {
+  document.querySelectorAll('.flag-img-3d').forEach(function (wrap) {
+    var zone = wrap.querySelector('.flag-safe-zone');
+    var img = wrap.querySelector('.flag-base-img');
+    if (!zone || !img) return;
+    // Image pas encore chargée : on repassera au load (voir écouteurs plus bas).
+    if (!img.offsetWidth || !img.offsetHeight) return;
+    // Marge de sécurité, en % de la largeur de l'image. Doit rester égale à
+    // FLAG_INSET (conf-logo-drag.js) : le cadre affiché et la contrainte
+    // appliquée au logo sont deux expressions de la même limite.
+    var insetX = (window.FLAG_INSET != null ? window.FLAG_INSET : 4) / 100;
+    var insetYp = (window.FLAG_INSET_Y != null ? window.FLAG_INSET_Y : 9) / 100;
+    var mx = img.offsetWidth * insetX;
+    var my = img.offsetHeight * insetYp;
+    zone.style.left = (img.offsetLeft + mx) + 'px';
+    zone.style.top = (img.offsetTop + my) + 'px';
+    zone.style.width = (img.offsetWidth - 2 * mx) + 'px';
+    zone.style.height = (img.offsetHeight - 2 * my) + 'px';
+  });
+}
+window.syncFlagSafeZones = syncFlagSafeZones;
+
+/* Ramène un logo de drapeau DANS sa zone imprimable.
+   La contrainte de conf-logo-drag.js ne joue qu'au déplacement : un visuel
+   fraîchement uploadé garde sa position/taille par défaut et peut donc déborder.
+   Appelée après chaque upload et à chaque changement de format. */
+function clampFlagLogo(face) {
+  var faces = face ? [face] : ['recto', 'verso'];
+  faces.forEach(function (f) {
+    var logo = document.getElementById('flag-logo-' + f);
+    if (!logo || logo.style.display === 'none') return;
+    var wrap = logo.closest('.flag-img-3d');
+    var img = wrap && wrap.querySelector('.flag-base-img');
+    if (!img || !img.offsetWidth || !img.offsetHeight) return;
+
+    var cw = wrap.offsetWidth, ch = wrap.offsetHeight;
+    if (!cw || !ch) return;
+
+    var inset = (window.FLAG_INSET != null ? window.FLAG_INSET : 4);
+    var insetY = (window.FLAG_INSET_Y != null ? window.FLAG_INSET_Y : 9);
+    // Emprise de l'image dans le conteneur, en % — mêmes bornes que le drag.
+    var x0 = (img.offsetLeft / cw) * 100 + inset;
+    var x1 = ((img.offsetLeft + img.offsetWidth) / cw) * 100 - inset;
+    var y0 = (img.offsetTop / ch) * 100 + insetY;
+    var y1 = ((img.offsetTop + img.offsetHeight) / ch) * 100 - insetY;
+
+    // Largeur : bornée à la zone.
+    var w = parseFloat(logo.style.width) || 44;
+    w = Math.min(w, x1 - x0);
+    logo.style.width = w + '%';
+
+    // Hauteur réelle après application de la largeur (ratio de l'image).
+    var h = (logo.offsetHeight / ch) * 100;
+    if (h > y1 - y0) {
+      // Trop haut pour la zone : on réduit la largeur d'autant (ratio conservé).
+      w = w * ((y1 - y0) / h);
+      logo.style.width = w + '%';
+      h = (logo.offsetHeight / ch) * 100;
+    }
+
+    var l = parseFloat(logo.style.left);
+    var t = parseFloat(logo.style.top);
+    if (isNaN(l)) l = x0;
+    if (isNaN(t)) t = y0;
+    logo.style.left = Math.max(x0, Math.min(x1 - w, l)) + '%';
+    logo.style.top = Math.max(y0, Math.min(y1 - h, t)) + '%';
+  });
+}
+window.clampFlagLogo = clampFlagLogo;
+
+/* Recale la zone à chaque événement qui change la géométrie du drapeau :
+   chargement d'image, changement d'orientation/taille/couleur, resize. */
+document.addEventListener('DOMContentLoaded', syncFlagSafeZones);
+window.addEventListener('resize', syncFlagSafeZones);
+window.addEventListener('load', syncFlagSafeZones);
+document.addEventListener('load', function (e) {
+  if (e.target && e.target.classList && e.target.classList.contains('flag-base-img')) {
+    syncFlagSafeZones();
+  }
+}, true);   // capture : l'événement load des <img> ne remonte pas

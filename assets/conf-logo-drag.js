@@ -14,6 +14,45 @@
 
   const MIN_W = 4;       // largeur min du logo en % du canvas
   const MAX_W = 100;     // largeur max
+  /* Marge de la zone imprimable des drapeaux, en % de la largeur.
+     0 = la zone couvre tout le drapeau, bord à bord : le design peut être
+     placé sur toute la surface, mais ne peut plus en sortir (avant, le logo
+     n'était borné par rien et débordait de l'aperçu).
+     Relever cette valeur réserverait une marge pour l'ourlet et les œillets ;
+     garder alors `.flag-safe-zone { inset }` (conf-drapeaux.css) identique. */
+  const FLAG_INSET = 4;
+  window.FLAG_INSET = FLAG_INSET;
+  /* Marge VERTICALE, plus généreuse : le haut et le bas du drapeau portent
+     l'ourlet de fixation, et l'aperçu y montre l'ondulation du tissu — un
+     visuel qui s'en approche paraît déborder. */
+  const FLAG_INSET_Y = 9;
+  window.FLAG_INSET_Y = FLAG_INSET_Y;
+  /* Marge des pièces (coins), en % du disque. Le pourtour est occupé par le
+     listel — bord relevé de la frappe — où le motif ne s'imprime pas.
+     Garder égal à `.coin-safe-zone { inset }` (conf-patches.css). */
+  const COIN_INSET = 8;
+  window.COIN_INSET = COIN_INSET;
+  /* Décalage vertical de la zone, en % du disque. Positif = vers le bas.
+     La pièce est centrée dans son image, mais le rendu 3D lui donne une
+     épaisseur visible en partie basse : sans ce décalage, le motif paraît
+     trop haut sur la frappe.
+     Garder égal au `top`/`bottom` de `.coin-safe-zone` (conf-patches.css). */
+  const COIN_OFFSET_Y = 1.5;
+  window.COIN_OFFSET_Y = COIN_OFFSET_Y;
+  /* Hauteur réservée au numéro en bas du verso, en % du disque. Le logo ne
+     descend pas plus bas quand la numérotation est active, sinon il le
+     recouvrirait. Doit couvrir le `bottom` de .coin-verso-number + sa hauteur. */
+  const COIN_NUMBER_RESERVE = 22;
+  window.COIN_NUMBER_RESERVE = COIN_NUMBER_RESERVE;
+  /* Marge de la zone imprimable des patchs, en % du canvas. L'image du patch
+     porte déjà un padding de 13% (.patch-shape-img) : la zone doit donc
+     commencer plus bas, sinon elle tomberait hors du visuel.
+     Garder égal à  (conf-coins.css). */
+  const PATCH_INSET = 14;
+  window.PATCH_INSET = PATCH_INSET;
+  /* Rectangle : plus large que haut -> bornes verticales plus serrées. */
+  const PATCH_INSET_RECT_Y = 27;
+  window.PATCH_INSET_RECT_Y = PATCH_INSET_RECT_Y;
 
   // Conteneur de référence selon le type de logo :
   //  - .coin-disc  pour les coins
@@ -26,8 +65,8 @@
       const flagWrap = logo.closest('.flag-img-3d');
       if (flagWrap) return flagWrap;
       // Patch : le logo est positionné DIRECTEMENT dans #coins-canvas (l'image
-      // du patch). Ses % sont relatifs à ce conteneur. Aucune contrainte de zone :
-      // le client le place librement (voir onPointerMove).
+      // du patch). Ses % sont relatifs à ce conteneur, et il est borné à la
+      // zone imprimable de la forme choisie (voir onPointerMove).
       const patchCanvas = logo.closest('#coins-canvas');
       if (patchCanvas) return patchCanvas;
       const patchStage = logo.closest('.patch-stage');
@@ -61,6 +100,9 @@
     const scale = width / 44;
     cote.style.setProperty('--coin-logo-scale', scale.toFixed(3));
   }
+  // Exposé : clampCoinLogo() doit resynchroniser la tranche après un upload,
+  // sinon la vue de côté garde l'échelle du visuel précédent.
+  window.syncCoinCote = syncCoinCote;
 
   // Applique la position/taille miroir (par rapport au centre horizontal 50%)
   function mirrorSleeve(logo) {
@@ -122,15 +164,74 @@
     const dx = point.clientX - startX;
     const dy = point.clientY - startY;
 
-    // PATCH : aucune contrainte de zone — le client place et dimensionne son logo
-    // librement (il peut même déborder du patch). Les autres pièces restent
-    // bornées à leur canvas (0..100 %).
+    // PATCH : le logo reste dans la zone imprimable, comme les autres pièces.
+    // Les marges suivent la forme choisie : le rectangle est plus large que
+    // haut, ses bornes verticales sont donc plus serrées (cf. .patch-safe-zone
+    // dans conf-coins.css — garder les deux jeux de valeurs alignés).
     const isPatchLogo = active && active.id === 'patch-logo';
-    const inset = 0;
-    const MIN_POS = isPatchLogo ? -Infinity : inset;
+    let pX0 = PATCH_INSET, pX1 = 100 - PATCH_INSET;
+    let pY0 = PATCH_INSET, pY1 = 100 - PATCH_INSET;
+    if (isPatchLogo && active.closest('.shape-rectangle')) {
+      pY0 = PATCH_INSET_RECT_Y;
+      pY1 = 100 - PATCH_INSET_RECT_Y;
+    }
+
+    // DRAPEAUX : le logo est positionné en % de .flag-img-3d, un conteneur
+    // flex PLUS LARGE que le drapeau (l'image y est centrée). Se borner à
+    // 0..100 % laissait donc le visuel sortir de l'image. On calcule les
+    // bornes réelles de l'image dans son conteneur, puis on y ajoute la marge
+    // de sécurité (ourlet de couture + œillets).
+    const isFlagLogo = active && /^flag-logo-/.test(active.id || '');
+    // Bornes par axe : en portrait l'image est contrainte par la HAUTEUR, donc
+    // ses marges horizontales et verticales diffèrent — un jeu de bornes unique
+    // serait faux sur l'un des deux axes.
+    let fX0 = 0, fX1 = 100, fY0 = 0, fY1 = 100, flagMaxW = MAX_W;
+    if (isFlagLogo) {
+      const img = active.closest('.flag-img-3d')?.querySelector('.flag-base-img');
+      if (img && bounds.width && bounds.height && img.offsetWidth && img.offsetHeight) {
+        const xPct = (img.offsetLeft / bounds.width) * 100;
+        const wPctImg = (img.offsetWidth / bounds.width) * 100;
+        const yPct = (img.offsetTop / bounds.height) * 100;
+        const hPctImg = (img.offsetHeight / bounds.height) * 100;
+        fX0 = xPct + FLAG_INSET;
+        fX1 = xPct + wPctImg - FLAG_INSET;
+        fY0 = yPct + FLAG_INSET_Y;
+        fY1 = yPct + hPctImg - FLAG_INSET_Y;
+        flagMaxW = wPctImg - 2 * FLAG_INSET;
+      } else {
+        fX0 = FLAG_INSET;   fX1 = 100 - FLAG_INSET;
+        fY0 = FLAG_INSET_Y; fY1 = 100 - FLAG_INSET_Y;
+        flagMaxW = 100 - 2 * FLAG_INSET;
+      }
+    }
+
+    // PIÈCES (coins) : le motif reste dans la zone frappée, le pourtour étant
+    // occupé par le listel. Le disque est carré, la marge est donc symétrique.
+    const isCoinLogo = active && /^coin-logo-/.test(active.id || '');
+    const coinMin = COIN_INSET;
+    const coinMax = 100 - COIN_INSET;
+    // Bornes verticales décalées vers le bas (voir COIN_OFFSET_Y).
+    const coinMinY = COIN_INSET + COIN_OFFSET_Y;
+    // Verso numéroté : le bas est réservé au numéro.
+    const coinHasNumber = isCoinLogo &&
+      !!active.closest('.coin-disc.has-number');
+    const coinMaxY = coinHasNumber
+      ? Math.min(100 - COIN_INSET + COIN_OFFSET_Y, 100 - COIN_NUMBER_RESERVE)
+      : (100 - COIN_INSET + COIN_OFFSET_Y);
+
+    const MIN_POS = isPatchLogo ? pX0
+      : (isFlagLogo ? fX0 : (isCoinLogo ? coinMin : 0));
+    const MIN_POS_Y = isPatchLogo ? pY0
+      : (isFlagLogo ? fY0 : (isCoinLogo ? coinMinY : 0));
     const maxPos = (sizePct) =>
-      isPatchLogo ? Infinity : (100 - inset - sizePct);
-    const maxW = MAX_W;
+      isPatchLogo ? (pX1 - sizePct)
+        : (isFlagLogo ? (fX1 - sizePct) : ((isCoinLogo ? coinMax : 100) - sizePct));
+    const maxPosY = (sizePct) =>
+      isPatchLogo ? (pY1 - sizePct)
+        : (isFlagLogo ? (fY1 - sizePct) : ((isCoinLogo ? coinMaxY : 100) - sizePct));
+    // Le logo ne peut pas être plus large que la zone imprimable.
+    const maxW = isFlagLogo ? flagMaxW
+      : (isCoinLogo ? (coinMax - coinMin) : (isPatchLogo ? (pX1 - pX0) : MAX_W));
 
     if (mode === 'resize') {
       /* Redimensionnement depuis les 8 poignées (4 coins + 4 côtés).
@@ -166,6 +267,35 @@
       }
 
       active.style.width = newW + '%';
+
+      /* DRAPEAUX : maxW ne borne que la LARGEUR. Un visuel très haut (ou tiré
+         depuis une poignée nord/ouest, qui déplace aussi le logo) sortait donc
+         encore de la zone en hauteur ou par un bord. On revérifie ici les trois
+         dimensions — largeur, hauteur et position — après application. */
+      if (isFlagLogo || isCoinLogo || isPatchLogo) {
+        // Bornes de la zone selon la pièce en cours.
+        var zX0 = isFlagLogo ? fX0 : (isPatchLogo ? pX0 : coinMin);
+        var zX1 = isFlagLogo ? fX1 : (isPatchLogo ? pX1 : coinMax);
+        var zY0 = isFlagLogo ? fY0 : (isPatchLogo ? pY0 : coinMinY);
+        var zY1 = isFlagLogo ? fY1 : (isPatchLogo ? pY1 : coinMaxY);
+
+        var wNow = parseFloat(active.style.width) || newW;
+        var hNow = (active.offsetHeight / bounds.height) * 100;
+        var zoneH = zY1 - zY0;
+        if (hNow > zoneH && hNow > 0) {
+          // Trop haut : on réduit la largeur d'autant, ratio conservé.
+          wNow = wNow * (zoneH / hNow);
+          active.style.width = wNow + '%';
+          hNow = (active.offsetHeight / bounds.height) * 100;
+        }
+        var lNow = parseFloat(active.style.left);
+        var tNow = parseFloat(active.style.top);
+        if (isNaN(lNow)) lNow = zX0;
+        if (isNaN(tNow)) tNow = zY0;
+        active.style.left = Math.max(zX0, Math.min(zX1 - wNow, lNow)) + '%';
+        active.style.top = Math.max(zY0, Math.min(zY1 - hNow, tNow)) + '%';
+      }
+
       // Pour un TEXTE simple : la taille de police suit la largeur (proportionnel).
       if (active.classList.contains('design-text') && !active.classList.contains('is-shaped')) {
         var ratio = newW / (startW || newW);
@@ -185,7 +315,7 @@
 
       const { wPct, hPct } = logoSizePct(active);
       newLeft = Math.max(MIN_POS, Math.min(maxPos(wPct), newLeft));
-      newTop = Math.max(MIN_POS, Math.min(maxPos(hPct), newTop));
+      newTop = Math.max(MIN_POS_Y, Math.min(maxPosY(hPct), newTop));
 
       active.style.left = newLeft + '%';
       active.style.top = newTop + '%';
@@ -200,16 +330,19 @@
       window.updateRecapThumbLogo();
     }
     // Contrainte : le logo textile reste DANS sa zone pointillée.
+    // Calque -> zone de contrainte. Toute zone absente d'ici n'est PAS bornée :
+    // son logo peut sortir du gabarit d'impression.
     var TEXTILE_ZONE = {
-      'logo-f': 'f', 'logo-b': 'b',
-      'logo-sl': 'sl'
+      'logo-f': 'f', 'logo-fr': 'fr', 'logo-b': 'b',
+      'logo-sl': 'sl', 'logo-sr': 'sr'
     };
     if (TEXTILE_ZONE[active.id] && typeof window.clampLogoToZone === 'function') {
       window.clampLogoToZone(TEXTILE_ZONE[active.id]);
     }
     // Le texte reste DANS sa zone horizontale (pas de sortie).
     if (active.classList.contains('design-text') && typeof window.clampTextToZone === 'function') {
-      var tz = active.id === 'text-f' ? 'f' : (active.id === 'text-b' ? 'b' : null);
+      // id « text-<zone> » -> zone ; couvre f, fr et b sans énumération.
+      var tz = (active.id || '').indexOf('text-') === 0 ? active.id.slice(5) : null;
       if (tz) window.clampTextToZone(tz);
     }
 
@@ -232,6 +365,7 @@
   // Map l'id d'un logo -> sa zone de persistance (pour sauvegarder taille/position)
   const LOGO_ZONE = {
     'logo-f': 'f',
+    'logo-fr': 'fr',
     'logo-b': 'b',
     'logo-sl': 'sl', 'logo-sl-face': 'sl',
     'logo-sr': 'sr', 'logo-sr-face': 'sr',
@@ -246,7 +380,8 @@
     if (active) {
       // Texte déplaçable : sauvegarder position + taille via le hook dédié.
       if (active.classList.contains('design-text') && typeof window.saveTextGeo === 'function') {
-        var tzone = active.id === 'text-f' ? 'f' : (active.id === 'text-b' ? 'b' : null);
+        // id « text-<zone> » -> zone ; couvre f, fr et b sans énumération.
+        var tzone = (active.id || '').indexOf('text-') === 0 ? active.id.slice(5) : null;
         if (tzone) window.saveTextGeo(tzone, {
           left: active.style.left, top: active.style.top,
           width: active.style.width, fontSize: active.style.fontSize

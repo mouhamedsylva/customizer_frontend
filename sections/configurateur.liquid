@@ -102,10 +102,23 @@
          Clé   : "{anneaux}-{couleur}-{face}-{orientation}"
          Ex.   : "2an-rouge-recto-paysage"
          Fichier attendu : flag-2an-rouge-recto-paysage.png
-         16 couleurs × 2 anneaux × 2 faces × 2 orientations = 128 images. */
+
+         Finitions : 0an (sans anneaux, défaut) | 2an | 4an
+         16 couleurs × 3 finitions × 2 faces × 2 orientations = 192 images.
+
+         NOMENCLATURE À RESPECTER pour les fichiers « sans anneaux » :
+             flag-0an-{couleur}-{face}-{orientation}.png
+         couleur     : blanc, blanc-casse, noir, gris, gris-fonce, gris-ardoise,
+                       bleu-marine, bleu-ciel, vert-fonce, rouge, rose,
+                       rose-clair, orange, jaune, violet, marron
+         face        : recto | verso
+         orientation : paysage | portrait
+         Ex. : flag-0an-rouge-recto-paysage.png
+         Tant qu'une image manque, refreshFlagImages() replie sur le blanc de
+         la même finition, puis sur l'image générique — rien ne casse. */
       window.FLAG_IMAGE_URLS = {
-        {%- assign fl_anneaux = "2an,4an" | split: "," -%}
-        {%- assign fl_colors = "blanc,noir,blanc-casse,gris,gris-fonce,gris-ardoise,bleu-marine,bleu-ciel,vert-fonce,rose-clair,rose,rouge,orange,jaune,violet,marron" | split: "," -%}
+        {%- assign fl_anneaux = "0an,2an,4an" | split: "," -%}
+        {%- assign fl_colors = "blanc,noir,rouge,bleu-marine" | split: "," -%}
         {%- assign fl_faces = "recto,verso" | split: "," -%}
         {%- assign fl_orients = "paysage,portrait" | split: "," -%}
         {%- for a in fl_anneaux -%}
@@ -559,10 +572,29 @@
           </div>
         </div>
 
-        <!-- 6. Manches -->
+        <!-- 6. Manches — option tarifée (activable par le client) -->
         <div class="sec">
           <div class="sec-title">7. Personnalisation Manches 👕</div>
-          <div class="sec-sub">Ajoutez un logo ou texte sur les manches (facultatif)</div>
+
+          <!-- Carte d'option : intitulé, prix, bascule. Design professionnel
+               avec badge de prix bien visible. Repliée tant que l'option n'est
+               pas activée — on ne montre pas des zones d'upload pour une
+               prestation que le client n'a pas choisie. -->
+          <div class="opt-card" id="slv-opt">
+            <button type="button" class="opt-row" id="slv-toggle-row"
+                    onclick="toggleSleeveOption()" aria-expanded="false" aria-controls="slv-body">
+              <span class="opt-txt">
+                <span class="opt-name">
+                  Ajouter un logo sur les manches
+                  <span class="opt-badge" id="slv-price-badge">+ 5,00 €/manche</span>
+                </span>
+                <span class="opt-desc">Logo imprimé sur manche gauche et/ou droite</span>
+              </span>
+              <span class="opt-switch" id="slv-switch"><span class="opt-knob"></span></span>
+            </button>
+          </div>
+
+          <div id="slv-body" style="display:none">
           <div class="note">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
             Position : à 5 cm de la couture de l'épaule
@@ -595,6 +627,7 @@
               </div>
             </div>
           </div>
+          </div><!-- /slv-body -->
         </div>
 
       </div><!-- /sb-inner -->
@@ -848,9 +881,11 @@
             <svg viewBox="0 0 24 24" width="20" height="20" fill="#888"><path d="M16 5v2h-3V3H11v4H8V5L3 8v3h2v9h14V11h2V8l-5-3z"/></svg>
           </div>
           <div class="ri-info">
-            <div class="ri-name">Manches</div>
+            <div class="ri-name">Manches <span id="rc-sleeves-qty" class="ri-qty"></span></div>
             <div class="ri-ok">✓ Personnalisé</div>
           </div>
+          <!-- Supplément : renseigné par updateSleeveSurcharge(). -->
+          <div class="ri-extra" id="rc-sleeves-extra"></div>
         </div>
       </div><!-- /rp-items -->
 
@@ -1488,6 +1523,12 @@
       // coins -> devis (draft order), pas de variant panier
     };
 
+    /* Produit add-on « Personnalisation manche » (masqué du storefront).
+       Le textile passe par le panier NATIF Shopify, où une line item property
+       ne porte aucun prix : le supplément doit être une vraie ligne de panier.
+       Créé par customizer-backend/scripts/create-sleeve-addon.mjs. */
+    window.CONF_SLEEVE_VARIANT = 47911518077091;
+
     /* ── Panier (persisté dans sessionStorage) ── */
     let cartItems = [];
     try {
@@ -1798,80 +1839,15 @@
       return t[shape] || '';
     }
 
-    /* Met à jour l'image de fond du canevas (#patch-shape-img) selon la forme et
-       la couleur courantes, + applique l'aspect-ratio de la forme. Applique la
-       teinte de repli si l'image colorée est absente. */
+    /* Applique l'aspect-ratio de la forme au canevas du patch.
+       La forme et sa couleur sont désormais rendues en CSS (.patch-body) :
+       plus aucune image PNG à charger, donc plus de préchargement ni de fondu
+       — le changement de forme est instantané. */
     function updatePatchShapeImg() {
-      var img = document.getElementById('patch-shape-img');
       var canvas = document.getElementById('coins-canvas');
-      console.log('[PATCH] updatePatchShapeImg — img:', !!img, 'canvas:', !!canvas,
-        '| WHITE_URLS:', window.PATCH_WHITE_URLS,
-        '| canvas dims:', canvas ? (canvas.offsetWidth + 'x' + canvas.offsetHeight) : 'n/a');
-      if (!img || !canvas) return;
-
+      if (!canvas) return;
       var shape = patchShapeName();
-      var slug = window.currentPatchSlug || 'noir';
-
-      // Aspect-ratio de la forme (rond/carré=1, rectangle=1.56, blason=0.85).
-      var ratio = PATCH_SHAPE_RATIO[shape] || 1;
-      canvas.style.aspectRatio = ratio;
-
-      var whiteUrl = patchWhiteUrl(shape);
-      var colorUrl = patchColorUrl(shape, slug);
-
-      /* Fondu au changement (couleur ou forme) : on PRÉCHARGE d'abord l'image
-         cible (la vraie image colorée si elle se charge, sinon le blanc de repli),
-         PUIS on fait un fondu sortant -> swap du src -> fondu entrant. Le client
-         ne perçoit qu'une transition de couleur douce, pas un remplacement d'image. */
-
-      // Applique une nouvelle image à #patch-shape-img avec fondu.
-      function fadeSwap(newUrl) {
-        if (!newUrl) return;
-        // Si c'est déjà l'image affichée, ne rien faire (évite un clignotement).
-        if (img.getAttribute('src') === newUrl) return;
-
-        img.classList.add('is-swapping');           // fondu sortant (opacity -> 0)
-        // Attend la fin du fondu sortant avant de remplacer l'image.
-        window.setTimeout(function () {
-          img.src = newUrl;                          // swap invisible (image opacity 0)
-          var reveal = function () {
-            // Petit délai (setTimeout) : laisse le navigateur PEINDRE l'état
-            // opacity:0 avant de retirer .is-swapping, sinon add+remove sont
-            // fusionnés et le fondu entrant ne se déclenche pas.
-            window.setTimeout(function () {
-              img.classList.remove('is-swapping');
-              // La vignette du récap suit la nouvelle image (src async).
-              if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
-            }, 30);
-          };
-          // Une fois la nouvelle image chargée, on la fait réapparaître en fondu.
-          if (img.complete) reveal();
-          else img.onload = reveal;
-        }, 200);                                     // ~ durée de la transition CSS (fondu sortant)
-      }
-
-      // Premier affichage (src encore vide) : on pose l'image sans fondu pour
-      // qu'elle apparaisse immédiatement au chargement de la page.
-      var firstPaint = !img.getAttribute('src');
-
-      console.log('[PATCH] shape:', shape, 'whiteUrl:', whiteUrl, 'colorUrl:', colorUrl, 'firstPaint:', firstPaint);
-      img.onerror = function () { console.error('[PATCH] ÉCHEC chargement:', img.src); };
-
-      // Précharge la vraie image colorée ; si elle se charge, c'est la cible,
-      // sinon on retombe sur le blanc. Puis on applique (avec ou sans fondu).
-      function applyTarget(targetUrl) {
-        if (firstPaint) { img.src = targetUrl; return; }
-        fadeSwap(targetUrl);
-      }
-
-      if (colorUrl && colorUrl !== whiteUrl) {
-        var test = new Image();
-        test.onload = function () { applyTarget(colorUrl); };
-        test.onerror = function () { applyTarget(whiteUrl); };   // 404 -> blanc
-        test.src = colorUrl;
-      } else {
-        applyTarget(whiteUrl);
-      }
+      canvas.style.aspectRatio = PATCH_SHAPE_RATIO[shape] || 1;
     }
     window.updatePatchShapeImg = updatePatchShapeImg;
 
@@ -2146,47 +2122,30 @@
       var thumb = document.getElementById('coins-recap-thumb');
       if (!thumb) return;
 
-      // Image du patch actuellement affichée dans le canevas (forme + couleur,
-      // repli teinté inclus). On la RÉUTILISE telle quelle dans la miniature.
-      var shapeImg = document.getElementById('patch-shape-img');
-      var imgSrc = shapeImg ? shapeImg.getAttribute('src') : '';
-
-      // Logo patch + sa position (% inline, relatifs au canvas = à l'image).
+      var shape = patchShapeName();
       var logoEl = document.getElementById('patch-logo');
       var logoImg = logoEl ? logoEl.querySelector('img') : null;
       var logoSrc = (logoImg && logoEl.style.display !== 'none') ? logoImg.getAttribute('src') : '';
-      var left = logoEl ? (parseFloat(logoEl.style.left) || 25) : 25;
-      var top  = logoEl ? (parseFloat(logoEl.style.top)  || 25) : 25;
-      var width = logoEl ? (parseFloat(logoEl.style.width) || 50) : 50;
 
-      // Conteneur transparent, image en object-fit:contain, logo par-dessus.
-      thumb.style.borderRadius = '0';
-      thumb.style.clipPath = '';
-      thumb.style.background = 'transparent';
-      thumb.style.border = 'none';
-      thumb.style.overflow = 'visible';
-      thumb.style.position = 'relative';
+      // Même rendu que le canevas : forme en CSS, design rogné à la silhouette.
+      // Les classes .patch-body / .shape-* portent déjà cette géométrie — on la
+      // réutilise au lieu de la redéfinir, pour que miniature et aperçu ne
+      // puissent pas diverger.
+      thumb.style.cssText = 'position:relative;aspect-ratio:' +
+        (PATCH_SHAPE_RATIO[shape] || 1) + ';background:transparent;border:none;overflow:visible;';
+      thumb.className = (thumb.className || '').replace(/shape-S+/g, '').trim() +
+        ' coins-canvas-circle shape-' + shape;
 
-      var html = '';
-      if (imgSrc) {
-        // MÊME padding que #patch-shape-img dans le canevas (voir .patch-shape-img
-        // dans conf-coins.css) : sans lui, le patch serait plus grand ici que dans
-        // l'aperçu et le logo (positionné en % du canevas) ne coïnciderait pas.
-        html += '<img src="' + imgSrc + '" alt="" style="position:absolute;inset:0;' +
-                'width:100%;height:100%;box-sizing:border-box;padding:13%;' +
-                'object-fit:contain;pointer-events:none;">';
-      }
+      var inner = '<div class="patch-body">';
       if (logoSrc) {
-        // height:auto !important : la règle `.rp-patch-thumb img { height:100% }`
-        // étirait le logo sur toute la hauteur puis le recentrait (object-fit),
-        // ce qui ANNULAIT son `top` -> logo mal placé dans la miniature.
-        // object-fit:fill (défaut) : la boîte fait déjà le bon ratio via height:auto.
-        html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
-                '%;width:' + width + '%;height:auto !important;object-fit:fill;' +
-                'pointer-events:none;z-index:2;">';
+        inner += '<img src="' + logoSrc + '" alt="" ' +
+                 'style="position:absolute;inset:0;width:100%;height:100%;' +
+                 'object-fit:cover;pointer-events:none;">';
       }
-      thumb.innerHTML = html;
+      inner += '</div>';
+      thumb.innerHTML = inner;
     }
+
 
     /* Forme du patch actuellement choisie : 'rond' | 'carre' | 'rectangle' | 'blason'. */
     function patchShapeName() {
@@ -2468,6 +2427,9 @@
         sheet: design.sheet,   // planche multi-vues (aperçu commande) — peut être null
         // URLs Cloudinary des logos/textes réellement utilisés (pour la commande Shopify)
         assets: logoAssets.concat(textAssets),
+        // Nombre de manches personnalisées : facturé au checkout via le produit
+        // add-on (voir buildShopifyItems dans recapitulatif.liquid).
+        sleeveCount: (typeof sleeveCount === 'function') ? sleeveCount() : 0,
         qty: 1
       };
 
@@ -4376,6 +4338,10 @@
       u._product = currentProductType;
       try { sessionStorage.setItem('conf_uploads', JSON.stringify(u)); } catch (e) {}
     }
+    // Exposé : conf-patches.js persiste ici l'image détourée du mode
+    // « découpé à la forme », pour qu'elle survive au rechargement.
+    window.saveUpload = saveUpload;
+
     // Sauvegarde la taille/position (left/top/width) d'un logo pour une zone
     function saveUploadGeo(zone, geo) {
       const u = getUploads();
@@ -4399,8 +4365,13 @@
         const src = (typeof entry === 'string') ? entry : (entry && entry.src);
         const geo = (entry && typeof entry === 'object') ? entry.geo : null;
         if (src) {
+          // Restauration : le visuel garde la taille/position sauvegardées.
+          // Sans ce drapeau, le « remplir la zone » de l'upload (différé)
+          // écraserait la géométrie que le client avait ajustée.
+          window.__restoringUploads = true;
           applyUpload(zone, src);
           if (geo) applyUploadGeo(zone, geo);
+          window.__restoringUploads = false;
         }
       });
     }
@@ -4454,12 +4425,16 @@
             const ph = coinsCanvas.querySelector('.coins-placeholder');
             if (ph) ph.style.display = 'none';
           }
-          // Aucune contrainte de zone sur le patch : le client place son logo
-          // librement. On rafraîchit juste la miniature du récap une fois
-          // l'image chargée (ses dimensions sont alors connues).
+          // Le visuel uploadé garde sa taille par défaut (70 %) : on le ramène
+          // dans la zone imprimable de la forme. Différé jusqu'au 'load' :
+          // la hauteur réelle — donc le ratio — n'est connue qu'ensuite.
+          if (typeof clampPatchLogo === 'function') {
+            setTimeout(function () { clampPatchLogo(true); }, 80);
+          }
           if (coinsPreviewImg) {
             coinsPreviewImg.addEventListener('load', function onceLoaded() {
               coinsPreviewImg.removeEventListener('load', onceLoaded);
+              if (typeof clampPatchLogo === 'function') clampPatchLogo(true);
               if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
             });
           }
@@ -4479,6 +4454,22 @@
             const limg = logo.querySelector('img');
             if (limg) limg.src = src;
             logo.style.display = 'block';
+            // À l'upload, le visuel remplit toute la zone frappée et se centre.
+            // À la RESTAURATION, on se contente de le borner : sa géométrie
+            // sauvegardée doit être respectée. Le drapeau est capturé ici, car
+            // il est remis à false avant que les callbacks différés ne partent.
+            if (typeof clampCoinLogo === 'function') {
+              const fillZone = !window.__restoringUploads;
+              setTimeout(function () { clampCoinLogo(face, fillZone); }, 80);
+              if (limg) limg.addEventListener('load', function () { clampCoinLogo(face, fillZone); }, { once: true });
+            }
+            // Mode « découpé à la forme » déjà actif : le nouveau visuel doit
+            // être détouré, sinon la pièce prendrait la forme de son rectangle.
+            const inDecoupe = document.querySelector('.coin-disc.shape-decoupe');
+            if (inDecoupe && !window.__restoringUploads &&
+                typeof window.applyDecoupeShape === 'function') {
+              setTimeout(function () { window.applyDecoupeShape(); }, 120);
+            }
           }
 
           // Afficher le logo recto aussi sur la vue de côté (aperçu)
@@ -4509,6 +4500,14 @@
           const face = zone === 'flag-recto' ? 'recto' : 'verso';
           const dragLogo = document.getElementById('flag-logo-' + face);
           if (dragLogo) dragLogo.style.display = 'block';
+          // Le visuel uploadé garde sa taille par défaut : on le ramène dans la
+          // zone imprimable (la contrainte du drag ne joue qu'au déplacement).
+          // Différé : l'image doit être décodée pour connaître sa hauteur réelle.
+          if (typeof clampFlagLogo === 'function') {
+            setTimeout(function () { clampFlagLogo(face); }, 80);
+            const fimg = dragLogo && dragLogo.querySelector('.flag-design-img');
+            if (fimg) fimg.addEventListener('load', function () { clampFlagLogo(face); }, { once: true });
+          }
 
           // Afficher le bouton Supprimer
           const flagRemoveBtn = document.getElementById('flag-remove-' + face);
@@ -4558,6 +4557,7 @@
           }
           const rcS = document.getElementById('rc-sleeves');
           if (rcS) rcS.style.display = 'flex';
+          if (typeof updateSleeveSurcharge === 'function') updateSleeveSurcharge();
 
           // Placement auto dans la zone de la manche concernée.
           placeLogoInZone(zone);
@@ -4702,6 +4702,8 @@
         const slSrc = document.getElementById('isl')?.src;
         const srSrc = document.getElementById('isr')?.src;
         if (!slSrc && !srSrc) document.getElementById('rc-sleeves').style.display = 'none';
+        // Le supplément suit le nombre de manches restantes.
+        if (typeof updateSleeveSurcharge === 'function') updateSleeveSurcharge();
       }
       // Mettre à jour l'aperçu temps réel de la vignette récap (logo cœur)
       updateRecapThumbLogo();
@@ -4746,6 +4748,133 @@
 
     /* Passe la zone pointillée en mode HORIZONTAL (bandeau) pour le texte, ou
        la remet dans sa forme d'origine. Mémorise le style d'origine. */
+    /* ── Supplément « personnalisation manches » ──────────────────────────
+       Option payante. Le tarif définitif viendra de la grille fournie par
+       l'atelier : brancher ici window.PRICES.sleeve (servi par GET /api/pricing)
+       dès qu'il sera renseigné côté backend. La valeur ci-dessous n'est qu'un
+       repli d'affichage, pour que l'option soit visiblement payante. */
+    var SLEEVE_PRICE_FALLBACK = 4;
+
+    /** Prix unitaire du supplément par manche personnalisée. */
+    function sleeveUnitPrice() {
+      var p = (window.PRICES || {}).sleeve;
+      var v = Number(p);
+      return isNaN(v) || v <= 0 ? SLEEVE_PRICE_FALLBACK : v;
+    }
+
+    /** Nombre de manches personnalisées (0, 1 ou 2). */
+    function sleeveCount() {
+      return ['sl', 'sr'].filter(function (z) {
+        var el = document.getElementById('logo-' + z);
+        var img = el && el.querySelector('img');
+        return img && img.getAttribute('src');
+      }).length;
+    }
+
+    /* Option manches activée par le client (bascule). Persistée pour survivre
+       à un rechargement, comme le reste du design. */
+    function sleeveOptOn() {
+      try { return sessionStorage.getItem('conf_sleeve_opt') === '1'; } catch (e) { return false; }
+    }
+    function setSleeveOpt(on) {
+      try { sessionStorage.setItem('conf_sleeve_opt', on ? '1' : '0'); } catch (e) {}
+    }
+
+    /* Active/désactive l'option payante. En la désactivant, on retire les
+       logos déjà posés : laisser un visuel sur une prestation non facturée
+       produirait une commande que l'atelier ne saurait pas honorer. */
+    function toggleSleeveOption() {
+      var on = !sleeveOptOn();
+      if (!on && sleeveCount() > 0) {
+        confConfirm('Désactiver l’option retirera les logos déjà placés sur les manches.',
+          { icon: 'warning', title: 'Retirer la personnalisation ?',
+            confirmText: 'Retirer', cancelText: 'Annuler' })
+          .then(function (ok) {
+            if (!ok) return;
+            ['sl', 'sr'].forEach(function (z) { if (typeof rmUp === 'function') rmUp(z); });
+            setSleeveOpt(false);
+            applySleeveOption();
+          });
+        return;
+      }
+      setSleeveOpt(on);
+      applySleeveOption();
+    }
+    window.toggleSleeveOption = toggleSleeveOption;
+
+    /* Reflète l'état de l'option dans l'interface (bascule + repli du corps). */
+    function applySleeveOption() {
+      var on = sleeveOptOn();
+      var card = document.getElementById('slv-opt');
+      var row = document.getElementById('slv-toggle-row');
+      var body = document.getElementById('slv-body');
+      if (card) card.classList.toggle('on', on);
+      if (row) row.setAttribute('aria-expanded', on ? 'true' : 'false');
+      if (body) body.style.display = on ? '' : 'none';
+      updateSleeveSurcharge();
+      updateTotalPrice(); // Met à jour le prix total
+    }
+    window.applySleeveOption = applySleeveOption;
+
+    /* Met à jour l'indication de prix (badge + ligne du récap).
+       Appelée à chaque ajout/retrait de logo manche. */
+    function updateSleeveSurcharge() {
+      var unit = sleeveUnitPrice();
+      var n = sleeveCount();
+
+      // Met à jour le badge de prix dans l'option
+      var badge = document.getElementById('slv-price-badge');
+      if (badge) {
+        if (n > 0) {
+          // Si des manches sont personnalisées, affiche le total
+          badge.textContent = '+ ' + window.formatPrix(unit * n);
+        } else {
+          // Sinon affiche le prix unitaire
+          badge.textContent = '+ ' + window.formatPrix(unit) + '/manche';
+        }
+      }
+
+      var qty = document.getElementById('rc-sleeves-qty');
+      if (qty) qty.textContent = n > 1 ? '×' + n : '';
+
+      var extra = document.getElementById('rc-sleeves-extra');
+      if (extra) extra.textContent = n ? '+ ' + window.formatPrix(unit * n) : '';
+      
+      // Met à jour le prix total
+      updateTotalPrice();
+    }
+    window.updateSleeveSurcharge = updateSleeveSurcharge;
+
+    /* Met à jour le prix total affiché dans le récapitulatif.
+       Inclut le prix de base + supplément manches. */
+    function updateTotalPrice() {
+      var priceEl = document.getElementById('rp-price-val');
+      if (!priceEl) return;
+
+      // Prix de base du produit (sweatshirt, tshirt, etc.)
+      var basePrice = window.prixUnitaire ? window.prixUnitaire(currentProductType) : 45;
+      
+      // Supplément manches (uniquement si l'option est activée)
+      var sleeveExtra = 0;
+      if (sleeveOptOn()) {
+        var unit = sleeveUnitPrice();
+        var n = sleeveCount();
+        sleeveExtra = unit * n;
+      }
+
+      var total = basePrice + sleeveExtra;
+      
+      // Met à jour l'affichage
+      priceEl.innerHTML = window.formatPrix(total) + ' <span class="rp-pvat">TTC</span>';
+    }
+    window.updateTotalPrice = updateTotalPrice;
+
+    // Affiche le prix initial, puis le rafraîchit quand les prix
+    // réels arrivent du backend (événement émis par le fetch /api/pricing).
+    document.addEventListener('DOMContentLoaded', applySleeveOption);
+    document.addEventListener('conf:prices-loaded', updateSleeveSurcharge);
+    document.addEventListener('conf:prices-loaded', updateTotalPrice);
+
     /* Taille de police maximale du texte personnalisé (px CSS).
        Plafond atelier : au-delà, le rendu d'impression n'est plus garanti.
        Exposée sur window : conf-text-editor.js s'en sert pour borner l'état
@@ -4857,6 +4986,96 @@
       el.style.top = Math.max(minT, Math.min(maxT, top)) + '%';
     }
     window.clampTextToZone = clampTextToZone;
+
+    /* Ramène le logo d'une pièce DANS sa zone frappée.
+       La contrainte de conf-logo-drag.js ne joue qu'au déplacement et au
+       redimensionnement : un visuel fraîchement uploadé garde sa taille par
+       défaut (44 %) et peut donc déborder sur le listel. */
+    /* @param fill  true : le visuel est AGRANDI pour remplir la zone (upload).
+                    false/absent : il est seulement borné s'il déborde. */
+    function clampCoinLogo(face, fill) {
+      var faces = face ? [face] : ['recto', 'verso'];
+      var inset = (window.COIN_INSET != null ? window.COIN_INSET : 12);
+      faces.forEach(function (f) {
+        var logo = document.getElementById('coin-logo-' + f);
+        if (!logo || logo.style.display === 'none') return;
+        var disc = logo.closest('.coin-disc');
+        if (!disc || !disc.offsetWidth || !disc.offsetHeight) return;
+
+        var offY = (window.COIN_OFFSET_Y != null ? window.COIN_OFFSET_Y : 3);
+        var lo = inset, hi = 100 - inset;
+        var zone = hi - lo;
+        // Bornes verticales décalées vers le bas (voir COIN_OFFSET_Y).
+        var loY = lo + offY, hiY = hi + offY;
+        // Verso numéroté : on réserve le bas de la pièce au numéro, sinon un
+        // design descendant bas le recouvrirait.
+        if (disc.classList.contains('has-number')) {
+          hiY = Math.min(hiY, 100 - COIN_NUMBER_RESERVE);
+        }
+
+        var w = parseFloat(logo.style.width) || 44;
+        if (fill) {
+          // Occupe toute la largeur de la zone ; la hauteur suit le ratio et
+          // sera réduite juste après si l'image est plus haute que large.
+          w = zone;
+        }
+        w = Math.min(w, zone);
+        logo.style.width = w + '%';
+
+        // Hauteur réelle après application de la largeur (ratio de l'image).
+        var h = (logo.offsetHeight / disc.offsetHeight) * 100;
+        if (h > zone && h > 0) {
+          // Image plus haute que large : c'est la HAUTEUR qui borne (contain).
+          w = w * (zone / h);
+          logo.style.width = w + '%';
+          h = (logo.offsetHeight / disc.offsetHeight) * 100;
+        }
+
+        // La vue de côté reprend l'échelle du logo recto : sans cette synchro,
+        // la tranche resterait à la taille du visuel précédent.
+        if (f === 'recto' && typeof window.syncCoinCote === 'function') {
+          window.syncCoinCote(logo);
+        }
+
+        if (fill) {
+          // Centré dans la zone.
+          logo.style.left = (lo + (zone - w) / 2) + '%';
+          logo.style.top = (loY + (zone - h) / 2) + '%';
+          return;
+        }
+
+        var l = parseFloat(logo.style.left);
+        var t = parseFloat(logo.style.top);
+        if (isNaN(l)) l = lo;
+        if (isNaN(t)) t = loY;
+        logo.style.left = Math.max(lo, Math.min(hi - w, l)) + '%';
+        logo.style.top = Math.max(loY, Math.min(hiY - h, t)) + '%';
+      });
+    }
+    window.clampCoinLogo = clampCoinLogo;
+
+    /* Ramène le logo du patch DANS sa zone imprimable.
+       La contrainte de conf-logo-drag.js ne joue qu'au déplacement et au
+       redimensionnement : un visuel fraîchement uploadé garde sa taille par
+       défaut (70 %) et déborderait de la forme.
+       Les bornes suivent la forme choisie — le rectangle est plus large que
+       haut, ses marges verticales sont donc plus fortes. */
+    /* @param fill  true : le visuel est AGRANDI pour occuper toute la zone
+                    (upload / changement de forme) — le design s'intègre seul,
+                    sans placement manuel. false : simple bornage. */
+    /* Le design du patch remplit toute la forme et est rogné par .patch-body
+       (overflow:hidden + clip-path) : il n'y a plus de placement à faire.
+       La fonction est conservée pour les appelants existants et se contente de
+       remettre le logo en pleine forme — un design déplacé lors d'une session
+       précédente est ainsi recadré. */
+    function clampPatchLogo() {
+      var logo = document.getElementById('patch-logo');
+      if (!logo || logo.style.display === 'none') return;
+      logo.style.left = '0%';
+      logo.style.top = '0%';
+      logo.style.width = '100%';
+    }
+    window.clampPatchLogo = clampPatchLogo;
 
     /* ── Coins functions ── */
     function selectShape(el) {
@@ -4988,17 +5207,25 @@
       // Pour l'instant, juste changer l'apparence de l'onglet
     }
 
-    /* ── Quantity management for Coins ── */
+    /* ── Quantity management for Coins ──
+       Le minimum est LU sur l'attribut `min` du champ, jamais codé en dur :
+       ces fonctions servent aux patchs (min 10) comme aux coins (min 50), et
+       une valeur fixe serait fausse pour l'un des deux. */
+    function coinMinQty() {
+      const input = document.getElementById('coin-qty-input');
+      const m = input ? parseInt(input.getAttribute('min'), 10) : NaN;
+      return isNaN(m) || m < 1 ? 1 : m;
+    }
+
     function changeQty(delta) {
       const input = document.getElementById('coin-qty-input');
       if (!input) return;
-      
-      let currentQty = parseInt(input.value) || 20;
+
+      const min = coinMinQty();
+      let currentQty = parseInt(input.value) || min;
       let newQty = currentQty + delta;
-      
-      // Minimum 20 unités
-      if (newQty < 20) newQty = 20;
-      
+      if (newQty < min) newQty = min;
+
       input.value = newQty;
       updateCoinPrice(newQty);
     }
@@ -5006,15 +5233,14 @@
     function handleQtyInput() {
       const input = document.getElementById('coin-qty-input');
       if (!input) return;
-      
-      let qty = parseInt(input.value) || 20;
-      
-      // Minimum 20 unités
-      if (qty < 20) {
-        qty = 20;
+
+      const min = coinMinQty();
+      let qty = parseInt(input.value) || min;
+      if (qty < min) {
+        qty = min;
         input.value = qty;
       }
-      
+
       updateCoinPrice(qty);
     }
 

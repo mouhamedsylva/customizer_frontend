@@ -118,6 +118,60 @@
       text-transform: uppercase; letter-spacing: .5px;
       margin-bottom: 2px; color: var(--black);
     }
+    /* ── Option tarifée (bascule) ──────────────────────────────────────────
+       Présente un supplément comme un choix désirable, pas comme un
+       avertissement : intitulé, prix, interrupteur. Le corps de la section
+       ne se déplie qu'une fois l'option activée. */
+    .opt-card {
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--white); overflow: hidden; transition: .15s;
+    }
+    .opt-card.on { border-color: var(--black); background: #fafafa; }
+    .opt-row {
+      width: 100%; display: flex; align-items: center; gap: 10px;
+      padding: 10px; background: none; border: none; cursor: pointer;
+      font-family: inherit; text-align: left;
+    }
+    .opt-txt { flex: 1; min-width: 0; }
+    .opt-name {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      font-size: 11px; font-weight: 600; color: var(--black);
+    }
+    
+    /* Badge de prix : design professionnel et clair */
+    .opt-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 6px; border-radius: 4px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; font-size: 9px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase;
+      box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
+      white-space: nowrap;
+    }
+    .opt-card.on .opt-badge {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      box-shadow: 0 1px 3px rgba(17, 153, 142, 0.3);
+    }
+    
+    .opt-desc {
+      display: block; margin-top: 2px;
+      font-size: 9px; color: var(--faint);
+      font-variant-numeric: tabular-nums;
+    }
+    .opt-card.on .opt-desc { color: var(--black); }
+    /* Interrupteur : affordance universelle « activable », sans texte. */
+    .opt-switch {
+      flex: 0 0 34px; width: 34px; height: 20px; border-radius: 10px;
+      background: #d4d4d4; position: relative; transition: background .18s;
+    }
+    .opt-card.on .opt-switch { background: var(--black); }
+    .opt-knob {
+      position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; transition: transform .18s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    }
+    .opt-card.on .opt-knob { transform: translateX(14px); }
     .sec-sub {
       font-size: 10px; color: var(--faint); margin-bottom: 8px;
     }
@@ -636,6 +690,14 @@
     .ri-thumb img { width: 100%; height: 100%; object-fit: contain; }
     .ri-info { flex: 1; min-width: 0; }
     .ri-name { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+    /* Quantité de manches (×2) accolée au libellé. */
+    .ri-qty { font-size: 10px; font-weight: 500; color: var(--faint); }
+    /* Montant du supplément, aligné à droite de la ligne de récap. */
+    .ri-extra {
+      margin-left: auto; align-self: center;
+      font-size: 11px; font-weight: 700; color: var(--black);
+      font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
     .ri-det  { font-size: 10px; color: var(--muted); }
     .ri-ok   { font-size: 10px; color: #16a34a; font-weight: 600; }
 

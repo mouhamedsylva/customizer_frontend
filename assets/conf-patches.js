@@ -250,12 +250,21 @@ function updateCoinNumber() {
   const input = document.getElementById('coin-num-start');
   const val = input ? String(input.value || '').trim() : '';
 
-  if (type === 'recto-verso-num' && val) {
+  const on = (type === 'recto-verso-num' && !!val);
+  if (on) {
     numEl.textContent = val;
     numEl.style.display = 'block';
   } else {
     numEl.style.display = 'none';
   }
+
+  // Marque le disque verso : la zone du logo y est raccourcie pour laisser la
+  // place au numéro (voir .coin-disc.has-number dans conf-patches.css), sinon
+  // un design descendant bas le recouvrirait.
+  const versoDisc = document.getElementById('coin-disc-verso');
+  if (versoDisc) versoDisc.classList.toggle('has-number', on);
+  // Recontraint le logo verso à la nouvelle zone.
+  if (typeof window.clampCoinLogo === 'function') window.clampCoinLogo('verso');
 }
 
 // Met à jour le numéro en temps réel quand on modifie le champ "Numéro de départ".
@@ -264,17 +273,99 @@ document.addEventListener('input', function (e) {
 });
 
 // Forme
+/* L'image a-t-elle un fond transparent ?
+   On échantillonne les 4 coins et les milieux de bords : un visuel détouré y
+   est transparent. Suffisant et instantané — inutile de parcourir tous les
+   pixels pour répondre à « le fond est-il opaque ? ». */
+function hasAlphaBackground(src) {
+  return new Promise(function (resolve) {
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function () {
+      try {
+        var c = document.createElement('canvas');
+        var n = 40;                       // miniature : l'échantillon suffit
+        c.width = n; c.height = n;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, n, n);
+        var pts = [[0,0],[n-1,0],[0,n-1],[n-1,n-1],
+                   [(n>>1),0],[(n>>1),n-1],[0,(n>>1)],[n-1,(n>>1)]];
+        var transparent = 0;
+        pts.forEach(function (p) {
+          if (ctx.getImageData(p[0], p[1], 1, 1).data[3] < 24) transparent++;
+        });
+        // Majorité des bords transparents -> l'image est détourée.
+        resolve(transparent >= 5);
+      } catch (e) {
+        // Canvas « tainted » (image cross-origin sans CORS) : on n'insiste pas.
+        resolve(true);
+      }
+    };
+    img.onerror = function () { resolve(true); };
+    img.src = src;
+  });
+}
+
+/* Passe la pièce en mode « découpé à la forme » : le disque s'efface et le
+   visuel détouré devient la pièce. Si le fond n'est pas transparent, propose
+   le détourage automatique (outil déjà présent : conf-bgremoval2.js). */
+async function applyDecoupeShape() {
+  var faces = ['recto', 'verso'];
+  for (var i = 0; i < faces.length; i++) {
+    var f = faces[i];
+    var logo = document.getElementById('coin-logo-' + f);
+    var img = logo && logo.querySelector('img');
+    var src = img && img.getAttribute('src');
+    if (!src || logo.style.display === 'none') continue;
+
+    var ok = await hasAlphaBackground(src);
+    if (ok) continue;
+
+    // Fond opaque : sans détourage, la « découpe » serait un rectangle.
+    if (window.ConfBgRemoval && typeof window.ConfBgRemoval.ask === 'function') {
+      var cleaned = await window.ConfBgRemoval.ask(src);
+      if (cleaned && cleaned !== src) {
+        img.src = cleaned;
+        if (typeof window.saveUpload === 'function') window.saveUpload('coin-' + f, cleaned);
+        if (f === 'recto') {
+          var cote = document.getElementById('coin-cote-logo');
+          if (cote) cote.src = cleaned;
+        }
+      }
+    } else if (typeof confAlert === 'function') {
+      confAlert(
+        'Le design ' + f + ' a un fond opaque : la découpe suivra son rectangle. ' +
+        'Utilisez un PNG ou SVG à fond transparent pour un détourage net.',
+        { icon: 'info', title: 'Fond non transparent' }
+      );
+    }
+  }
+}
+window.applyDecoupeShape = applyDecoupeShape;
+
 function selectCoinShape(el) {
   document.querySelectorAll('.coin-shape-card').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
 
   const shape = el.getAttribute('data-shape');
+  const isDecoupe = (shape === 'decoupe');
   document.querySelectorAll('.coin-disc').forEach(d => {
-    d.classList.toggle('shape-decoupe', shape === 'decoupe');
+    d.classList.toggle('shape-decoupe', isDecoupe);
+  });
+  // Marque la scène : la vue de côté (tranche d'un disque rond) est masquée
+  // en mode découpé — voir .coin-stage.shape-decoupe dans conf-patches.css.
+  document.querySelectorAll('.coin-stage').forEach(s => {
+    s.classList.toggle('shape-decoupe', isDecoupe);
   });
 
+  // En mode découpé, le visuel EST la pièce : il doit l'occuper entièrement.
+  if (isDecoupe && typeof window.clampCoinLogo === 'function') {
+    window.clampCoinLogo(null, true);
+  }
+  if (isDecoupe) applyDecoupeShape();
+
   const recapShape = document.getElementById('coin-recap-shape');
-  if (recapShape) recapShape.textContent = (shape === 'decoupe') ? 'Découpé à la forme' : 'Rond';
+  if (recapShape) recapShape.textContent = isDecoupe ? 'Découpé à la forme' : 'Rond';
 }
 
 // Taille — gère COINS (.coin-size-card, mm) ET PATCHS (.coins-size-card, cm).

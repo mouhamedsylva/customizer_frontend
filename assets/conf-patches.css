@@ -413,6 +413,29 @@
   justify-content: center;
 }
 
+/* ── Zone imprimable de la pièce (INVISIBLE) ────────────────────────────
+   L'élément matérialise les bornes du motif — le pourtour est occupé par le
+   listel, bord relevé de la frappe — mais il n'est PAS montré au client :
+   l'aperçu de la pièce doit rester net. La contrainte, elle, reste appliquée
+   au logo (COIN_INSET / COIN_OFFSET_Y dans conf-logo-drag.js) au déplacement,
+   au redimensionnement et à l'upload.
+   Pour réafficher le repère en développement : passer opacity à 1. */
+.coin-safe-zone {
+  position: absolute;
+  /* = COIN_INSET, décalé de COIN_OFFSET_Y vers le bas : le rendu 3D donne à
+     la pièce une épaisseur visible en partie basse, et un motif centré sur
+     l'image paraît trop haut sur la frappe. */
+  left: 8%;
+  right: 8%;
+  top: 9.5%;                     /* 8 + 1.5 (COIN_OFFSET_Y) */
+  bottom: 6.5%;                  /* 8 − 1.5 */
+  border: 1px dashed rgba(220, 38, 38, .6);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;                    /* au-dessus de l'image (0), sous le logo (3) */
+  opacity: 0;                    /* masqué : repère technique, pas un guide client */
+}
+
 /* Image de base de la pièce */
 .coin-base-img {
   position: absolute;
@@ -425,15 +448,29 @@
   transition: filter 0.25s ease;
 }
 
-.coin-disc.shape-decoupe {
-  border-radius: 18% 18% 18% 18% / 18% 18% 18% 18%;
-  clip-path: polygon(
-    50% 0%, 62% 8%, 76% 6%, 80% 20%, 93% 26%, 90% 40%, 100% 50%,
-    90% 60%, 93% 74%, 80% 80%, 76% 94%, 62% 92%, 50% 100%, 38% 92%,
-    24% 94%, 20% 80%, 7% 74%, 10% 60%, 0% 50%, 10% 40%, 7% 26%,
-    20% 20%, 24% 6%, 38% 8%
-  );
+/* ── Découpé à la forme ─────────────────────────────────────────────────
+   La pièce épouse le contour du visuel fourni : le disque métallique
+   disparaît, seul le design détouré reste, avec la finition métallique
+   appliquée dessus. Suppose une image à canal alpha (PNG/SVG transparent) ;
+   à défaut, le configurateur propose le détourage automatique.
+
+   Le clip-path « dents de scie » de l'ancienne version est retiré : il
+   imposait une forme arbitraire, sans rapport avec le design. */
+.coin-disc.shape-decoupe .coin-base-img {
+  opacity: 0;                    /* le disque s'efface */
 }
+/* Le visuel occupe la pièce entière et porte l'effet métal. */
+.coin-disc.shape-decoupe .coin-logo {
+  filter: var(--coin-finish-filter, none)
+          drop-shadow(0 2px 3px rgba(0,0,0,.28));
+}
+/* Sans disque, le repère de zone n'a plus de sens. */
+.coin-disc.shape-decoupe .coin-safe-zone { display: none; }
+
+/* La vue de côté montre la tranche d'un disque rond : hors sujet dès que la
+   pièce épouse le contour du design. La colonne entière est retirée, sinon
+   un espace vide subsisterait entre RECTO et VERSO. */
+.coin-stage.shape-decoupe .coin-view[data-view="cote"] { display: none; }
 
 /* Vue de côté (tranche) — image de pièce réelle */
 .coin-edge {
@@ -689,3 +726,13 @@
 }
 .qm-success h2 { font-size: 20px; margin-bottom: 8px; }
 .qm-success p { font-size: 14px; color: #666; margin-bottom: 20px; }
+
+/* ── Finitions : exposées en variable ───────────────────────────────────
+   Le même filtre sert au disque (.coin-base-img) et, en mode « découpé à la
+   forme », au visuel détouré qui remplace le disque. Déclarer la valeur une
+   fois par finition évite que les deux rendus divergent. */
+.coin-disc.finish-or     { --coin-finish-filter: sepia(0.75) saturate(2.2) hue-rotate(-8deg) brightness(1.08); }
+.coin-disc.finish-argent { --coin-finish-filter: grayscale(0.15) brightness(1.12) contrast(1.02); }
+.coin-disc.finish-nickel { --coin-finish-filter: grayscale(1) brightness(0.45) contrast(1.2); }
+.coin-disc.finish-bronze { --coin-finish-filter: sepia(0.85) saturate(1.8) hue-rotate(-18deg) brightness(0.92); }
+.coin-disc.finish-cuivre { --coin-finish-filter: sepia(0.9) saturate(2.6) hue-rotate(-28deg) brightness(0.98); }

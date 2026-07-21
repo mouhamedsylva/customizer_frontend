@@ -770,6 +770,22 @@
 .flag-logo {
   z-index: 4;
 }
+
+/* ── Zone imprimable (INVISIBLE) ─────────────────────────────────────────
+   L'élément est conservé — il matérialise les bornes que syncFlagSafeZones()
+   calcule en pixels sur l'image affichée, et sert de repère de débogage — mais
+   il n'est PAS montré au client : l'aperçu du drapeau doit rester net.
+   La contrainte, elle, reste bien appliquée au logo (FLAG_INSET / FLAG_INSET_Y
+   dans conf-logo-drag.js) au déplacement, au redimensionnement et à l'upload.
+   Pour réafficher le repère en développement : passer opacity à 1. */
+.flag-safe-zone {
+  position: absolute;
+  border: 1px dashed rgba(220, 38, 38, .55);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 3;                    /* sous le logo (4), au-dessus du fond */
+  opacity: 0;                    /* masqué : repère technique, pas un guide client */
+}
 .flag-logo .flag-design-img {
   width: 100%;
   height: auto;
@@ -878,3 +894,8 @@
 /* Le design uploadé doit rester au-dessus du calque couleur. */
 .flag-logo { z-index: 3; }
 .flag-design-img { position: relative; z-index: 2; }
+
+/* Finition « sans anneaux » : aucun œillet sur le drapeau codé (vue 2D).
+   Les images 3D, elles, portent (ou non) les anneaux selon le fichier
+   flag-{0an|2an|4an}-*.png sélectionné par refreshFlagImages(). */
+.flag-wave.grommets-0 .flag-grommet { display: none; }

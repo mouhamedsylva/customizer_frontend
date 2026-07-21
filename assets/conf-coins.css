@@ -370,17 +370,26 @@
 }
 
 /* Numéro gravé sur le verso (type "recto verso numéroté") */
+/* Numérotation du verso : discrète, en bas de la pièce.
+   Auparavant centrée à 40px, elle occupait le champ réservé au design.
+   Position et taille relatives au disque (%, em) pour rester justes quel que
+   soit le diamètre choisi (25 à 50 mm) ou le zoom. */
 .coin-verso-number {
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-family: 'Courier New', monospace;
-  font-weight: 800;
-  font-size: 40px;
-  letter-spacing: 0.1em;
-  color: rgba(30, 25, 15, 0.75);
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  top: auto;
+  bottom: 12%;                   /* dans la frappe, au-dessus du listel */
+  transform: translateX(-50%);
+  /* Courier New n'a que deux graisses (normale / bold) : au-delà de 700 le
+     rendu n'évolue plus. On passe donc sur une pile sans-serif, qui offre de
+     vraies graisses lourdes, et on épaissit le trait au-delà du bold. */
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: rgba(20, 16, 8, 0.92);
+  -webkit-text-stroke: 0.4px currentColor;   /* densifie au-delà du 900 */
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.45);
   pointer-events: none;
   z-index: 3;
   line-height: 1;
@@ -1419,3 +1428,101 @@
 /* Le logo est positionné DIRECTEMENT dans #coins-canvas, AU-DESSUS de l'image.
    Il reste entier et est simplement borné à l'intérieur de la forme (clamp JS). */
 #coins-canvas > .patch-logo { position: absolute; z-index: 5; }
+
+/* ── Zone imprimable du patch ───────────────────────────────────────────
+   La forme du patch vient de l'image PNG, pas du CSS : le repère est donc
+   dessiné par forme, en reprenant la géométrie de chaque visuel.
+   Marge de 10 % pour la couture / bordure du patch.
+   Indicatif : pointer-events none pour ne pas gêner le glisser-déposer.
+   Pour le masquer : passer opacity à 0. */
+.patch-safe-zone {
+  position: absolute;
+  /* L'image du patch porte un padding de 13% (.patch-shape-img) : la zone
+     démarre juste à l'intérieur pour épouser le bord du visuel. */
+  inset: 14%;
+  border: 1px dashed rgba(220, 38, 38, .6);
+  pointer-events: none;
+  z-index: 1;                    /* au-dessus de l'image, sous le logo */
+}
+/* Rond */
+.coins-canvas-circle.shape-rond .patch-safe-zone { border-radius: 50%; }
+/* Carré : coins légèrement arrondis, comme le visuel. */
+.coins-canvas-circle.shape-carre .patch-safe-zone { border-radius: 5%; }
+/* Rectangle : le patch est plus large que haut. */
+.coins-canvas-circle.shape-rectangle .patch-safe-zone {
+  inset: 27% 14%;
+  border-radius: 4%;
+}
+/* Blason : contour relevé sur l'image réelle (patch-blason-*.png).
+   Bords verticaux jusqu'à ~40 % de la hauteur, puis courbe vers la pointe.
+   Un clip-path découperait la bordure au lieu de la tracer : on passe donc
+   par un SVG de fond, seule méthode fiable pour ce contour. */
+.coins-canvas-circle.shape-blason .patch-safe-zone {
+  border: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M1 1 L99 1 L99 40 C99 62 82 84 50 99 C18 84 1 62 1 40 Z' fill='none' stroke='rgb(220,38,38)' stroke-opacity='0.6' stroke-width='1.4' stroke-dasharray='3 3' vector-effect='non-scaling-stroke'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PATCH VECTORIEL
+   La forme n'est plus une image PNG : elle est dessinée en CSS. Avantages :
+   nette à tout zoom, aucune image à produire par forme, et surtout elle peut
+   ROGNER le design (overflow:hidden + clip-path) pour qu'il épouse exactement
+   la silhouette au lieu de déborder.
+   ════════════════════════════════════════════════════════════════════════ */
+.patch-body {
+  position: absolute;
+  inset: 0;
+  background: #1a1a1a;           /* fond du patch, visible tant qu'il est vide */
+  overflow: hidden;              /* rogne le design à la forme */
+  z-index: 1;
+}
+
+/* — Rond — */
+.coins-canvas-circle.shape-rond .patch-body { border-radius: 50%; }
+.coins-canvas-circle.shape-rond .patch-safe-zone { border-radius: 50%; }
+
+/* — Carré : angles légèrement adoucis, comme un patch cousu — */
+.coins-canvas-circle.shape-carre .patch-body { border-radius: 6%; }
+.coins-canvas-circle.shape-carre .patch-safe-zone { border-radius: 5%; }
+
+/* — Rectangle : le canevas est carré, la forme occupe une bande centrale — */
+.coins-canvas-circle.shape-rectangle .patch-body {
+  inset: 18% 0;
+  border-radius: 5%;
+}
+.coins-canvas-circle.shape-rectangle .patch-safe-zone {
+  inset: 27% 14%;
+  border-radius: 4%;
+}
+
+/* — Blason : silhouette relevée sur le produit réel (montants verticaux
+     jusqu'à ~40 % de la hauteur, puis courbe vers la pointe). — */
+.coins-canvas-circle.shape-blason .patch-body {
+  border-radius: 0;
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 40%, 97% 55%, 89% 70%, 75% 84%, 50% 100%,
+    25% 84%, 11% 70%, 3% 55%, 0% 40%
+  );
+}
+
+/* Le logo remplit la forme ; ce qui dépasse est rogné par .patch-body. */
+.patch-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;             /* couvre toute la forme, sans déformer */
+  display: block;
+}
+
+/* Le design remplit toute la forme : plus rien à déplacer ni à redimensionner.
+   On neutralise le curseur et la poignée pour ne pas suggérer une interaction
+   qui n'a plus d'effet (la contrainte de conf-logo-drag.js reste inoffensive). */
+.patch-logo {
+  position: absolute;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100%;
+  cursor: default;
+}
+.patch-logo .logo-resize { display: none !important; }
