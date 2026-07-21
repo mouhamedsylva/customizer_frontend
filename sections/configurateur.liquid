@@ -451,19 +451,26 @@
         <!-- 4. Texte : bouton -> champ inline -> panneau d'édition (façon CustomInk) -->
         <div class="sec" id="txt-sec">
           <div class="sec-title">4. Texte personnalisé</div>
-          <div class="sec-sub">Ajoutez un texte sur la vue affichée (face ou dos)</div>
+          <div class="sec-sub">Ajoutez un texte sur le vêtement</div>
 
-          <!-- État 1 : boutons. En vue de face, deux emplacements (cœur gauche
-               et poitrine droite du porteur) ; en vue de dos, un seul. La zone
-               est transmise explicitement à startTextInline(). -->
+          <!-- État 1 : un seul bouton. L'emplacement est choisi à l'étape
+               suivante, ce qui évite trois boutons de poids égal pour ce qui
+               n'est qu'une seule action. -->
           <div id="txt-add-btns" class="txt-add-btns">
-            <button class="txt-add-btn" onclick="startTextInline('f')">✏️ Texte cœur (gauche)</button>
-            <button class="txt-add-btn" onclick="startTextInline('fr')">✏️ Texte poitrine droite</button>
-            <button class="txt-add-btn" onclick="startTextInline('b')">✏️ Texte dos</button>
+            <button class="txt-add-btn" onclick="startTextInline()">✏️ Ajouter un texte</button>
           </div>
 
-          <!-- État 2 : champ de saisie inline (remplace le bouton) -->
+          <!-- État 2 : emplacement + saisie (remplacent le bouton). -->
           <div class="txt-inline" id="txt-inline" style="display:none">
+            <div class="txt-where-lbl">Emplacement <span class="txt-where-hint">(côtés du porteur)</span></div>
+            <div class="txt-where" id="txt-where">
+              <!-- Côtés nommés du point de vue du PORTEUR (comme les manches).
+                   Les deux options poitrine portent leur côté : « Cœur » seul
+                   n'indiquait pas qu'il s'agit du côté gauche. -->
+              <button type="button" class="txt-where-opt on" data-zone="f"  onclick="setTextZoneChoice(this)" title="Côté cœur, à gauche du porteur">Cœur (g.)</button>
+              <button type="button" class="txt-where-opt"    data-zone="fr" onclick="setTextZoneChoice(this)" title="Poitrine, à droite du porteur">Poitrine (d.)</button>
+              <button type="button" class="txt-where-opt"    data-zone="b"  onclick="setTextZoneChoice(this)" title="Dos du vêtement">Dos</button>
+            </div>
             <input type="text" id="txt-inline-input" maxlength="40" placeholder="Saisissez votre texte…">
             <div class="txt-inline-acts">
               <button class="txt-inline-btn sec" onclick="cancelTextInline()">Annuler</button>
@@ -489,51 +496,51 @@
           </div>
         </div>
 
-        <!-- 4. Logo cœur -->
+        <!-- 4. Logos poitrine : les deux emplacements côte à côte, disposés
+             comme sur le vêtement vu de face (poitrine droite du porteur à
+             gauche de l'écran, cœur à droite). Même grille que les manches. -->
         <div class="sec">
-          <div class="sec-title">5. Logo Cœur</div>
-          <div class="sec-sub">Ajoutez un logo sur le cœur (côté gauche)</div>
-          <div class="uz" id="uz-f" onclick="document.getElementById('uf').click()">
-            <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
-            <p><strong>Cliquez ou glissez votre logo ici</strong><br>PNG, JPG, SVG (max. 5Mo)</p>
-          </div>
-          <input type="file" id="uf" style="display:none" accept="image/*" onchange="doUpload(event,'f')">
-          <div class="uprev" id="pf">
-            <img id="if" src="" alt="" style="height:28px">
-          </div>
-          <div class="uprev-lbl" id="lf">
-            <span>Aperçu du logo</span>
-            <span class="uprev-actions">
-              <button class="ctr" onclick="centerLogo('f')" title="Recentrer le logo dans sa zone">⊹ Centrer</button>
-              <button class="rmv" onclick="rmUp('f')">🗑 Supprimer</button>
-            </span>
+          <div class="sec-title">5. Logos Poitrine</div>
+          <div class="sec-sub">Un logo de chaque côté (facultatif)</div>
+          <div class="slvg" style="margin-top:6px">
+            <div>
+              <label>Poitrine droite</label>
+              <div class="uz" id="uz-fr" style="padding:5px 4px;flex-direction:column;gap:3px" onclick="document.getElementById('ufr').click()">
+                <div class="uz-ico" style="width:18px;height:18px;margin:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
+                <p style="font-size:8px;text-align:center">Cliquez ou glissez<br><em>PNG, JPG, SVG</em></p>
+              </div>
+              <input type="file" id="ufr" style="display:none" accept="image/*" onchange="doUpload(event,'fr')">
+              <div class="uprev" id="pfr"><img id="ifr" src="" alt="" style="height:24px"></div>
+              <div class="uprev-lbl" id="lfr">
+                <span>Aperçu</span>
+                <span class="uprev-actions">
+                  <button class="ctr" onclick="centerLogo('fr')" title="Recentrer le logo dans sa zone">⊹</button>
+                  <button class="rmv" onclick="rmUp('fr')">🗑</button>
+                </span>
+              </div>
+            </div>
+            <div>
+              <label>Cœur (gauche)</label>
+              <div class="uz" id="uz-f" style="padding:5px 4px;flex-direction:column;gap:3px" onclick="document.getElementById('uf').click()">
+                <div class="uz-ico" style="width:18px;height:18px;margin:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
+                <p style="font-size:8px;text-align:center">Cliquez ou glissez<br><em>PNG, JPG, SVG</em></p>
+              </div>
+              <input type="file" id="uf" style="display:none" accept="image/*" onchange="doUpload(event,'f')">
+              <div class="uprev" id="pf"><img id="if" src="" alt="" style="height:24px"></div>
+              <div class="uprev-lbl" id="lf">
+                <span>Aperçu</span>
+                <span class="uprev-actions">
+                  <button class="ctr" onclick="centerLogo('f')" title="Recentrer le logo dans sa zone">⊹</button>
+                  <button class="rmv" onclick="rmUp('f')">🗑</button>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- 5 bis. Logo poitrine droite (du porteur) -->
+        <!-- 5. Logo dos -->
         <div class="sec">
-          <div class="sec-title">6. Logo Poitrine droite</div>
-          <div class="sec-sub">Ajoutez un second logo, côté droit du porteur</div>
-          <div class="uz" id="uz-fr" onclick="document.getElementById('ufr').click()">
-            <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
-            <p><strong>Cliquez ou glissez votre logo ici</strong><br>PNG, JPG, SVG (max. 5Mo)</p>
-          </div>
-          <input type="file" id="ufr" style="display:none" accept="image/*" onchange="doUpload(event,'fr')">
-          <div class="uprev" id="pfr">
-            <img id="ifr" src="" alt="" style="height:28px">
-          </div>
-          <div class="uprev-lbl" id="lfr">
-            <span>Aperçu du logo</span>
-            <span class="uprev-actions">
-              <button class="ctr" onclick="centerLogo('fr')" title="Recentrer le logo dans sa zone">⊹ Centrer</button>
-              <button class="rmv" onclick="rmUp('fr')">🗑 Supprimer</button>
-            </span>
-          </div>
-        </div>
-
-        <!-- 6. Logo dos -->
-        <div class="sec">
-          <div class="sec-title">7. Logo Dos</div>
+          <div class="sec-title">6. Logo Dos</div>
           <div class="sec-sub">Ajoutez un logo au dos de l'article</div>
           <div class="uz" onclick="document.getElementById('ub').click()">
             <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
@@ -2090,7 +2097,7 @@
         var img = logo ? logo.querySelector('img') : null;
         var hasLogo = logo && logo.style.display !== 'none' && img && img.getAttribute('src');
         // La zone se masque aussi si un TEXTE est présent (face 'f' / dos 'b').
-        var txtEl = (zone === 'f' || zone === 'b') ? document.getElementById('text-' + zone) : null;
+        var txtEl = (zone === 'f' || zone === 'fr' || zone === 'b') ? document.getElementById('text-' + zone) : null;
         var hasText = txtEl && txtEl.style.display !== 'none' &&
           (txtEl.textContent.trim() || txtEl.querySelector('svg'));
         zoneEl.classList.toggle('filled', !!hasLogo || !!hasText);
@@ -4514,9 +4521,9 @@
         }
 
         // FACE : logo cœur et texte sont exclusifs. Ajouter un logo retire le texte.
-        if (zone === 'f') {
-          if (typeof removeText === 'function') removeText('f');
-          if (typeof setTextEnabled === 'function') setTextEnabled('f', false);
+        if (zone === 'f' || zone === 'fr') {
+          if (typeof removeText === 'function') removeText(zone);
+          if (typeof setTextEnabled === 'function') setTextEnabled(zone, false);
         }
 
         // Sidebar preview (textiles)
@@ -4561,19 +4568,21 @@
           // et le vêtement se mettrait à tourner tout seul.
         }
 
-        // Logo cœur déplaçable sur le produit (vue de face) + bascule auto vers la vue de face
-        if (zone === 'f') {
-          const logo = document.getElementById('logo-f');
+        // Logos poitrine déplaçables (vue de face) + bascule auto vers la face.
+        // 'f' = cœur (gauche du porteur), 'fr' = poitrine droite : même
+        // traitement, seul l'id du calque change.
+        if (zone === 'f' || zone === 'fr') {
+          const logo = document.getElementById('logo-' + zone);
           if (logo) {
             const limg = logo.querySelector('img');
             if (limg) {
               limg.src = src;
               // Placement auto dans la zone dès que l'image est chargée (ratio connu).
-              limg.onload = function () { placeLogoInZone('f'); };
+              limg.onload = function () { placeLogoInZone(zone); };
             }
             logo.style.display = 'block';
           }
-          placeLogoInZone('f');
+          placeLogoInZone(zone);
           // Aperçu temps réel dans la vignette récap
           updateRecapThumbLogo();
           // Basculer vers la vue de face pour positionner le logo
@@ -4683,10 +4692,10 @@
         }
       });
 
-      if (zone === 'f') {
-        document.getElementById('rc-front').style.display = 'none';
-        // Le logo cœur est retiré : réautoriser l'ajout de texte en face.
-        if (typeof setTextEnabled === 'function') setTextEnabled('f', true);
+      if (zone === 'f' || zone === 'fr') {
+        if (zone === 'f') document.getElementById('rc-front').style.display = 'none';
+        // Le logo est retiré : réautoriser l'ajout de texte sur CETTE zone.
+        if (typeof setTextEnabled === 'function') setTextEnabled(zone, true);
       }
       if (zone === 'b') document.getElementById('rc-back').style.display = 'none';
       if (zone === 'sl' || zone === 'sr') {
@@ -4717,27 +4726,21 @@
     }
     function setTextEnabled(zone, enabled) { refreshTextButton(); }
 
-    // Active/désactive le bouton « Ajouter un texte » selon la vue courante.
+    /* Active/désactive le bouton « Ajouter un texte » selon la vue courante.
+       Le bouton vit dans #txt-add-btns (un seul bouton + sélecteur
+       d'emplacement) ; #txt-add-btn est l'ancien id, conservé en repli.
+       Plus de désactivation liée au logo cœur : chaque emplacement est
+       indépendant, et l'exclusivité logo/texte se règle zone par zone au
+       moment de l'insertion. */
     function refreshTextButton() {
-      var btn = document.getElementById('txt-add-btn');
+      var btn = document.querySelector('#txt-add-btns .txt-add-btn') ||
+                document.getElementById('txt-add-btn');
       if (!btn) return;
       var layer = document.getElementById('logo-layer');
       var view = layer ? layer.getAttribute('data-view') : 'face';
-      if (view === 'cote') {
-        btn.disabled = true;
-        btn.title = 'Le texte n\'est pas disponible sur les manches';
-        return;
-      }
-      if (view === 'face') {
-        var logoF = document.getElementById('logo-f');
-        var hasLogo = logoF && logoF.style.display !== 'none' &&
-          logoF.querySelector('img') && logoF.querySelector('img').getAttribute('src');
-        btn.disabled = !!hasLogo;
-        btn.title = hasLogo ? 'Retirez le logo cœur pour ajouter un texte sur la face' : '';
-      } else {
-        btn.disabled = false;
-        btn.title = '';
-      }
+      var onSleeve = (view === 'cote');
+      btn.disabled = onSleeve;
+      btn.title = onSleeve ? 'Le texte n\'est pas disponible sur les manches' : '';
     }
     window.refreshTextButton = refreshTextButton;
 
@@ -4759,7 +4762,7 @@
       'b':  { left: 36, top: 27, width: 28, height: 11 }
     };
     function setTextZoneMode(zone, on) {
-      var zid = (zone === 'f') ? 'zone-f' : (zone === 'b' ? 'zone-b' : null);
+      var zid = (zone === 'f' || zone === 'fr' || zone === 'b') ? ('zone-' + zone) : null;
       if (!zid) return;
       var zoneEl = document.getElementById(zid);
       if (!zoneEl) return;

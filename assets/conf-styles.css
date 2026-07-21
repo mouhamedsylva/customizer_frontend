@@ -266,6 +266,32 @@
 
     /* ── Champ inline (remplace le bouton) ── */
     .txt-inline { margin-top: 2px; }
+    /* Sélecteur d'emplacement : segmented control (3 segments jointifs).
+       Plus léger que trois boutons pleins — c'est un choix, pas trois actions. */
+    .txt-where-lbl {
+      font-size: 9px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px;
+    }
+    /* Lève l'ambiguïté gauche/droite : côtés nommés du point de vue du porteur,
+       donc inversés à l'écran en vue de face. */
+    .txt-where-hint {
+      font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--faint);
+    }
+    .txt-where {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--border); border-radius: 6px;
+      overflow: hidden; margin-bottom: 7px;
+    }
+    .txt-where-opt {
+      padding: 6px 4px; font-size: 9.5px; font-weight: 600;
+      font-family: inherit; color: var(--muted);
+      background: var(--white); border: none; cursor: pointer;
+      border-right: 1px solid var(--border); transition: .12s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .txt-where-opt:last-child { border-right: none; }
+    .txt-where-opt:hover { background: var(--bg-light); color: var(--black); }
+    .txt-where-opt.on { background: var(--black); color: #fff; }
     .txt-inline input[type="text"] {
       width: 100%; padding: 9px 11px; border: 1.5px solid #14181c;
       border-radius: 7px; font-size: 13px; outline: none;

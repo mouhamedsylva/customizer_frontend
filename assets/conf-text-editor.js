@@ -107,8 +107,29 @@
      null = on retombe sur la déduction par la vue courante. */
   var pendingZone = null;
 
+  /* Sélection de l'emplacement dans le panneau de saisie. */
+  window.setTextZoneChoice = function (btn) {
+    pendingZone = btn.getAttribute('data-zone');
+    var wrap = document.getElementById('txt-where');
+    if (wrap) {
+      wrap.querySelectorAll('.txt-where-opt').forEach(function (b) {
+        b.classList.toggle('on', b === btn);
+      });
+    }
+  };
+
   window.startTextInline = function (zone) {
-    pendingZone = zone || null;
+    // Emplacement par défaut : celui de la vue affichée, pour que le choix
+    // proposé corresponde à ce que le client regarde.
+    var layer = document.getElementById('logo-layer');
+    var view = layer ? layer.getAttribute('data-view') : 'face';
+    pendingZone = zone || (view === 'dos' ? 'b' : 'f');
+    var wrap = document.getElementById('txt-where');
+    if (wrap) {
+      wrap.querySelectorAll('.txt-where-opt').forEach(function (b) {
+        b.classList.toggle('on', b.getAttribute('data-zone') === pendingZone);
+      });
+    }
     var addBtns = document.getElementById('txt-add-btns');
     if (addBtns) addBtns.style.display = 'none';
     var single = document.getElementById('txt-add-btn');
@@ -207,7 +228,9 @@
     hideFontPicker(); hideShapePicker();
 
     // Bascule vers la vue concernée + zone horizontale + rendu live.
-    var view = (state.zone === 'f') ? 'face' : 'dos';
+    // Seul le dos est en vue « dos » : 'f' ET 'fr' sont deux emplacements de
+    // la vue de face (un test sur 'f' seul envoyait 'fr' vers le dos).
+    var view = (state.zone === 'b') ? 'dos' : 'face';
     var vb = document.querySelector('.vt[onclick*="' + view + '"]');
     if (vb && typeof window.selView === 'function') window.selView(vb, view);
     if (typeof window.setTextZoneMode === 'function') window.setTextZoneMode(state.zone, true);
