@@ -2105,8 +2105,16 @@
 
       // L'image du drapeau est DÉJÀ à la bonne couleur (une image par couleur) :
       // aucune teinte à appliquer, on affiche simplement l'image + le logo.
-      var html = '<div style="position:relative;width:100%;height:100%;">' +
-        '<img src="' + bgSrc + '" alt="Drapeau" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:4px;">';
+      /* Le logo est positionné en % DU DRAPEAU, pas du cadre. Avec un
+         object-fit:contain, l'image ne remplit pas la vignette carrée (60px)
+         alors qu'un drapeau est en 3:2 : les deux repères divergeaient et le
+         logo débordait. On donne donc au conteneur le ratio du drapeau, et
+         l'image le remplit — les % redeviennent cohérents. */
+      var isPortrait = (window.__flagOrientation === 'portrait');
+      var html = '<div style="position:relative;width:100%;aspect-ratio:' +
+        (isPortrait ? '2/3' : '3/2') + ';margin:auto;">' +
+        '<img src="' + bgSrc + '" alt="Drapeau" style="position:absolute;inset:0;' +
+        'width:100%;height:100%;object-fit:fill;display:block;border-radius:4px;">';
       if (logoSrc) {
         html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
                 '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;z-index:2;">';
@@ -2114,6 +2122,8 @@
       html += '</div>';
       thumb.innerHTML = html;
       thumb.style.overflow = 'hidden';
+      thumb.style.display = 'flex';
+      thumb.style.alignItems = 'center';
     }
 
     /* Met à jour la vignette du récap PATCH (colonne droite) : cercle à la couleur
@@ -2131,10 +2141,14 @@
       // Les classes .patch-body / .shape-* portent déjà cette géométrie — on la
       // réutilise au lieu de la redéfinir, pour que miniature et aperçu ne
       // puissent pas diverger.
-      thumb.style.cssText = 'position:relative;aspect-ratio:' +
-        (PATCH_SHAPE_RATIO[shape] || 1) + ';background:transparent;border:none;overflow:visible;';
-      thumb.className = (thumb.className || '').replace(/shape-S+/g, '').trim() +
-        ' coins-canvas-circle shape-' + shape;
+      // On ne remplace PAS tout le style : .rp-patch-thumb porte width/height
+      // (60px). Un cssText complet les effacait -> conteneur de hauteur nulle,
+      // donc miniature vide. On n'ajuste que le ratio et le débordement.
+      thumb.style.aspectRatio = PATCH_SHAPE_RATIO[shape] || 1;
+      thumb.style.overflow = 'visible';
+      thumb.style.position = 'relative';
+      ['rond', 'carre', 'rectangle', 'blason'].forEach(function (s) { thumb.classList.remove('shape-' + s); });
+      thumb.classList.add('coins-canvas-circle', 'shape-' + shape);
 
       var inner = '<div class="patch-body">';
       if (logoSrc) {
@@ -2233,15 +2247,26 @@
       var top  = logoEl ? (parseFloat(logoEl.style.top)  || 28) : 28;
       var width = logoEl ? (parseFloat(logoEl.style.width) || 44) : 44;
 
-      var html = '<div style="position:relative;width:100%;height:100%;">' +
-        '<img src="' + bgSrc + '" alt="Coin" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">';
+      /* Le logo est positionné en % de l'IMAGE du coin, or le disque n'y
+         occupe que ~79 % (le reste est transparent). Sur la petite vignette,
+         cet écart se voit : le design paraît flotter dans un anneau vide.
+         On agrandit donc l'ensemble (image + logo) du même facteur, pour que
+         le DISQUE remplisse la vignette comme il remplit le canevas. */
+      var DISC_FILL = 100 / 79.4;   // emprise du disque dans l'image (mesurée)
+      var html = '<div style="position:relative;width:100%;aspect-ratio:1;margin:auto;' +
+        'overflow:hidden;"><div style="position:absolute;inset:0;' +
+        'transform:scale(' + DISC_FILL.toFixed(3) + ');">' +
+        '<img src="' + bgSrc + '" alt="Coin" style="position:absolute;inset:0;' +
+        'width:100%;height:100%;object-fit:contain;display:block;">';
       if (logoSrc) {
         html += '<img src="' + logoSrc + '" alt="" style="position:absolute;left:' + left + '%;top:' + top +
-                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;">';
+                '%;width:' + width + '%;height:auto;object-fit:contain;pointer-events:none;z-index:2;">';
       }
-      html += '</div>';
+      html += '</div></div>';
       thumb.innerHTML = html;
       thumb.style.overflow = 'hidden';
+      thumb.style.display = 'flex';
+      thumb.style.alignItems = 'center';
     }
 
     /* Renvoie l'URL CDN de l'image {produit}-{couleur}-{vue} pour l'état courant,
@@ -4378,6 +4403,10 @@
 
     // Applique une géométrie sauvegardée au(x) logo(s) d'une zone
     function applyUploadGeo(zone, geo) {
+      // Patch : le design remplit la forme, il n'y a plus de géométrie propre
+      // à restaurer — une position sauvegardée avant ce changement le
+      // recadrerait à 70 % en haut à gauche.
+      if (zone === 'c') return;
       // Map zone -> id(s) du/des logo(s) déplaçable(s)
       const ids = {
         'f': ['logo-f'],
@@ -4651,9 +4680,11 @@
         if (coinsPreviewImg) coinsPreviewImg.src = '';
         if (patchLogo) {
           patchLogo.style.display = 'none';
-          patchLogo.style.left = '15%';
-          patchLogo.style.top = '15%';
-          patchLogo.style.width = '70%';
+          // Le design remplit toute la forme (rogné par .patch-body) : on
+          // remet la pleine dimension, pas l'ancien cadrage à 70 %.
+          patchLogo.style.left = '0%';
+          patchLogo.style.top = '0%';
+          patchLogo.style.width = '100%';
           patchLogo.style.height = '';
         }
         // Réinitialiser la miniature du récap
@@ -4995,7 +5026,11 @@
                     false/absent : il est seulement borné s'il déborde. */
     function clampCoinLogo(face, fill) {
       var faces = face ? [face] : ['recto', 'verso'];
-      var inset = (window.COIN_INSET != null ? window.COIN_INSET : 12);
+      var inset = (window.COIN_INSET != null ? window.COIN_INSET : 3);
+      /* Le disque n'occupe que ~79 % de l'image du coin (le reste est
+         transparent). Un logo dimensionné en % de l'IMAGE paraît donc bien
+         plus petit que le disque : on ramène la zone à l'emprise réelle. */
+      var DISC = 79.4;
       faces.forEach(function (f) {
         var logo = document.getElementById('coin-logo-' + f);
         if (!logo || logo.style.display === 'none') return;
@@ -5003,14 +5038,20 @@
         if (!disc || !disc.offsetWidth || !disc.offsetHeight) return;
 
         var offY = (window.COIN_OFFSET_Y != null ? window.COIN_OFFSET_Y : 3);
-        var lo = inset, hi = 100 - inset;
+        var margin = (100 - DISC) / 2;          // bord transparent de l'image
+        var lo = margin + (DISC * inset / 100);
+        var hi = 100 - lo;
         var zone = hi - lo;
         // Bornes verticales décalées vers le bas (voir COIN_OFFSET_Y).
         var loY = lo + offY, hiY = hi + offY;
         // Verso numéroté : on réserve le bas de la pièce au numéro, sinon un
         // design descendant bas le recouvrirait.
         if (disc.classList.contains('has-number')) {
-          hiY = Math.min(hiY, 100 - COIN_NUMBER_RESERVE);
+          // window.* : la constante est déclarée dans l'IIFE de
+          // conf-logo-drag.js ; y accéder directement levait une ReferenceError
+          // qui interrompait tout le remplissage.
+          var reserve = (window.COIN_NUMBER_RESERVE != null ? window.COIN_NUMBER_RESERVE : 22);
+          hiY = Math.min(hiY, 100 - reserve);
         }
 
         var w = parseFloat(logo.style.width) || 44;
@@ -5064,10 +5105,10 @@
                     (upload / changement de forme) — le design s'intègre seul,
                     sans placement manuel. false : simple bornage. */
     /* Le design du patch remplit toute la forme et est rogné par .patch-body
-       (overflow:hidden + clip-path) : il n'y a plus de placement à faire.
-       La fonction est conservée pour les appelants existants et se contente de
-       remettre le logo en pleine forme — un design déplacé lors d'une session
-       précédente est ainsi recadré. */
+       (overflow:hidden + masque) : il n'y a plus de placement à calculer.
+       Conservée pour les appelants existants, elle remet simplement le logo en
+       pleine forme — un design cadré lors d'une session précédente est ainsi
+       recentré. */
     function clampPatchLogo() {
       var logo = document.getElementById('patch-logo');
       if (!logo || logo.style.display === 'none') return;

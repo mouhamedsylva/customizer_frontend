@@ -425,10 +425,12 @@
   /* = COIN_INSET, décalé de COIN_OFFSET_Y vers le bas : le rendu 3D donne à
      la pièce une épaisseur visible en partie basse, et un motif centré sur
      l'image paraît trop haut sur la frappe. */
-  left: 8%;
-  right: 8%;
-  top: 9.5%;                     /* 8 + 1.5 (COIN_OFFSET_Y) */
-  bottom: 6.5%;                  /* 8 − 1.5 */
+  /* Valeurs en % de l IMAGE, dont le disque n occupe que 79,4 % :
+     marge = (100-79.4)/2 + 79.4 x COIN_INSET/100 */
+  left: 12.7%;
+  right: 12.7%;
+  top: 14.2%;                    /* 12.7 + 1.5 (COIN_OFFSET_Y) */
+  bottom: 11.2%;                 /* 12.7 - 1.5 */
   border: 1px dashed rgba(220, 38, 38, .6);
   border-radius: 50%;
   pointer-events: none;

@@ -1429,41 +1429,6 @@
    Il reste entier et est simplement borné à l'intérieur de la forme (clamp JS). */
 #coins-canvas > .patch-logo { position: absolute; z-index: 5; }
 
-/* ── Zone imprimable du patch ───────────────────────────────────────────
-   La forme du patch vient de l'image PNG, pas du CSS : le repère est donc
-   dessiné par forme, en reprenant la géométrie de chaque visuel.
-   Marge de 10 % pour la couture / bordure du patch.
-   Indicatif : pointer-events none pour ne pas gêner le glisser-déposer.
-   Pour le masquer : passer opacity à 0. */
-.patch-safe-zone {
-  position: absolute;
-  /* L'image du patch porte un padding de 13% (.patch-shape-img) : la zone
-     démarre juste à l'intérieur pour épouser le bord du visuel. */
-  inset: 14%;
-  border: 1px dashed rgba(220, 38, 38, .6);
-  pointer-events: none;
-  z-index: 1;                    /* au-dessus de l'image, sous le logo */
-}
-/* Rond */
-.coins-canvas-circle.shape-rond .patch-safe-zone { border-radius: 50%; }
-/* Carré : coins légèrement arrondis, comme le visuel. */
-.coins-canvas-circle.shape-carre .patch-safe-zone { border-radius: 5%; }
-/* Rectangle : le patch est plus large que haut. */
-.coins-canvas-circle.shape-rectangle .patch-safe-zone {
-  inset: 27% 14%;
-  border-radius: 4%;
-}
-/* Blason : contour relevé sur l'image réelle (patch-blason-*.png).
-   Bords verticaux jusqu'à ~40 % de la hauteur, puis courbe vers la pointe.
-   Un clip-path découperait la bordure au lieu de la tracer : on passe donc
-   par un SVG de fond, seule méthode fiable pour ce contour. */
-.coins-canvas-circle.shape-blason .patch-safe-zone {
-  border: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M1 1 L99 1 L99 40 C99 62 82 84 50 99 C18 84 1 62 1 40 Z' fill='none' stroke='rgb(220,38,38)' stroke-opacity='0.6' stroke-width='1.4' stroke-dasharray='3 3' vector-effect='non-scaling-stroke'/></svg>");
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-}
-
 /* ════════════════════════════════════════════════════════════════════════
    PATCH VECTORIEL
    La forme n'est plus une image PNG : elle est dessinée en CSS. Avantages :
@@ -1481,38 +1446,44 @@
 
 /* — Rond — */
 .coins-canvas-circle.shape-rond .patch-body { border-radius: 50%; }
-.coins-canvas-circle.shape-rond .patch-safe-zone { border-radius: 50%; }
 
 /* — Carré : angles légèrement adoucis, comme un patch cousu — */
 .coins-canvas-circle.shape-carre .patch-body { border-radius: 6%; }
-.coins-canvas-circle.shape-carre .patch-safe-zone { border-radius: 5%; }
 
 /* — Rectangle : le canevas est carré, la forme occupe une bande centrale — */
 .coins-canvas-circle.shape-rectangle .patch-body {
   inset: 18% 0;
   border-radius: 5%;
 }
-.coins-canvas-circle.shape-rectangle .patch-safe-zone {
-  inset: 27% 14%;
-  border-radius: 4%;
-}
 
 /* — Blason : silhouette relevée sur le produit réel (montants verticaux
      jusqu'à ~40 % de la hauteur, puis courbe vers la pointe). — */
 .coins-canvas-circle.shape-blason .patch-body {
   border-radius: 0;
-  clip-path: polygon(
-    0% 0%, 100% 0%, 100% 40%, 97% 55%, 89% 70%, 75% 84%, 50% 100%,
-    25% 84%, 11% 70%, 3% 55%, 0% 40%
-  );
+  /* Un polygone donnerait des segments anguleux sur la courbe basse.
+     Le masque SVG accepte des courbes de Bézier : les bords restent lisses
+     à toute taille. Le tracé est celui relevé sur le produit réel. */
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 L100 0 L100 40 C100 63 83 84 50 100 C17 84 0 63 0 40 Z' fill='black'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 L100 0 L100 40 C100 63 83 84 50 100 C17 84 0 63 0 40 Z' fill='black'/></svg>");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
-/* Le logo remplit la forme ; ce qui dépasse est rogné par .patch-body. */
-.patch-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;             /* couvre toute la forme, sans déformer */
-  display: block;
+/* Le logo remplit la forme ; ce qui dépasse est rogné par .patch-body.
+   Sélecteur qualifié + !important : la règle générique
+    est plus
+   spécifique et bridait le design à 70 %, calé en haut à gauche. */
+.coins-canvas-circle .patch-body .patch-logo img {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;  /* couvre toute la forme, sans déformer */
+  display: block !important;
 }
 
 /* Le design remplit toute la forme : plus rien à déplacer ni à redimensionner.
@@ -1526,3 +1497,53 @@
   cursor: default;
 }
 .patch-logo .logo-resize { display: none !important; }
+
+/* ── Zone imprimable : CONFONDUE avec le bord du patch ───────────────────
+   Elle ne marque pas une marge intérieure mais le contour lui-même — le
+   design est imprimé bord à bord. Chaque forme reprend donc exactement la
+   géométrie de .patch-body.
+   Pour la masquer : passer opacity à 0. */
+.patch-safe-zone {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed rgba(220, 38, 38, .65);
+  pointer-events: none;
+  z-index: 2;                    /* au-dessus du design, pour rester visible */
+}
+.coins-canvas-circle.shape-rond .patch-safe-zone { border-radius: 50%; }
+.coins-canvas-circle.shape-carre .patch-safe-zone { border-radius: 6%; }
+/* Rectangle : même bande centrale que .patch-body. */
+.coins-canvas-circle.shape-rectangle .patch-safe-zone {
+  inset: 18% 0;
+  border-radius: 5%;
+}
+/* Blason : contour tracé en SVG (une bordure CSS ne suit pas cette forme).
+   Le tracé est identique à celui de .patch-body, aux arrondis près. */
+.coins-canvas-circle.shape-blason .patch-safe-zone {
+  border: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M1 1 L99 1 L99 40 C99 63 82 84 50 99 C18 84 1 63 1 40 Z' fill='none' stroke='rgb(220,38,38)' stroke-opacity='0.65' stroke-width='1.4' stroke-dasharray='3 3' vector-effect='non-scaling-stroke'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+/* ── Miniature du récap : même forme que le canevas, en petit ─────────────
+   La miniature porte les classes .coins-canvas-circle.shape-* pour réutiliser
+   la géométrie des formes. Il faut donc neutraliser ce que ces classes
+   imposent au canevas grand format (largeur 520px, marges auto), sinon la
+   vignette de 60px est écrasée et le design devient invisible. */
+.rp-patch-thumb.coins-canvas-circle {
+  width: 60px !important;
+  max-width: 60px !important;
+  margin: 0 !important;
+}
+/* Le design remplit la forme dans la miniature comme dans le canevas. */
+.rp-patch-thumb .patch-body img {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  display: block !important;
+}

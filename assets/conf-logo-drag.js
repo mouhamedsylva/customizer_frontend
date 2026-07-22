@@ -30,7 +30,7 @@
   /* Marge des pièces (coins), en % du disque. Le pourtour est occupé par le
      listel — bord relevé de la frappe — où le motif ne s'imprime pas.
      Garder égal à `.coin-safe-zone { inset }` (conf-patches.css). */
-  const COIN_INSET = 8;
+  const COIN_INSET = 3;
   window.COIN_INSET = COIN_INSET;
   /* Décalage vertical de la zone, en % du disque. Positif = vers le bas.
      La pièce est centrée dans son image, mais le rendu 3D lui donne une
