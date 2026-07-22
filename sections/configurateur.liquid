@@ -471,6 +471,12 @@
                n'est qu'une seule action. -->
           <div id="txt-add-btns" class="txt-add-btns">
             <button class="txt-add-btn" onclick="startTextInline()">✏️ Ajouter un texte</button>
+            <!-- Commande de groupe : un nom floqué par personne. Ouvre la même
+                 modale que l'ancien bouton « Commander pour un groupe », qui
+                 est désormais masqué. Textiles uniquement (bascule en JS). -->
+            <button class="txt-add-btn" id="txt-multi-btn" onclick="openGroupOrder()">
+              👥 Ajouter plusieurs noms
+            </button>
           </div>
 
           <!-- État 2 : emplacement + saisie (remplacent le bouton). -->
@@ -509,12 +515,13 @@
           </div>
         </div>
 
-        <!-- 4. Logos poitrine : les deux emplacements côte à côte, disposés
-             comme sur le vêtement vu de face (poitrine droite du porteur à
-             gauche de l'écran, cœur à droite). Même grille que les manches. -->
+        <!-- 5. Logos : poitrine (deux emplacements côte à côte, disposés comme
+             sur le vêtement vu de face — poitrine droite du porteur à gauche de
+             l'écran) puis dos, en pleine largeur. Une seule section : ce sont
+             trois emplacements d'une même opération. -->
         <div class="sec">
-          <div class="sec-title">5. Logos Poitrine</div>
-          <div class="sec-sub">Un logo de chaque côté (facultatif)</div>
+          <div class="sec-title">5. Ajoutez vos logos</div>
+          <div class="sec-sub">Poitrine et dos (facultatif)</div>
           <div class="slvg" style="margin-top:6px">
             <div>
               <label>Poitrine droite</label>
@@ -549,12 +556,9 @@
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 5. Logo dos -->
-        <div class="sec">
-          <div class="sec-title">6. Logo Dos</div>
-          <div class="sec-sub">Ajoutez un logo au dos de l'article</div>
+          <!-- Dos : pleine largeur, sous les deux emplacements poitrine. -->
+          <label style="display:block;margin-top:10px">Dos</label>
           <div class="uz" onclick="document.getElementById('ub').click()">
             <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
             <p><strong>Cliquez ou glissez votre logo ici</strong><br>PNG, JPG, SVG (max. 5Mo)</p>
@@ -574,7 +578,7 @@
 
         <!-- 6. Manches — option tarifée (activable par le client) -->
         <div class="sec">
-          <div class="sec-title">7. Personnalisation Manches 👕</div>
+          <div class="sec-title">6. Personnalisation Manches 👕</div>
 
           <!-- Carte d'option : intitulé, prix, bascule. Design professionnel
                avec badge de prix bien visible. Repliée tant que l'option n'est
@@ -899,8 +903,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
           Ajouter au panier
         </button>
-        <!-- Commande de groupe : uniquement pour les textiles (masqué sinon en JS). -->
-        <button class="btn-group" id="btn-group-order" onclick="openGroupOrder()">
+        <!-- Commande de groupe : le point d'entrée est désormais « Ajouter
+             plusieurs noms », dans la section Texte personnalisé. Ce bouton est
+             conservé (masqué) : le JS le référence encore pour la logique
+             textile, et la modale reste la même. -->
+        <button class="btn-group" id="btn-group-order" onclick="openGroupOrder()" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
           Commander pour un groupe
         </button>
@@ -984,7 +991,7 @@
             </button>
             <p class="grp-import-hint" id="grp-import-hint">
               Vous avez déjà la liste ? Importez-la. Colonnes :
-              <strong>Nom, Taille, Couleur, Nom floqué, Qté</strong>.
+              <strong>Nom floqué, Taille, Couleur, Qté</strong>.
             </p>
           </div>
 
@@ -992,10 +999,10 @@
             <table class="grp-table">
               <thead>
                 <tr>
-                  <th class="grp-c-name">Nom / réf.</th>
+                  {% comment %} <th class="grp-c-name">Nom / réf.</th> {% endcomment %}
+                  <th class="grp-c-flock">Nom floqué <span class="grp-opt">(option)</span></th>
                   <th class="grp-c-size">Taille</th>
                   <th class="grp-c-color">Couleur</th>
-                  <th class="grp-c-flock">Nom floqué <span class="grp-opt">(option)</span></th>
                   <th class="grp-c-qty">Qté</th>
                   <th class="grp-c-act"></th>
                 </tr>
@@ -1021,7 +1028,7 @@
         <div class="grp-foot">
           <button class="grp-btn-secondary" onclick="closeGroupOrder()">Annuler</button>
           <button class="grp-btn-primary" id="grp-submit" onclick="submitGroupOrder(this)">
-            Demander un devis groupe
+            Confirmer
           </button>
         </div>
       </div>
@@ -1120,23 +1127,23 @@
       var tr = document.createElement('tr');
       tr.id = id;
       tr.innerHTML =
-        '<td><input class="grp-inp grp-f-name" type="text" placeholder="Nom / réf." value="' + (preset.name || '') + '"></td>' +
+        // '<td><input class="grp-inp grp-f-name" type="text" placeholder="Nom / réf." value="' + (preset.name || '') + '"></td>' +
+        '<td><input class="grp-inp grp-f-flock" type="text" placeholder="ex. JEAN 10" value="' + (preset.flock || '') + '"></td>' +
         '<td><select class="grp-sel grp-f-size" onchange="grpUpdateTotals()">' + sizeOpts + '</select></td>' +
         '<td><div class="grp-color-cell">' +
           '<span class="grp-color-dot" data-dot="1"></span>' +
           '<select class="grp-sel grp-f-color" onchange="grpSyncDot(this)">' + colorOpts + '</select>' +
         '</div></td>' +
-        '<td><input class="grp-inp grp-f-flock" type="text" placeholder="ex. JEAN 10" value="' + (preset.flock || '') + '"></td>' +
         '<td><div class="grp-qty">' +
           '<input class="grp-f-qty" type="number" min="1" value="' + (preset.qty || 1) + '" onchange="grpUpdateTotals()">' +
         '</div></td>' +
         '<td>' +
-          '<button class="grp-row-btn" title="Aperçu" onclick="grpPreviewRow(this)">' +
-            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>' +
-          '</button>' +
-          '<button class="grp-row-btn" title="Dupliquer" onclick="grpDupRow(this)">' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>' +
-          '</button>' +
+          // '<button class="grp-row-btn" title="Aperçu" onclick="grpPreviewRow(this)">' +
+          //   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          // '</button>' +
+          // '<button class="grp-row-btn" title="Dupliquer" onclick="grpDupRow(this)">' +
+          //   '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>' +
+          // '</button>' +
           '<button class="grp-row-btn danger" title="Supprimer" onclick="grpDelRow(this)">' +
             '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>' +
           '</button>' +
@@ -1460,7 +1467,7 @@
         if (design.sheet) previews.push({ label: 'Design (toutes vues)', base: design.sheet });
         else if (design.thumb) previews.push({ label: 'Design', base: design.thumb });
       } catch (e) { /* aperçu best-effort */ }
-      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Demander un devis groupe'; }
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Confirmer'; }
 
       // Récapitulatif texte de la liste (pour l'atelier), + les lignes en données.
       var detailLines = rows.map(function (r) {
@@ -2001,6 +2008,9 @@
         el.style.height = z.height + '%';
         // Un logo déjà posé peut dépasser la nouvelle zone : on le recontraint.
         clampLogoToZone(k);
+        // Idem pour le texte : les zones de texte dérivent de LOGO_ZONES, elles
+        // changent donc aussi avec le produit.
+        if (typeof clampTextToZone === 'function') clampTextToZone(k);
       });
       refreshZoneGuides();
     }
@@ -2011,24 +2021,28 @@
       var z = LOGO_ZONES[zone];
       if (!z) return;
       var logo = document.getElementById(z.logoId);
-      if (!logo) return;
+      var layer = document.getElementById('logo-layer');
+      if (!logo || !layer) return;
 
       // Largeur cible : ~90% de la largeur de zone, bornée à maxW.
       var w = Math.min(z.maxW, z.width * 0.9);
       logo.style.width = w + '%';
 
-      // Hauteur réelle du logo (selon ratio image) pour un centrage vertical correct.
-      var img = logo.querySelector('img');
-      var ratio = (img && img.naturalWidth && img.naturalHeight) ? (img.naturalHeight / img.naturalWidth) : 1;
-      // hauteur du logo en % du layer : w% de largeur -> w*ratio en unité largeur,
-      // mais top/height sont en % de la hauteur du layer. On approxime avec le
-      // ratio d'aspect du layer (carré-ish) -> centrage suffisant à cette échelle.
-      var hApprox = w * ratio;
+      /* Hauteur MESURÉE (et non approximée) : le layer n'est pas carré, donc
+         convertir une largeur en % vers une hauteur en % via le seul ratio de
+         l'image était faux — un visuel plus haut que large débordait de la
+         zone, en bas comme sur les côtés. On lit la hauteur réelle rendue. */
+      var lh = layer.offsetHeight || 1;
+      var h = (logo.offsetHeight / lh) * 100;
+      if (h > z.height && h > 0) {
+        // Trop haut pour la zone : on réduit la largeur d'autant (ratio gardé).
+        w = w * (z.height / h);
+        logo.style.width = w + '%';
+        h = (logo.offsetHeight / lh) * 100;
+      }
 
-      var left = z.left + (z.width - w) / 2;
-      var top  = z.top + (z.height - Math.min(hApprox, z.height)) / 2;
-      logo.style.left = clampNum(left, z.left, z.left + z.width - w) + '%';
-      logo.style.top  = clampNum(top,  z.top,  z.top + z.height) + '%';
+      logo.style.left = clampNum(z.left + (z.width - w) / 2, z.left, z.left + z.width - w) + '%';
+      logo.style.top  = clampNum(z.top + (z.height - h) / 2, z.top, z.top + z.height - h) + '%';
 
       refreshZoneGuides();
     }
@@ -2040,25 +2054,32 @@
     function clampLogoToZone(zone) {
       var z = LOGO_ZONES[zone];
       var logo = z && document.getElementById(z.logoId);
-      if (!z || !logo) return false;
+      var layer = document.getElementById('logo-layer');
+      if (!z || !logo || !layer) return false;
 
       var w = parseFloat(logo.style.width) || z.maxW;
       // Largeur bornée à maxW et à la largeur de zone.
       w = Math.min(w, z.maxW, z.width);
       logo.style.width = w + '%';
 
+      /* Hauteur MESURÉE : l'ancienne estimation (largeur x ratio de l'image)
+         ignorait que le layer n'est pas carré, et ne réduisait jamais le logo
+         — un visuel plus haut que large sortait de la zone. */
+      var lh = layer.offsetHeight || 1;
+      var h = (logo.offsetHeight / lh) * 100;
+      if (h > z.height && h > 0) {
+        w = w * (z.height / h);
+        logo.style.width = w + '%';
+        h = (logo.offsetHeight / lh) * 100;
+      }
+
       var left = parseFloat(logo.style.left);
       var top  = parseFloat(logo.style.top);
       if (isNaN(left)) left = z.left;
       if (isNaN(top))  top = z.top;
 
-      // Estime la hauteur du logo pour le clamp vertical.
-      var img = logo.querySelector('img');
-      var ratio = (img && img.naturalWidth && img.naturalHeight) ? (img.naturalHeight / img.naturalWidth) : 1;
-      var hApprox = Math.min(w * ratio, z.height);
-
       logo.style.left = clampNum(left, z.left, z.left + z.width - w) + '%';
-      logo.style.top  = clampNum(top,  z.top,  z.top + z.height - hApprox) + '%';
+      logo.style.top  = clampNum(top,  z.top,  z.top + z.height - h) + '%';
       return true;
     }
 
@@ -2327,12 +2348,12 @@
       // pas la même échelle d'image : on les recalcule à chaque changement.
       if (typeof applyZonesForProduct === 'function') applyZonesForProduct(productType);
 
-      // « Commander pour un groupe » : uniquement pour les textiles.
-      var grpBtn = document.getElementById('btn-group-order');
-      if (grpBtn) {
-        var isTx = ['sweatshirt', 'tshirt', 'tshirt_polyester'].indexOf(productType) !== -1;
-        grpBtn.style.display = isTx ? '' : 'none';
-      }
+      /* Commande de groupe : réservée aux textiles. Le point d'entrée est
+         « Ajouter plusieurs noms » (section Texte) ; l'ancien bouton reste
+         masqué en permanence. */
+      var isTx = ['sweatshirt', 'tshirt', 'tshirt_polyester'].indexOf(productType) !== -1;
+      var multiBtn = document.getElementById('txt-multi-btn');
+      if (multiBtn) multiBtn.style.display = isTx ? '' : 'none';
       // Persiste le produit choisi : au reload (F5), on revient sur CE produit
       // au lieu de repartir sur le sweatshirt par défaut.
       try { if (productType) sessionStorage.setItem('conf_current_product', productType); } catch (e) {}
@@ -4914,12 +4935,31 @@
     window.MAX_TEXT_SIZE = MAX_TEXT_SIZE;
 
     var _zoneOrigStyle = {};
+    /* Zones de TEXTE : dérivées des zones de logo (LOGO_ZONES), qui sont
+       calculées depuis les contraintes atelier en cm et changent selon le
+       produit (sweat / t-shirt). Les valeurs étaient auparavant codées en dur
+       et ne suivaient donc ni la taille réelle des zones ni le produit choisi :
+       un texte pouvait sortir du gabarit d'impression.
+       Le texte occupe un BANDEAU : toute la largeur de la zone, mais une
+       hauteur réduite (un texte est large et peu haut). */
+    var TEXT_ZONE_RATIO = 0.42;   // part de la hauteur de zone réservée au texte
+    function textZone(zone) {
+      var z = (typeof LOGO_ZONES !== 'undefined') ? LOGO_ZONES[zone] : null;
+      if (!z) return null;
+      var hh = z.height * TEXT_ZONE_RATIO;
+      return {
+        left: z.left,
+        top: z.top + (z.height - hh) / 2,   // bandeau centré verticalement
+        width: z.width,
+        height: hh
+      };
+    }
+    /* Compat : l'ancien objet est conservé en accès dynamique, les appelants
+       existants (TEXT_ZONE_HORIZ[zone]) continuent de fonctionner. */
     var TEXT_ZONE_HORIZ = {
-      // Bandeau horizontal centré, adapté au texte (plus étroit).
-      'f':  { left: 44, top: 31, width: 22, height: 9 },
-      // Poitrine droite du porteur : miroir de 'f' (44 -> 100-44-22 = 34).
-      'fr': { left: 34, top: 31, width: 22, height: 9 },
-      'b':  { left: 36, top: 27, width: 28, height: 11 }
+      get 'f'()  { return textZone('f'); },
+      get 'fr'() { return textZone('fr'); },
+      get 'b'()  { return textZone('b'); }
     };
     function setTextZoneMode(zone, on) {
       var zid = (zone === 'f' || zone === 'fr' || zone === 'b') ? ('zone-' + zone) : null;
@@ -4969,6 +5009,16 @@
       // Dimensions de la zone en pixels écran.
       var zoneW = (h.width / 100) * lb.width;
       var zoneH = (h.height / 100) * lb.height;
+
+      /* La BOÎTE du texte est bornée à la largeur de la zone. Sans cela, la
+         largeur inline du markup (héritée des anciennes zones, ex. 22 %)
+         restait appliquée alors que la zone n'en fait plus que 7,3 % : le
+         texte était bien réduit en police, mais son conteneur — donc le
+         centrage et le débordement — dépassait toujours le gabarit. */
+      var curW = parseFloat(el.style.width);
+      if (isNaN(curW) || curW > h.width) {
+        el.style.width = h.width + '%';
+      }
 
       // 1) Ajuste la taille de police pour tenir dans la zone (largeur ET
       //    hauteur). On part de la taille demandée et on réduit si nécessaire.

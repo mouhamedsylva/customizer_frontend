@@ -462,8 +462,18 @@
       el.classList.remove('is-shaped');
       content.textContent = data.text;
     }
-    // Contrainte : rester dans la zone.
-    if (typeof window.clampTextToZone === 'function') window.clampTextToZone(zone);
+    /* Contrainte : rester dans la zone.
+       Rejouée après le chargement de la police : la première mesure se fait
+       sur la police de repli (les Google Fonts arrivent en différé), donc sur
+       des dimensions fausses — le texte pouvait déborder une fois la vraie
+       police appliquée. */
+    if (typeof window.clampTextToZone === 'function') {
+      window.clampTextToZone(zone);
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function () { window.clampTextToZone(zone); });
+      }
+      setTimeout(function () { window.clampTextToZone(zone); }, 120);
+    }
     if (typeof window.refreshZoneGuides === 'function') window.refreshZoneGuides();
   }
 
