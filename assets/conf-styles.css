@@ -1091,6 +1091,8 @@
   .cd-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
   .cd-meta { font-size: 11px; color: var(--muted); line-height: 1.6; }
   .cd-price { font-size: 14px; font-weight: 700; margin-top: 8px; }
+  /* Détail du prix dégressif (prix unitaire au palier + quantité). */
+  .cd-tier { font-size: 10.5px; font-weight: 600; color: #16a34a; white-space: nowrap; }
 
   .cd-qty {
     display: flex; align-items: center; gap: 8px;

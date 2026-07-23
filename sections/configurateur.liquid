@@ -29,7 +29,7 @@
          injoignable : l'affichage reste correct au lieu de tomber à 0.
          window.PRICES est renseigné dès la réponse, puis prixUnitaire() l'utilise. */
       window.PRICES = {
-        sweatshirt: 45, tshirt: 25, tshirt_polyester: 28,
+        sweatshirt: 60, tshirt: 25, tshirt_polyester: 28,
         coins: 2.45, drapeaux: 19.90, patches: 2.45
       };
 
@@ -38,6 +38,45 @@
         var p = window.PRICES || {};
         var v = Number(p[key]);
         return isNaN(v) ? 0 : v;
+      };
+
+      /* ── Prix DÉGRESSIF par quantité, PAR PRODUIT (TTC) ──
+         Table { productType: [ {min, price}, … ] }, paliers du plus grand au
+         plus petit min. Seuls les produits listés sont dégressifs ; les autres
+         gardent leur prix unitaire fixe (window.PRICES). Le palier se calcule
+         sur le total de CE produit dans le panier (toutes lignes cumulées).
+         Sweatshirt : 1-4 → 60 €, 5-14 → 56,50 €, 15-39 → 53,90 €, 40+ → 52 €.
+         Coton / polyester / coins : à ajouter ici quand les grilles seront prêtes.
+         NB : c'est un AFFICHAGE. Le paiement dégressif se règle via des
+         réductions automatiques Shopify (Admin → Réductions), le panier natif
+         facturant le prix du variant. */
+      window.QTY_TIERS = {
+        sweatshirt: [
+          { min: 40, price: 52.00 },
+          { min: 15, price: 53.90 },
+          { min: 5,  price: 56.50 },
+          { min: 1,  price: 60.00 }
+        ]
+        // tshirt: [...], tshirt_polyester: [...], coins: [...]  (à venir)
+      };
+      /** Prix unitaire dégressif d'un produit pour une quantité totale.
+          Renvoie null si le produit n'a pas de grille (non dégressif). */
+      window.tierUnitPrice = function (productType, totalQty) {
+        var tiers = (window.QTY_TIERS || {})[productType];
+        if (!tiers || !tiers.length) return null;
+        var q = Math.max(0, parseInt(totalQty, 10) || 0);
+        for (var i = 0; i < tiers.length; i++) {
+          if (q >= tiers[i].min) return tiers[i].price;
+        }
+        return tiers[tiers.length - 1].price;
+      };
+      /** Prix unitaire effectif d'un article selon la quantité totale de son type.
+          @param totalsByType  { productType: quantité totale dans le panier }
+          Produit dégressif → prix du palier ; sinon → prix stocké de la ligne. */
+      window.effectiveUnitPrice = function (item, totalsByType) {
+        if (!item) return 0;
+        var tier = window.tierUnitPrice(item.productType, (totalsByType || {})[item.productType] || 0);
+        return tier != null ? tier : (Number(item.price) || 0);
       };
 
       /** Formate un prix à la française : 2.45 -> "2,45 €". */
@@ -1063,14 +1102,14 @@
           <button class="grp-add" onclick="grpAddRow()">＋ Ajouter une ligne</button>
 
           <div class="grp-summary">
-            <span id="grp-total-lines">0 personne</span>
+            <span id="grp-total-lines">0 ligne</span>
             <strong id="grp-total-qty">0 pièce</strong>
           </div>
 
           <p class="grp-note">
-            💡 Le flocage d'un nom/numéro est un supplément chiffré à la main : votre
-            commande de groupe part en <strong>demande de devis</strong>. Nous vous
-            envoyons un prix précis sous 24–48 h.
+            💡 Même design pour tous. En validant, votre liste est enregistrée :
+            « Ajouter au panier » créera ensuite <strong>une ligne par personne</strong>
+            (taille, couleur et nom floqué propres à chacune).
           </p>
         </div>
 
@@ -1093,9 +1132,10 @@
     </div>
 
   <script>
-    /* ═══════════════════ COMMANDE DE GROUPE (textiles) ═══════════════════
+    /* ═══════════════════ LISTE MULTI-PERSONNES (textiles) ═══════════════════
        Design commun (créé dans le configurateur) + une ligne par personne :
-       taille, couleur, nom floqué optionnel. Sortie = demande de devis. */
+       taille, couleur, nom floqué optionnel. Sortie = ajout au panier (une
+       ligne de panier par personne), jamais un devis. */
 
     /* Tailles disponibles : lues depuis le sidebar (.sb) pour rester synchronisées
        si on modifie la liste. Repli sur les tailles standard. */
@@ -1365,29 +1405,38 @@
       grpUpdateTotals();
     }
 
+    /* Lit une valeur de champ dans une ligne, sans planter si la colonne a été
+       retirée du markup (ex. l'ancienne colonne « nom de personne »). */
+    function grpVal(tr, cls) {
+      var el = tr.querySelector('.' + cls);
+      return el ? el.value : '';
+    }
+
     function grpDupRow(btn) {
       var tr = btn.closest('tr');
       if (!tr) return;
       grpAddRow({
-        name: tr.querySelector('.grp-f-name').value,
-        size: tr.querySelector('.grp-f-size').value,
-        color: tr.querySelector('.grp-f-color').value,
-        flock: tr.querySelector('.grp-f-flock').value,
-        qty: tr.querySelector('.grp-f-qty').value
+        size: grpVal(tr, 'grp-f-size'),
+        color: grpVal(tr, 'grp-f-color'),
+        flock: grpVal(tr, 'grp-f-flock'),
+        qty: grpVal(tr, 'grp-f-qty')
       });
     }
 
-    /* Lit toutes les lignes en objets. */
+    /* Lit toutes les lignes en objets. Colonnes : Nom floqué, Taille, Couleur,
+       Qté (plus de colonne « nom de personne »). Le nom floqué sert d'étiquette
+       de la ligne ET de propriété transmise à la commande. */
     function grpCollect() {
       var rows = [];
       document.querySelectorAll('#grp-rows tr').forEach(function (tr) {
-        var qty = parseInt(tr.querySelector('.grp-f-qty').value, 10) || 0;
+        var qty = parseInt(grpVal(tr, 'grp-f-qty'), 10) || 0;
         if (qty < 1) return;
+        var flock = String(grpVal(tr, 'grp-f-flock')).trim();
         rows.push({
-          name: tr.querySelector('.grp-f-name').value.trim(),
-          size: tr.querySelector('.grp-f-size').value,
-          color: tr.querySelector('.grp-f-color').value,
-          flock: tr.querySelector('.grp-f-flock').value.trim(),
+          name: flock,          // le nom floqué identifie la ligne
+          size: grpVal(tr, 'grp-f-size'),
+          color: grpVal(tr, 'grp-f-color'),
+          flock: flock,
           qty: qty
         });
       });
@@ -1411,10 +1460,10 @@
     function grpPreviewRow(btn) {
       var tr = btn.closest('tr');
       if (!tr) return;
-      var colorName = tr.querySelector('.grp-f-color').value;
-      var size = tr.querySelector('.grp-f-size').value;
-      var flock = tr.querySelector('.grp-f-flock').value.trim();
-      var name = tr.querySelector('.grp-f-name').value.trim();
+      var colorName = grpVal(tr, 'grp-f-color');
+      var size = grpVal(tr, 'grp-f-size');
+      var flock = String(grpVal(tr, 'grp-f-flock')).trim();
+      var name = flock;   // le nom floqué identifie la ligne (plus de colonne nom)
 
       // Ces variables sont déclarées plus bas dans le script (let/const) : on y
       // accède via try/catch, sinon la « temporal dead zone » lève une
@@ -1488,12 +1537,11 @@
       if (ov) ov.classList.remove('open');
     }
 
-    /* Envoi de la commande de groupe : on RÉUTILISE le formulaire de devis
-       existant (coordonnées client) en lui passant la liste + le design commun.
-       La sortie est donc un draft order / devis, comme pour les coins. */
-    /* Liste de groupe validée (« Confirmer »). Mémorisée ici puis consommée par
-       addToCart, qui crée UNE ligne de panier par personne. Non persistée en
-       sessionStorage : elle n'a de sens que pour le design en cours d'édition. */
+    /* Liste multi-personnes validée (« Confirmer »). Mémorisée ici puis consommée
+       par addToCart, qui crée UNE ligne de panier par personne. Non persistée en
+       sessionStorage : elle n'a de sens que pour le design en cours d'édition.
+       Le flux va TOUJOURS au panier, y compris avec un nom floqué (le flocage
+       est porté comme propriété de ligne, chiffré à la main ensuite). */
     var groupOrderRows = null;
 
     /* Résumé sous le bouton d'ajout : rappelle que le panier créera N lignes. */
@@ -1503,84 +1551,31 @@
       if (!groupOrderRows || !groupOrderRows.length) { el.style.display = 'none'; return; }
       var pieces = groupOrderRows.reduce(function (s, r) { return s + r.qty; }, 0);
       el.style.display = '';
-      el.textContent = 'Liste de groupe : ' + groupOrderRows.length + ' personne' +
+      el.textContent = 'Liste : ' + groupOrderRows.length + ' ligne' +
         (groupOrderRows.length > 1 ? 's' : '') + ' · ' + pieces + ' pièce' + (pieces > 1 ? 's' : '');
     }
 
-    async function submitGroupOrder(btnEl) {
+    function submitGroupOrder(btnEl) {
       var rows = grpCollect();
       if (!rows.length) {
-        confAlert('Ajoutez au moins une personne à votre liste.', { icon: 'info', title: 'Liste vide' });
+        confAlert('Ajoutez au moins une ligne à votre liste.', { icon: 'info', title: 'Liste vide' });
         return;
       }
 
       var pieces = rows.reduce(function (s, r) { return s + r.qty; }, 0);
-      var hasFlock = rows.some(function (r) { return r.flock; });
 
-      /* SANS FLOCAGE : la liste est simplement mémorisée. L'ajout au panier se
-         fait ensuite via « Ajouter au panier », une fois le design terminé —
-         c'est lui qui déplie la liste en une ligne par personne. */
-      if (!hasFlock) {
-        groupOrderRows = rows;
-        refreshGroupBadge();
-        closeGroupOrder();
-        confAlert(
-          'Liste enregistrée : ' + rows.length + ' personne' + (rows.length > 1 ? 's' : '') +
-          ' · ' + pieces + ' pièce' + (pieces > 1 ? 's' : '') +
-          '. Terminez votre design, puis « Ajouter au panier » créera une ligne par personne.',
-          { icon: 'success', title: 'Liste enregistrée' }
-        );
-        return;
-      }
-
-      /* AVEC FLOCAGE : le flocage n'a pas de variant Shopify, il ne peut donc
-         pas être facturé sur une ligne de panier. On passe par le devis. */
-
-      // Type de produit lisible (Sweatshirt / T-shirt coton / T-shirt polyester).
-      var rcProd = document.getElementById('rc-prod');
-      var productLabel = rcProd ? rcProd.textContent.trim() : 'Textile personnalisé';
-
-      // Design commun : on capture la planche multi-vues (face/dos/côté) + la
-      // vignette, comme pour l'ajout au panier. Réutilise resolveDesignImage.
-      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Préparation…'; }
-      var previews = [];
-      try {
-        var fallback = (typeof currentProductImageURL === 'function') ? currentProductImageURL('face') : '';
-        var design = (typeof resolveDesignImage === 'function')
-          ? await resolveDesignImage(fallback, btnEl) : { thumb: fallback, sheet: null };
-        if (design.sheet) previews.push({ label: 'Design (toutes vues)', base: design.sheet });
-        else if (design.thumb) previews.push({ label: 'Design', base: design.thumb });
-      } catch (e) { /* aperçu best-effort */ }
-      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Confirmer'; }
-
-      // Récapitulatif texte de la liste (pour l'atelier), + les lignes en données.
-      var detailLines = rows.map(function (r) {
-        return (r.name ? r.name + ' — ' : '') + r.qty + '× ' + r.size + ' / ' + r.color +
-               (r.flock ? ' — floqué « ' + r.flock + ' »' : '');
-      });
-
+      // La liste est mémorisée. L'ajout au panier se fait ensuite via
+      // « Ajouter au panier », une fois le design terminé : c'est lui qui
+      // déplie la liste en une ligne de panier par personne.
+      groupOrderRows = rows;
+      refreshGroupBadge();
       closeGroupOrder();
-
-      // Ouvre le modal de devis commun avec les données du groupe.
-      openQuoteModal({
-        name: 'Commande de groupe — ' + productLabel,
-        subtitle: 'Recevez un devis pour votre commande de groupe (' + pieces +
-                  ' pièce' + (pieces > 1 ? 's' : '') + (hasFlock ? ', avec flocage' : '') + ').',
-        details: [
-          'Produit : ' + productLabel,
-          'Total : ' + pieces + ' pièce' + (pieces > 1 ? 's' : '') + ' · ' + rows.length + ' ligne(s)',
-          hasFlock ? 'Flocage nom/numéro : oui (chiffré au devis)' : 'Flocage : non'
-        ].concat(detailLines),
-        previews: previews,
-        // Données structurées transmises telles quelles au backend (voir submitQuote).
-        group: {
-          productType: currentProductType,
-          productLabel: productLabel,
-          pieces: pieces,
-          hasFlock: hasFlock,
-          rows: rows
-        }
-      });
+      confAlert(
+        'Liste enregistrée : ' + rows.length + ' ligne' + (rows.length > 1 ? 's' : '') +
+        ' · ' + pieces + ' pièce' + (pieces > 1 ? 's' : '') +
+        '. Terminez votre design, puis « Ajouter au panier » créera une ligne par personne.',
+        { icon: 'success', title: 'Liste enregistrée' }
+      );
     }
 
     /* ── Guide des tailles ── */
@@ -2057,16 +2052,18 @@
       var dosW = 30 * cm.w, dosH = Math.min(39 * cm.h, DOS_H_MAX_PCT);
       var manW = 8 * cm.w,  manH = 8 * cm.h;
       return {
-        // Logo cœur (gauche) : bornes = tout le bandeau ; startLeft = côté GAUCHE.
+        // Logo « Cœur (gauche) » : démarre côté DROIT du bandeau (le porteur voit
+        // son cœur à sa gauche = à droite sur le rendu vu de face).
         'f':  { zoneId: 'zone-chest', logoId: 'logo-f',
                 left: CHEST.left, top: CHEST.top,
                 width: CHEST.width, height: CHEST.height, maxW: chLogoW,
-                startLeft: CHEST.left + chPad },
-        // Logo poitrine droite : mêmes bornes ; startLeft = côté DROIT.
+                startLeft: CHEST.left + CHEST.width - chLogoW - chPad },
+        // Logo « Poitrine droite » : démarre côté GAUCHE du bandeau (droite du
+        // porteur = gauche sur le rendu vu de face).
         'fr': { zoneId: 'zone-chest', logoId: 'logo-fr',
                 left: CHEST.left, top: CHEST.top,
                 width: CHEST.width, height: CHEST.height, maxW: chLogoW,
-                startLeft: CHEST.left + CHEST.width - chLogoW - chPad },
+                startLeft: CHEST.left + chPad },
         // Dos : centré (X≈49.8 %), haut de zone sous le col.
         'b':  { zoneId: 'zone-b',  logoId: 'logo-b',
                 left: 49.8 - dosW / 2, top: DOS_TOP_PCT, width: dosW, height: dosH, maxW: dosW },
@@ -2226,6 +2223,9 @@
           
           // Masquer la zone dès qu'un élément est présent
           zoneEl.classList.toggle('filled', hasLogoF || hasLogoFr || hasTextF || hasTextFr);
+          // Un LOGO sur un côté grise le choix de TEXTE de ce côté (réciproque
+          // du grisage upload<->texte). Indépendant gauche/droite.
+          refreshTextZoneChoices(!!hasLogoF, !!hasLogoFr);
         } else {
           // Autres zones : comportement normal
           var logo = document.getElementById(z.logoId);
@@ -2237,6 +2237,34 @@
           zoneEl.classList.toggle('filled', !!hasLogo || !!hasText);
         }
       });
+    }
+
+    /* Grise le bouton d'emplacement TEXTE d'un côté quand un LOGO l'occupe.
+       Zone poitrine unifiée : pas de texte + logo du même côté. Si le côté
+       désactivé était sélectionné, on repli la sélection vers un côté libre. */
+    function refreshTextZoneChoices(logoOnF, logoOnFr) {
+      var wrap = document.getElementById('txt-where');
+      if (!wrap) return;
+      var blocked = { f: !!logoOnF, fr: !!logoOnFr };
+      var titles = { f: 'Côté cœur, à gauche du porteur',
+                     fr: 'Poitrine, à droite du porteur', b: 'Dos du vêtement' };
+      var current = null, firstFree = null;
+      wrap.querySelectorAll('.txt-where-opt').forEach(function (b) {
+        var z = b.getAttribute('data-zone');
+        var off = !!blocked[z];                 // b (dos) jamais bloqué
+        b.disabled = off;
+        b.style.opacity = off ? '0.4' : '';
+        b.style.pointerEvents = off ? 'none' : '';
+        b.title = off ? 'Un logo occupe ce côté — retirez-le pour y ajouter du texte'
+                      : (titles[z] || '');
+        if (b.classList.contains('on')) current = b;
+        if (!off && !firstFree) firstFree = b;
+      });
+      // Le côté actif vient d'être bloqué -> basculer vers un côté libre.
+      if (current && blocked[current.getAttribute('data-zone')] && firstFree &&
+          typeof window.setTextZoneChoice === 'function') {
+        window.setTextZoneChoice(firstFree);
+      }
     }
 
     /* Met à jour dynamiquement les bornes des zones selon la TAILLE choisie
@@ -4070,9 +4098,19 @@
       emptyEl.style.display = 'none';
       footerEl.style.display = 'block';
 
+      // Quantité totale PAR TYPE (toutes lignes) -> palier de prix dégressif.
+      const totalsByType = {};
+      cartItems.forEach(i => {
+        totalsByType[i.productType] = (totalsByType[i.productType] || 0) + (i.qty || 0);
+      });
+
       let total = 0;
       cartItems.forEach(item => {
-        total += item.price * item.qty;
+        // Prix unitaire effectif : produit dégressif = prix du palier atteint.
+        const unit = window.effectiveUnitPrice
+          ? window.effectiveUnitPrice(item, totalsByType)
+          : item.price;
+        total += unit * item.qty;
         const div = document.createElement('div');
         div.className = 'cd-item';
         div.innerHTML = `
@@ -4082,7 +4120,9 @@
           <div class="cd-info">
             <div class="cd-name">${item.name}${item.personName ? ' — ' + item.personName : ''}</div>
             <div class="cd-meta">${item.color}${item.size ? ' · ' + item.size : ''}</div>
-            <div class="cd-price">${(item.price * item.qty).toFixed(2).replace('.',',')} €</div>
+            <div class="cd-price">${unit.toFixed(2).replace('.',',')} € <span class="cd-tier">/u${
+              item.qty > 1 ? ' · total ' + (unit * item.qty).toFixed(2).replace('.',',') + ' €' : ''
+            }</span></div>
             <div class="cd-qty">
               <button class="cd-qty-btn" onclick="changeCartQty(${item.id}, -1)">−</button>
               <span class="cd-qty-val">${item.qty}</span>
@@ -4806,9 +4846,18 @@
           el.style.textAlign = 'center';
         }
       } else {
-        var o = _zoneOrigStyle[zone];
-        if (o) { zoneEl.style.left = o.left; zoneEl.style.top = o.top;
-          zoneEl.style.width = o.width; zoneEl.style.height = o.height; }
+        // Restaure depuis LOGO_ZONES (source de vérité = CHEST), et NON depuis
+        // _zoneOrigStyle : au reload, restoreTexts() appelle ce mode 'off' avant
+        // qu'aucun 'on' n'ait mémorisé la géométrie -> l'ancienne capture (ou
+        // celle de l'autre côté f/fr partageant zone-chest) réagrandissait la
+        // zone. En repartant des bornes canoniques, la zone garde toujours sa
+        // hauteur voulue (bandeau fin) après rechargement.
+        var zk = (zone === 'fr') ? 'fr' : (zone === 'b') ? 'b' : 'f';
+        var cz = (typeof LOGO_ZONES !== 'undefined') ? LOGO_ZONES[zk] : null;
+        if (cz) {
+          zoneEl.style.left = cz.left + '%'; zoneEl.style.top = cz.top + '%';
+          zoneEl.style.width = cz.width + '%'; zoneEl.style.height = cz.height + '%';
+        }
         zoneEl.classList.remove('text-mode');
       }
       if (typeof refreshZoneGuides === 'function') refreshZoneGuides();

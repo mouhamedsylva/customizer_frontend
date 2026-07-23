@@ -396,6 +396,33 @@
     function money(val) {
       return (Number(val) || 0).toFixed(2).replace('.', ',') + ' €';
     }
+
+    /* Prix DÉGRESSIF par quantité, PAR PRODUIT (TTC). Doit rester aligné sur
+       window.QTY_TIERS du configurateur. Défini localement : recapitulatif.liquid
+       est une page distincte, on ne dépend pas d'un global chargé ailleurs.
+       Seuls les produits listés ici sont dégressifs ; les autres gardent le
+       prix stocké sur la ligne. Coton / polyester / coins : à compléter. */
+    var QTY_TIERS = (typeof window !== 'undefined' && window.QTY_TIERS) || {
+      sweatshirt: [
+        { min: 40, price: 52.00 }, { min: 15, price: 53.90 },
+        { min: 5, price: 56.50 }, { min: 1, price: 60.00 }
+      ]
+      // tshirt: [...], tshirt_polyester: [...], coins: [...]  (à venir)
+    };
+    function tierUnitPrice(productType, totalQty) {
+      var tiers = QTY_TIERS[productType];
+      if (!tiers || !tiers.length) return null;   // produit non dégressif
+      var q = Math.max(0, parseInt(totalQty, 10) || 0);
+      for (var i = 0; i < tiers.length; i++) {
+        if (q >= tiers[i].min) return tiers[i].price;
+      }
+      return tiers[tiers.length - 1].price;
+    }
+    function effectiveUnitPrice(item, totalsByType) {
+      if (!item) return 0;
+      var tier = tierUnitPrice(item.productType, (totalsByType || {})[item.productType] || 0);
+      return tier != null ? tier : (Number(item.price) || 0);
+    }
     function esc(s) {
       return String(s == null ? '' : s)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -586,9 +613,16 @@
       contBtn.style.pointerEvents = '';
       if (typeof onConsentChange === 'function') onConsentChange();
 
+      // Quantité totale par type -> palier dégressif appliqué à l'affichage.
+      var totalsByType = {};
+      items.forEach(function (i) {
+        totalsByType[i.productType] = (totalsByType[i.productType] || 0) + (i.qty || 1);
+      });
+
       let subtotal = 0;
       itemsEl.innerHTML = items.map((item, idx) => {
-        const lineTotal = (Number(item.price) || 0) * (item.qty || 1);
+        const unit = effectiveUnitPrice(item, totalsByType);
+        const lineTotal = unit * (item.qty || 1);
         subtotal += lineTotal;
 
         // Propriétés : textile = couleur + taille séparés ; custom = détails bruts
