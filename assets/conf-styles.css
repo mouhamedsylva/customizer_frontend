@@ -744,6 +744,15 @@
     }
     .btn-group:hover { background: var(--black); color: #fff; }
 
+    /* Rappel « liste de groupe enregistrée » au-dessus du bouton panier :
+       l'ajout au panier créera une ligne par personne. */
+    .grp-badge {
+      margin-bottom: 8px; padding: 7px 10px;
+      background: #f0fdf4; color: #166534;
+      border: 1px solid #bbf7d0; border-radius: 6px;
+      font-size: 11px; font-weight: 700; text-align: center; line-height: 1.35;
+    }
+
     /* ── Modale commande de groupe ── */
     .grp-overlay, .grp-preview-overlay {
       position: fixed; inset: 0; z-index: 10000;
@@ -1337,3 +1346,35 @@
     .txt-shape-grid,
     .conf-shape-grid { grid-template-columns: repeat(2, 1fr) !important; }
   }
+
+/* ── Section « Personnalisation » : liste d'options dépliables ────────────
+   Cinq entrées (texte, logo, surnoms, logo dos, manches) sous une seule
+   section. Chaque ligne se déplie au clic pour révéler sa zone de travail :
+   la barre latérale reste courte au repos, tout en gardant les aperçus et les
+   boutons Supprimer visibles une fois une zone remplie. */
+.perso-list { border-top: 1px solid var(--border); }
+.perso-item { border-bottom: 1px solid var(--border); }
+.perso-head {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 11px 2px; background: none; border: none; cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--black);
+}
+.perso-head:hover .perso-name { color: var(--blue); }
+.perso-ico { flex: 0 0 20px; font-size: 15px; line-height: 1; text-align: center; }
+.perso-txt { flex: 1; min-width: 0; }
+.perso-name { display: block; font-size: 11.5px; font-weight: 600; }
+.perso-sub  { display: block; margin-top: 1px; font-size: 9.5px; color: var(--faint); }
+/* Chevron : pivote quand la ligne est ouverte. */
+.perso-caret {
+  flex: 0 0 auto; font-size: 11px; color: var(--faint);
+  transition: transform .18s;
+}
+.perso-item.open .perso-caret { transform: rotate(90deg); }
+.perso-body { display: none; padding: 0 2px 12px; }
+.perso-item.open .perso-body { display: block; }
+/* Pastille « rempli » : le client repère d'un coup d'œil ce qui est déjà fait. */
+.perso-done {
+  flex: 0 0 auto; font-size: 9px; font-weight: 700; color: var(--ok, #16a34a);
+  display: none;
+}
+.perso-item.filled .perso-done { display: inline; }

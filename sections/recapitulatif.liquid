@@ -421,7 +421,14 @@
         if (!variantId) { skipped.push(it); return; }
 
         var properties = {};
-        // Visibles au checkout (utiles au client) : couleur + taille.
+        // Visibles au checkout (utiles au client) : personne + couleur + taille.
+        // « Personne » vient d'une liste de groupe : chaque ligne de la commande
+        // indique alors à qui le vêtement est destiné (nécessaire à l'atelier).
+        if (it.personName) properties['Personne'] = it.personName;
+        // Rattache la ligne à sa liste de groupe : les lignes d'une même
+        // commande restent lisibles comme un ensemble (« 2/5 »).
+        if (it.groupLabel) properties['Liste'] = it.groupLabel;
+        if (it.groupIndex) properties['Ligne'] = it.groupIndex;
         if (it.color) properties['Détails'] = it.color;
         if (it.size)  properties['Taille'] = it.size;
 

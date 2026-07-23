@@ -268,6 +268,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Bebas+Neue&family=Caveat:wght@700&family=Dancing+Script:wght@700&family=Fredoka+One&family=Great+Vibes&family=Lobster&family=Luckiest+Guy&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Oswald:wght@600&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@700&family=Poppins:wght@700&family=Righteous&family=Roboto+Slab:wght@700&family=Rock+Salt&family=Sacramento&family=Satisfy&family=Shrikhand&family=Special+Elite&family=Teko:wght@600&family=Yellowtail&display=swap" rel="stylesheet">
     <script src="{{ 'conf-text-editor.js' | asset_url }}" defer></script>
+    <script src="{{ 'conf-share.js' | asset_url }}" defer></script>
   {{ "conf-styles.css" | asset_url | stylesheet_tag }}
   </head>
   <body>
@@ -462,21 +463,30 @@
         </div>
 
         <!-- 4. Texte : bouton -> champ inline -> panneau d'édition (façon CustomInk) -->
+        <!-- 4. Personnalisation : toutes les options de design réunies en une
+             liste dépliable. Chaque ligne ouvre sa zone de travail ; le reste
+             reste replié, ce qui garde la barre latérale courte et lisible. -->
         <div class="sec" id="txt-sec">
-          <div class="sec-title">4. Texte personnalisé</div>
-          <div class="sec-sub">Ajoutez un texte sur le vêtement</div>
+          <div class="sec-title">4. Personnalisation</div>
+          <div class="sec-sub">Composez votre design</div>
+          <div class="perso-list">
+          <div class="perso-item" id="pi-text">
+            <button type="button" class="perso-head" onclick="togglePerso('text')">
+              <span class="perso-ico">✏️</span>
+              <span class="perso-txt">
+                <span class="perso-name">Ajouter du texte</span>
+                <span class="perso-sub">Cœur, poitrine droite ou dos</span>
+              </span>
+              <span class="perso-done">✓</span>
+              <span class="perso-caret">›</span>
+            </button>
+            <div class="perso-body">
 
           <!-- État 1 : un seul bouton. L'emplacement est choisi à l'étape
                suivante, ce qui évite trois boutons de poids égal pour ce qui
                n'est qu'une seule action. -->
           <div id="txt-add-btns" class="txt-add-btns">
             <button class="txt-add-btn" onclick="startTextInline()">✏️ Ajouter un texte</button>
-            <!-- Commande de groupe : un nom floqué par personne. Ouvre la même
-                 modale que l'ancien bouton « Commander pour un groupe », qui
-                 est désormais masqué. Textiles uniquement (bascule en JS). -->
-            <button class="txt-add-btn" id="txt-multi-btn" onclick="openGroupOrder()">
-              👥 Ajouter plusieurs noms
-            </button>
           </div>
 
           <!-- État 2 : emplacement + saisie (remplacent le bouton). -->
@@ -513,15 +523,19 @@
             <button class="rmv" title="Modifier" onclick="editText('b')">✎</button>
             <button class="rmv" title="Supprimer" onclick="removeText('b')">🗑</button>
           </div>
-        </div>
-
-        <!-- 5. Logos : poitrine (deux emplacements côte à côte, disposés comme
-             sur le vêtement vu de face — poitrine droite du porteur à gauche de
-             l'écran) puis dos, en pleine largeur. Une seule section : ce sont
-             trois emplacements d'une même opération. -->
-        <div class="sec">
-          <div class="sec-title">5. Ajoutez vos logos</div>
-          <div class="sec-sub">Poitrine et dos (facultatif)</div>
+            </div>
+          </div>
+          <div class="perso-item" id="pi-logo">
+            <button type="button" class="perso-head" onclick="togglePerso('logo')">
+              <span class="perso-ico">🖼️</span>
+              <span class="perso-txt">
+                <span class="perso-name">Ajouter un logo</span>
+                <span class="perso-sub">Poitrine droite et/ou cœur</span>
+              </span>
+              <span class="perso-done">✓</span>
+              <span class="perso-caret">›</span>
+            </button>
+            <div class="perso-body">
           <div class="slvg" style="margin-top:6px">
             <div>
               <label>Poitrine droite</label>
@@ -556,8 +570,35 @@
               </div>
             </div>
           </div>
-
-          <!-- Dos : pleine largeur, sous les deux emplacements poitrine. -->
+            </div>
+          </div>
+          <div class="perso-item" id="pi-names">
+            <button type="button" class="perso-head" onclick="togglePerso('names')">
+              <span class="perso-ico">👥</span>
+              <span class="perso-txt">
+                <span class="perso-name">Ajouter plusieurs surnoms</span>
+                <span class="perso-sub">Un nom floqué par personne</span>
+              </span>
+              <span class="perso-done">✓</span>
+              <span class="perso-caret">›</span>
+            </button>
+            <div class="perso-body">
+              <p class="sec-sub" style="margin:0 0 8px">Même design pour tous, une ligne par personne.</p>
+              <button class="txt-add-btn" id="txt-multi-btn" onclick="openGroupOrder()" style="display:none">👥 Ouvrir la liste</button>
+            </div>
+          </div>
+          <div class="perso-item" id="pi-back">
+            <button type="button" class="perso-head" onclick="togglePerso('back')">
+              <span class="perso-ico">👕</span>
+              <span class="perso-txt">
+                <span class="perso-name">Ajouter un logo dos</span>
+                <span class="perso-sub">Grand format, centré</span>
+              </span>
+              <span class="perso-done">✓</span>
+              <span class="perso-caret">›</span>
+            </button>
+            <div class="perso-body">
+<!-- Dos : pleine largeur, sous les deux emplacements poitrine. -->
           <label style="display:block;margin-top:10px">Dos</label>
           <div class="uz" onclick="document.getElementById('ub').click()">
             <div class="uz-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="#999"><path d="M9 16V10H5l7-7 7 7h-4v6H9zm-4 4v-2h14v2H5z"/></svg></div>
@@ -574,12 +615,19 @@
               <button class="rmv" onclick="rmUp('b')">🗑 Supprimer</button>
             </span>
           </div>
-        </div>
-
-        <!-- 6. Manches — option tarifée (activable par le client) -->
-        <div class="sec">
-          <div class="sec-title">6. Personnalisation Manches 👕</div>
-
+            </div>
+          </div>
+          <div class="perso-item" id="pi-sleeve">
+            <button type="button" class="perso-head" onclick="togglePerso('sleeve')">
+              <span class="perso-ico">🧵</span>
+              <span class="perso-txt">
+                <span class="perso-name">Logo sur les manches</span>
+                <span class="perso-sub">Option supplémentaire</span>
+              </span>
+              <span class="perso-done">✓</span>
+              <span class="perso-caret">›</span>
+            </button>
+            <div class="perso-body">
           <!-- Carte d'option : intitulé, prix, bascule. Design professionnel
                avec badge de prix bien visible. Repliée tant que l'option n'est
                pas activée — on ne montre pas des zones d'upload pour une
@@ -632,6 +680,9 @@
             </div>
           </div>
           </div><!-- /slv-body -->
+            </div>
+          </div>
+          </div>
         </div>
 
       </div><!-- /sb-inner -->
@@ -760,12 +811,9 @@
             <div class="logo-layer" id="logo-layer" data-view="face" data-side="l">
               <!-- ZONES GUIDES (pointillés rouges) : délimitent où poser l'asset.
                    Visibles tant que la zone est vide. left/top/width/height en %.
-                   VUE FACE : uniquement le LOGO CŒUR (poitrine, côté cœur = droite
-                   de l'image). VUE CÔTÉ : la manche. VUE DOS : le grand logo. -->
-              <div class="logo-zone for-face" id="zone-f"  data-zone="f"  style="left:53.5%; top:28%; width:6%; height:14%;"></div>
-              <!-- Poitrine DROITE du porteur = GAUCHE de l'image (vue de face).
-                   Miroir de la zone cœur : left = 100 - left(f) - width. -->
-              <div class="logo-zone for-face" id="zone-fr" data-zone="fr" style="left:40.5%; top:28%; width:6%; height:14%;"></div>
+                   VUE FACE : Zone poitrine unifiée pour les logos gauche (cœur) et droit.
+                   Le client peut positionner librement ses logos dans cette zone élargie. -->
+              <div class="logo-zone for-face" id="zone-chest" data-zone="chest" style="left:41%; top:31%; width:18%; height:9%;"></div>
               <div class="logo-zone for-dos"  id="zone-b"  data-zone="b"  style="left:38%; top:23%; width:24%; height:46%;"></div>
               <!-- Manches : une zone par côté. L'image de profil est la même,
                    retournée en miroir pour la droite : la zone l'est aussi
@@ -778,13 +826,14 @@
               <div class="design-text for-face" id="text-fr" style="display:none; left:34%; top:31%; width:22%; font-size:20px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-fr"></span></div>
               <div class="design-text for-dos"  id="text-b" style="display:none; left:36%; top:27%; width:28%; font-size:26px; color:#ffffff;"><span class="dt-content"></span><span class="logo-resize" data-resize="text-b"></span></div>
 
-              <!-- Logo cœur : visible sur la vue de face -->
-              <div class="design-logo for-face" id="logo-f" data-zone="f" style="display:none; left:38%; top:34%; width:18%;">
-                <img src="" alt="Logo cœur" draggable="false">
+              <!-- Zone poitrine unifiée : visible sur la vue de face -->
+              <!-- Logo cœur (gauche) : uploadé via le bouton "Cœur (gauche)" -->
+              <div class="design-logo for-face" id="logo-f" data-zone="chest" style="display:none; left:38%; top:30%; width:18%;">
+                <img src="" alt="Logo cœur (gauche)" draggable="false">
                 <span class="logo-resize" data-resize="f"></span>
               </div>
-              <!-- Logo poitrine droite (du porteur) : visible sur la vue de face -->
-              <div class="design-logo for-face" id="logo-fr" data-zone="fr" style="display:none; left:44%; top:34%; width:18%;">
+              <!-- Logo poitrine droite : uploadé via le bouton "Poitrine droite" -->
+              <div class="design-logo for-face" id="logo-fr" data-zone="chest" style="display:none; left:44%; top:30%; width:18%;">
                 <img src="" alt="Logo poitrine droite" draggable="false">
                 <span class="logo-resize" data-resize="fr"></span>
               </div>
@@ -899,6 +948,9 @@
       </div>
 
       <div class="rp-acts">
+        <!-- Rappel de la liste de groupe validée : l'ajout au panier créera
+             une ligne par personne. Rempli par refreshGroupBadge(). -->
+        <div id="grp-badge" class="grp-badge" style="display:none"></div>
         <button class="btn-cart" id="main-add-to-cart" onclick="addToCart()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
           Ajouter au panier
@@ -911,10 +963,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
           Commander pour un groupe
         </button>
-        <button class="btn-save" onclick="saveDesign(this)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-          Sauvegarder le design
-        </button>
+
       </div>
 
       <div class="rp-trust">
@@ -1442,6 +1491,22 @@
     /* Envoi de la commande de groupe : on RÉUTILISE le formulaire de devis
        existant (coordonnées client) en lui passant la liste + le design commun.
        La sortie est donc un draft order / devis, comme pour les coins. */
+    /* Liste de groupe validée (« Confirmer »). Mémorisée ici puis consommée par
+       addToCart, qui crée UNE ligne de panier par personne. Non persistée en
+       sessionStorage : elle n'a de sens que pour le design en cours d'édition. */
+    var groupOrderRows = null;
+
+    /* Résumé sous le bouton d'ajout : rappelle que le panier créera N lignes. */
+    function refreshGroupBadge() {
+      var el = document.getElementById('grp-badge');
+      if (!el) return;
+      if (!groupOrderRows || !groupOrderRows.length) { el.style.display = 'none'; return; }
+      var pieces = groupOrderRows.reduce(function (s, r) { return s + r.qty; }, 0);
+      el.style.display = '';
+      el.textContent = 'Liste de groupe : ' + groupOrderRows.length + ' personne' +
+        (groupOrderRows.length > 1 ? 's' : '') + ' · ' + pieces + ' pièce' + (pieces > 1 ? 's' : '');
+    }
+
     async function submitGroupOrder(btnEl) {
       var rows = grpCollect();
       if (!rows.length) {
@@ -1451,6 +1516,25 @@
 
       var pieces = rows.reduce(function (s, r) { return s + r.qty; }, 0);
       var hasFlock = rows.some(function (r) { return r.flock; });
+
+      /* SANS FLOCAGE : la liste est simplement mémorisée. L'ajout au panier se
+         fait ensuite via « Ajouter au panier », une fois le design terminé —
+         c'est lui qui déplie la liste en une ligne par personne. */
+      if (!hasFlock) {
+        groupOrderRows = rows;
+        refreshGroupBadge();
+        closeGroupOrder();
+        confAlert(
+          'Liste enregistrée : ' + rows.length + ' personne' + (rows.length > 1 ? 's' : '') +
+          ' · ' + pieces + ' pièce' + (pieces > 1 ? 's' : '') +
+          '. Terminez votre design, puis « Ajouter au panier » créera une ligne par personne.',
+          { icon: 'success', title: 'Liste enregistrée' }
+        );
+        return;
+      }
+
+      /* AVEC FLOCAGE : le flocage n'a pas de variant Shopify, il ne peut donc
+         pas être facturé sur une ligne de panier. On passe par le devis. */
 
       // Type de produit lisible (Sweatshirt / T-shirt coton / T-shirt polyester).
       var rcProd = document.getElementById('rc-prod');
@@ -1519,6 +1603,21 @@
     // Type de produit courant (tous types : textile, drapeaux, coins, patches).
     let currentProductType = 'sweatshirt';
 
+    /* Les 3 produits textiles : seuls eux acceptent une commande de groupe
+       (un coin ou un drapeau n'a ni taille ni nom floqué par personne). */
+    var TEXTILE_TYPES = ['sweatshirt', 'tshirt', 'tshirt_polyester'];
+
+    /* Affiche « Ajouter plusieurs surnoms » pour les seuls textiles.
+       Appelée au changement de produit ET au chargement : sans l'appel
+       initial, le bouton restait masqué (display:none du markup) même sur un
+       textile, puisque rien ne le réaffichait avant un changement. */
+    function refreshMultiNameBtn(productType) {
+      var t = productType || currentProductType;
+      var btn = document.getElementById('txt-multi-btn');
+      if (btn) btn.style.display = (TEXTILE_TYPES.indexOf(t) !== -1) ? '' : 'none';
+    }
+    window.refreshMultiNameBtn = refreshMultiNameBtn;
+
     /* ── Variants Shopify pour le panier natif (produits à prix fixe) ──
        coins n'a pas de variant : il passe par une demande de devis. */
     window.CONF_VARIANTS = {
@@ -1564,7 +1663,11 @@
         // Applique les zones du produit restauré (échelle sweat ≠ t-shirt),
         // ce qui rafraîchit aussi les guides.
         if (typeof applyZonesForProduct === 'function') {
-          setTimeout(function () { applyZonesForProduct(currentProductType); }, 300);
+          setTimeout(function () {
+            applyZonesForProduct(currentProductType);
+            // Le bouton « plusieurs surnoms » suit le produit restauré.
+            if (typeof refreshMultiNameBtn === 'function') refreshMultiNameBtn();
+          }, 300);
         } else if (typeof refreshZoneGuides === 'function') {
           setTimeout(refreshZoneGuides, 300);
         }
@@ -1942,21 +2045,28 @@
          Manches : rectangle 8x6, ou rond/autre 8x8 -> zone 8x8.
        Positions (left/top) relevées sur les visuels de référence de l'atelier. */
     function buildZones(cm) {
-      // Dos : 30 cm de large. La hauteur théorique (39 cm) descendait trop bas
-      // sur le visuel — la zone dépassait la couture d'épaule en haut et
-      // atteignait les hanches en bas. Bornée à la surface réellement
-      // imprimable relevée sur les repères atelier (voir DOS_H_MAX_PCT).
+      // Zone poitrine unifiée : bandeau LARGE et FIN centré sur la poitrine
+      // (cf. maquette de référence). Exprimée directement en % du layer — les
+      // "cm" servent aux zones dos/manches, mais ici la contrainte est visuelle
+      // (un ruban horizontal), pas une taille d'impression fixe.
+      // Les logos "gauche" (f) et "droite" (fr) s'y placent librement ; ils
+      // démarrent décalés (gauche / droite) pour ne pas se recouvrir à l'upload.
+      var CHEST = { left: 41, top: 31, width: 18, height: 9 };
+      // Largeur initiale d'un logo dans le bandeau, et marge intérieure.
+      var chLogoW = 7.5, chPad = CHEST.width * 0.06;
       var dosW = 30 * cm.w, dosH = Math.min(39 * cm.h, DOS_H_MAX_PCT);
-      var couW = 8 * cm.w,  couH = 8 * cm.h;
       var manW = 8 * cm.w,  manH = 8 * cm.h;
       return {
-        // Cœur : côté cœur du porteur = DROITE de l'image en vue face.
-        'f':  { zoneId: 'zone-f',  logoId: 'logo-f',
-                left: 53.6, top: 28.6, width: couW, height: couH, maxW: couW },
-        // Poitrine DROITE du porteur = GAUCHE de l'image. Miroir exact de 'f'
-        // par rapport à l'axe du vêtement (X ≈ 49.8 %), même gabarit 8x8.
-        'fr': { zoneId: 'zone-fr', logoId: 'logo-fr',
-                left: 2 * 49.8 - 53.6 - couW, top: 28.6, width: couW, height: couH, maxW: couW },
+        // Logo cœur (gauche) : bornes = tout le bandeau ; startLeft = côté GAUCHE.
+        'f':  { zoneId: 'zone-chest', logoId: 'logo-f',
+                left: CHEST.left, top: CHEST.top,
+                width: CHEST.width, height: CHEST.height, maxW: chLogoW,
+                startLeft: CHEST.left + chPad },
+        // Logo poitrine droite : mêmes bornes ; startLeft = côté DROIT.
+        'fr': { zoneId: 'zone-chest', logoId: 'logo-fr',
+                left: CHEST.left, top: CHEST.top,
+                width: CHEST.width, height: CHEST.height, maxW: chLogoW,
+                startLeft: CHEST.left + CHEST.width - chLogoW - chPad },
         // Dos : centré (X≈49.8 %), haut de zone sous le col.
         'b':  { zoneId: 'zone-b',  logoId: 'logo-b',
                 left: 49.8 - dosW / 2, top: DOS_TOP_PCT, width: dosW, height: dosH, maxW: dosW },
@@ -2041,7 +2151,11 @@
         h = (logo.offsetHeight / lh) * 100;
       }
 
-      logo.style.left = clampNum(z.left + (z.width - w) / 2, z.left, z.left + z.width - w) + '%';
+      // Position de départ : centrée par défaut, ou décalée (startLeft) pour la
+      // zone poitrine unifiée où gauche (f) et droite (fr) ne doivent pas se
+      // superposer. Dans tous les cas, bornée à la zone.
+      var startL = (typeof z.startLeft === 'number') ? z.startLeft : z.left + (z.width - w) / 2;
+      logo.style.left = clampNum(startL, z.left, z.left + z.width - w) + '%';
       logo.style.top  = clampNum(z.top + (z.height - h) / 2, z.top, z.top + z.height - h) + '%';
 
       refreshZoneGuides();
@@ -2084,20 +2198,44 @@
     }
 
     /* Affiche/masque les rectangles guides : visibles seulement si leur logo est
-       vide (pas encore d'asset). */
+       vide (pas encore d'asset). Pour la zone poitrine, elle se masque dès qu'un
+       des deux logos (f ou fr) est présent. */
     function refreshZoneGuides() {
       Object.keys(LOGO_ZONES).forEach(function (zone) {
         var z = LOGO_ZONES[zone];
         var zoneEl = document.getElementById(z.zoneId);
-        var logo = document.getElementById(z.logoId);
         if (!zoneEl) return;
-        var img = logo ? logo.querySelector('img') : null;
-        var hasLogo = logo && logo.style.display !== 'none' && img && img.getAttribute('src');
-        // La zone se masque aussi si un TEXTE est présent (face 'f' / dos 'b').
-        var txtEl = (zone === 'f' || zone === 'fr' || zone === 'b') ? document.getElementById('text-' + zone) : null;
-        var hasText = txtEl && txtEl.style.display !== 'none' &&
-          (txtEl.textContent.trim() || txtEl.querySelector('svg'));
-        zoneEl.classList.toggle('filled', !!hasLogo || !!hasText);
+        
+        // Pour la zone poitrine partagée, vérifier les deux logos (f et fr)
+        if (z.zoneId === 'zone-chest') {
+          var logoF = document.getElementById('logo-f');
+          var logoFr = document.getElementById('logo-fr');
+          var imgF = logoF ? logoF.querySelector('img') : null;
+          var imgFr = logoFr ? logoFr.querySelector('img') : null;
+          
+          var hasLogoF = logoF && logoF.style.display !== 'none' && imgF && imgF.getAttribute('src');
+          var hasLogoFr = logoFr && logoFr.style.display !== 'none' && imgFr && imgFr.getAttribute('src');
+          
+          // Vérifier aussi les textes sur f et fr
+          var txtF = document.getElementById('text-f');
+          var txtFr = document.getElementById('text-fr');
+          var hasTextF = txtF && txtF.style.display !== 'none' &&
+            (txtF.textContent.trim() || txtF.querySelector('svg'));
+          var hasTextFr = txtFr && txtFr.style.display !== 'none' &&
+            (txtFr.textContent.trim() || txtFr.querySelector('svg'));
+          
+          // Masquer la zone dès qu'un élément est présent
+          zoneEl.classList.toggle('filled', hasLogoF || hasLogoFr || hasTextF || hasTextFr);
+        } else {
+          // Autres zones : comportement normal
+          var logo = document.getElementById(z.logoId);
+          var img = logo ? logo.querySelector('img') : null;
+          var hasLogo = logo && logo.style.display !== 'none' && img && img.getAttribute('src');
+          var txtEl = (zone === 'b') ? document.getElementById('text-' + zone) : null;
+          var hasText = txtEl && txtEl.style.display !== 'none' &&
+            (txtEl.textContent.trim() || txtEl.querySelector('svg'));
+          zoneEl.classList.toggle('filled', !!hasLogo || !!hasText);
+        }
       });
     }
 
@@ -2352,8 +2490,7 @@
          « Ajouter plusieurs noms » (section Texte) ; l'ancien bouton reste
          masqué en permanence. */
       var isTx = ['sweatshirt', 'tshirt', 'tshirt_polyester'].indexOf(productType) !== -1;
-      var multiBtn = document.getElementById('txt-multi-btn');
-      if (multiBtn) multiBtn.style.display = isTx ? '' : 'none';
+      refreshMultiNameBtn(productType);
       // Persiste le produit choisi : au reload (F5), on revient sur CE produit
       // au lieu de repartir sur le sweatshirt par défaut.
       try { if (productType) sessionStorage.setItem('conf_current_product', productType); } catch (e) {}
@@ -2421,7 +2558,8 @@
 
 
     async function addToCart() {
-      cartCount++;
+      // cartCount est recalculé depuis cartItems par pushToCart : ne pas
+      // l'incrémenter ici (faux pour une liste de groupe = plusieurs lignes).
 
       // Récupère les infos du produit courant
       const rcProdImg = document.getElementById('rc-prod-img');
@@ -2462,10 +2600,47 @@
       const logoAssets = collectDesignAssets();
       const textAssets = await collectTextAssets();
 
+      const productName = rcProd ? rcProd.textContent.trim() : 'Produit personnalisé';
+      const sleeves = (typeof sleeveCount === 'function') ? sleeveCount() : 0;
+
+      /* LISTE DE GROUPE validée : le design est commun, mais chaque personne a
+         sa taille et sa couleur -> une ligne de panier par personne. La couleur
+         est écrite « Couleur : X » car variantForItem (recapitulatif.liquid)
+         extrait le nom via ce format pour choisir le bon variant ; sans le
+         préfixe, tout le monde retomberait sur le variant de repli. */
+      if (groupOrderRows && groupOrderRows.length) {
+        const rows = groupOrderRows;
+        // Toutes les lignes partagent ce libellé : elles restent identifiables
+        // comme UNE même liste dans le panier et sur la commande Shopify.
+        const groupLabel = 'Groupe ' + rows.length + ' pers. #' + String(Date.now()).slice(-5);
+        rows.forEach(function (r, idx) {
+          pushToCart({
+            id: Date.now() + idx,
+            productType: currentProductType,
+            name: productName,
+            color: 'Couleur : ' + r.color,
+            size: r.size,
+            personName: r.name || '',    // distingue deux personnes identiques
+            groupLabel: groupLabel,
+            groupIndex: (idx + 1) + '/' + rows.length,
+            price: price,
+            img: design.thumb,
+            sheet: design.sheet,
+            assets: logoAssets.concat(textAssets),
+            sleeveCount: sleeves,
+            qty: r.qty
+          }, idx === rows.length - 1 ? btnEl : null);
+        });
+        // Consommée : un second clic ne redupliquerait pas la liste.
+        groupOrderRows = null;
+        refreshGroupBadge();
+        return;
+      }
+
       const item = {
         id: Date.now(),
         productType: currentProductType,
-        name:  rcProd  ? rcProd.textContent.trim()  : 'Produit personnalisé',
+        name:  productName,
         color: rcColor ? rcColor.textContent.trim() : '',
         size:  rcSize  ? rcSize.textContent.trim()  : '',
         price: price,
@@ -2475,7 +2650,7 @@
         assets: logoAssets.concat(textAssets),
         // Nombre de manches personnalisées : facturé au checkout via le produit
         // add-on (voir buildShopifyItems dans recapitulatif.liquid).
-        sleeveCount: (typeof sleeveCount === 'function') ? sleeveCount() : 0,
+        sleeveCount: sleeves,
         qty: 1
       };
 
@@ -2680,8 +2855,12 @@
        replaceQty = true : la quantité de l'item EST le nombre d'unités (coins/patchs/drapeaux),
        on remplace au lieu de cumuler. false (textile) : on cumule +1 à chaque ajout. */
     function pushToCart(item, btnEl, replaceQty) {
-      // Vérifie si le même article existe déjà (même nom+détails)
-      const existing = cartItems.find(i => i.name === item.name && i.color === item.color && i.size === item.size);
+      // Vérifie si le même article existe déjà (même nom+détails).
+      // personName entre dans la clé : deux personnes d'une liste de groupe
+      // ayant même taille+couleur doivent rester DEUX lignes distinctes.
+      const existing = cartItems.find(i => i.name === item.name && i.color === item.color &&
+                                           i.size === item.size &&
+                                           (i.personName || '') === (item.personName || ''));
       if (existing) {
         if (replaceQty) {
           existing.qty = item.qty || 1;   // remplacer par la quantité choisie
@@ -3249,7 +3428,7 @@
       // reste de l'époque où elles s'affichaient sur la vue de face. Elles ont
       // été retirées du canevas mais pas d'ici : leurs logos se retrouvaient
       // plaqués sur la vignette du panier alors qu'ils sont sur les côtés.
-      const faceZones = ['logo-f'];
+      const faceZones = ['logo-f', 'logo-fr'];
       const logos = [];
       faceZones.forEach(id => {
         const el = document.getElementById(id);
@@ -3329,85 +3508,7 @@
        exactement comme un logo — pour l'ajouter à la planche. Renvoie null si la
        zone n'a pas de texte. Gère le texte simple ET le texte courbé (SVG).
        Sans ça, le texte du client n'apparaissait pas sur la planche. */
-    function textZoneImage(zoneId, imgBox, layerBox, canReproject) {
-      var el = document.getElementById(zoneId);
-      if (!el || el.style.display === 'none') return null;
-      var content = el.querySelector('.dt-content');
-      if (!content) return null;
-      var raw = (content.textContent || '').trim();
-      if (!raw) return null;
-
-      return new Promise(function (resolve) {
-        // Dimensions écran de la zone de texte (pour reprojeter comme un logo).
-        var pct = function (v) {
-          if (typeof v !== 'string') return null;
-          var m = v.trim().match(/^([\d.]+)%$/);
-          return m ? parseFloat(m[1]) / 100 : null;
-        };
-        var geo;
-        if (canReproject) {
-          var r = el.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) {
-            geo = {
-              x: (r.left - imgBox.left) / imgBox.width,
-              y: (r.top - imgBox.top) / imgBox.height,
-              w: r.width / imgBox.width
-            };
-          }
-        }
-        if (!geo) {
-          var lx = pct(el.style.left), ly = pct(el.style.top), lw = pct(el.style.width);
-          if (lx == null || ly == null || lw == null) { resolve(null); return; }
-          geo = { x: lx, y: ly, w: lw };
-        }
-
-        var cs = window.getComputedStyle(el);
-        var color = cs.color || '#111';
-        var fontFamily = cs.fontFamily || 'sans-serif';
-        var shaped = el.classList.contains('is-shaped');
-
-        // Texte courbé : on rasterise le SVG déjà rendu dans .dt-content.
-        var svg = content.querySelector('svg');
-        if (shaped && svg) {
-          var clone = svg.cloneNode(true);
-          // Fige une taille de rendu nette.
-          clone.setAttribute('width', '600');
-          clone.setAttribute('height', '180');
-          var xml = new XMLSerializer().serializeToString(clone);
-          var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
-          var im = new Image();
-          im.onload = function () {
-            var cv = document.createElement('canvas');
-            cv.width = 600; cv.height = 180;
-            cv.getContext('2d').drawImage(im, 0, 0, 600, 180);
-            try { resolve({ src: cv.toDataURL('image/png'), x: geo.x, y: geo.y, w: geo.w }); }
-            catch (e) { resolve(null); }
-          };
-          im.onerror = function () { resolve(null); };
-          im.src = url;
-          return;
-        }
-
-        // Texte simple : dessin canvas 2D haute résolution.
-        var fontSize = 160;
-        var font = '700 ' + fontSize + 'px ' + fontFamily;
-        var meas = document.createElement('canvas').getContext('2d');
-        meas.font = font;
-        var tw = Math.max(1, meas.measureText(raw).width);
-        var padX = fontSize * 0.15, padY = fontSize * 0.35;
-        var cv = document.createElement('canvas');
-        cv.width = Math.ceil(tw + padX * 2);
-        cv.height = Math.ceil(fontSize + padY * 2);
-        var ctx = cv.getContext('2d');
-        ctx.font = font;
-        ctx.fillStyle = color;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(raw, cv.width / 2, cv.height / 2);
-        try { resolve({ src: cv.toDataURL('image/png'), x: geo.x, y: geo.y, w: geo.w }); }
-        catch (e) { resolve(null); }
-      });
-    }
+    /* textZoneImage : extrait dans assets/conf-share.js (limite 256 Ko). */
 
     async function captureAllViews() {
       // Uniquement pour les produits TEXTILES. Pour coins/drapeaux/patches,
@@ -3478,7 +3579,7 @@
       // textZone : la zone de texte personnalisé visible sur cette vue
       // (face -> #text-f, dos -> #text-b). Les manches n'ont pas de texte.
       const viewDefs = [
-        { key: 'face',  img: 'face', label: 'FACE',          zones: ['logo-f'], textZone: 'f' },
+        { key: 'face',  img: 'face', label: 'FACE',          zones: ['logo-f', 'logo-fr'], textZone: 'f' },
         { key: 'dos',   img: 'dos',  label: 'DOS',           zones: ['logo-b'], textZone: 'b' },
         { key: 'sl',    img: 'cote', label: 'MANCHE GAUCHE', zones: ['logo-sl'] },
         { key: 'sr',    img: 'cote', label: 'MANCHE DROITE', zones: ['logo-sr'], mirror: true }
@@ -3879,85 +3980,8 @@
     /* Menu de partage. mode = 'image' (partage l'aperçu) ou 'invite' (partage le
        lien d'invitation à éditer). Les boutons WhatsApp/Gmail/Copier pointent tous
        vers l'URL fournie. */
-    function openShareMenu(url, text, mode) {
-      const old = document.getElementById('share-menu');
-      if (old) old.remove();
-
-      var isSave = (mode === 'save');
-      var isInvite = (mode === 'invite') || isSave; // save = même flux (lien de reprise)
-      const enc = encodeURIComponent;
-      var subject = isSave ? 'Mon design sauvegardé' : (isInvite ? 'Personnalisez ce design avec moi' : 'Mon design personnalisé');
-      const waHref = 'https://wa.me/?text=' + enc(text + ' ' + url);
-      const mailHref = 'https://mail.google.com/mail/?view=cm&fs=1&su=' +
-        enc(subject) + '&body=' + enc(text + '\n' + url);
-
-      var title = isSave ? 'Design sauvegardé' : (isInvite ? 'Inviter à éditer' : 'Partager mon design');
-      var copyLabel = isInvite ? 'Copier le lien' : 'Copier le lien de l\'image';
-      // Bloc "Inviter" (mode image) OU bouton "retour" (mode invite, pas save).
-      var extraBlock = isInvite
-        ? (isSave ? '' : '<button id="share-back-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:10px;border:none;border-radius:10px;background:#f0f0f0;cursor:pointer;color:#333;font-weight:600;font-family:inherit;margin-top:4px;"><span style="font-size:18px;">←</span> Retour au partage d\'image</button>')
-        : '<div style="border-top:1px solid #eee;margin:6px 0 12px;"></div>' +
-          '<button id="share-invite-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:none;border-radius:10px;background:#1a1a1a;cursor:pointer;color:#fff;font-weight:700;font-family:inherit;"><span style="font-size:20px;">✉️</span> Inviter une personne à éditer</button>' +
-          '<p style="font-size:11px;color:#888;margin-top:8px;line-height:1.4;">La personne invitée ouvrira le configurateur avec votre design en cours (modifiable).</p>';
-
-      const overlay = document.createElement('div');
-      overlay.id = 'share-menu';
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
-      overlay.innerHTML = `
-        <div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:90%;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <strong style="font-size:16px;">${title}</strong>
-            <button onclick="document.getElementById('share-menu').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">✕</button>
-          </div>
-          ${isInvite ? ('<p style="font-size:12px;color:#16a34a;margin:0 0 14px;font-weight:600;">✓ ' + (isSave ? 'Lien de reprise prêt (envoyez-le-vous)' : 'Lien d\'invitation prêt à envoyer') + '</p>') : '<div style="margin-bottom:10px;"></div>'}
-          <a href="${waHref}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e8e8e8;border-radius:10px;text-decoration:none;color:#1a1a1a;margin-bottom:10px;font-weight:600;">
-            <span style="font-size:20px;">🟢</span> WhatsApp
-          </a>
-          <a href="${mailHref}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e8e8e8;border-radius:10px;text-decoration:none;color:#1a1a1a;margin-bottom:10px;font-weight:600;">
-            <span style="font-size:20px;">✉️</span> Gmail
-          </a>
-          <button id="share-copy-btn" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #e8e8e8;border-radius:10px;background:#fff;cursor:pointer;color:#1a1a1a;font-weight:600;font-family:inherit;margin-bottom:10px;">
-            <span style="font-size:20px;">🔗</span> ${copyLabel}
-          </button>
-          ${extraBlock}
-        </div>`;
-      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-      document.body.appendChild(overlay);
-
-      const copyBtn = document.getElementById('share-copy-btn');
-      copyBtn.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(url);
-          copyBtn.innerHTML = '<span style="font-size:20px;">✅</span> Lien copié !';
-        } catch (e) {
-          confPrompt('Copiez le lien ci-dessous :', { defaultValue: url, icon: 'info', title: 'Lien', confirmText: 'Fermer' });
-        }
-      });
-
-      if (isInvite) {
-        // Retour au menu image.
-        var backBtn = document.getElementById('share-back-btn');
-        if (backBtn) backBtn.addEventListener('click', function () { openShareMenu(window.__lastImageUrl || url, "Découvrez mon design personnalisé :", 'image'); });
-      } else {
-        // Mémorise l'URL image pour le retour, et branche le bouton Inviter.
-        window.__lastImageUrl = url;
-        var inviteBtn = document.getElementById('share-invite-btn');
-        inviteBtn.addEventListener('click', async () => {
-          var orig = inviteBtn.innerHTML;
-          inviteBtn.disabled = true;
-          inviteBtn.innerHTML = '<span style="font-size:20px;">⏳</span> Génération du lien…';
-          try {
-            var inviteUrl = await createInviteLink();
-            // Rouvre le menu en mode INVITE : WhatsApp/Gmail/Copier -> lien d'invitation.
-            openShareMenu(inviteUrl, "Personnalisez ce design avec moi :", 'invite');
-          } catch (err) {
-            inviteBtn.disabled = false;
-            inviteBtn.innerHTML = orig;
-            confAlert('Impossible de générer le lien d\'invitation.\n' + (err && err.message ? err.message : err), { icon: 'error', title: 'Invitation' });
-          }
-        });
-      }
-    }
+    /* openShareMenu : extrait dans assets/conf-share.js (limite 256 Ko).
+       Exposé sur window par ce fichier. */
 
     /* Capture l'état complet du design courant (produit, couleur, uploads) et le
        sauvegarde côté serveur. Renvoie l'URL d'invitation (?design=<id>) que
@@ -4056,7 +4080,7 @@
             <img src="${item.img}" alt="${item.name}">
           </div>
           <div class="cd-info">
-            <div class="cd-name">${item.name}</div>
+            <div class="cd-name">${item.name}${item.personName ? ' — ' + item.personName : ''}</div>
             <div class="cd-meta">${item.color}${item.size ? ' · ' + item.size : ''}</div>
             <div class="cd-price">${(item.price * item.qty).toFixed(2).replace('.',',')} €</div>
             <div class="cd-qty">
@@ -4326,7 +4350,7 @@
           // Persister ce design pour le retrouver après un rechargement
           saveUpload(zone, src);
           // Applique l'image dans l'interface (affichage instantané via data URL)
-          applyUpload(zone, src);
+          window.applyUpload(zone, src);
 
           // Upload sur une manche : on pivote vers elle pour que le client
           // voie ce qu'il vient de poser. (Uniquement à l'upload — pas à la
@@ -4415,7 +4439,7 @@
           // Sans ce drapeau, le « remplir la zone » de l'upload (différé)
           // écraserait la géométrie que le client avait ajustée.
           window.__restoringUploads = true;
-          applyUpload(zone, src);
+          window.applyUpload(zone, src);
           if (geo) applyUploadGeo(zone, geo);
           window.__restoringUploads = false;
         }
@@ -4451,227 +4475,8 @@
     }
 
     /* ── Application d'un design dans l'interface (partagé upload + restauration) ── */
-    function applyUpload(zone, src) {
-      {
-
-        // Si c'est un upload de coin
-        if (zone === 'c') {
-          // Preview dans la sidebar
-          const prev = document.getElementById('pc');
-          const img  = document.getElementById('ic');
-          const lbl  = document.getElementById('lc');
-          if (prev && img) { img.src = src; prev.style.display = 'block'; }
-          if (lbl) lbl.style.display = 'flex';
-          
-          // Afficher dans le canvas circulaire (logo déplaçable/redimensionnable)
-          const coinsCanvas = document.getElementById('coins-canvas');
-          const coinsPreviewImg = document.getElementById('coins-preview-img');
-          const patchLogo = document.getElementById('patch-logo');
-          if (coinsPreviewImg) coinsPreviewImg.src = src;
-          if (patchLogo) patchLogo.style.display = 'block';
-          if (coinsCanvas) {
-            coinsCanvas.classList.add('has-image');
-            // Masquer le placeholder
-            const ph = coinsCanvas.querySelector('.coins-placeholder');
-            if (ph) ph.style.display = 'none';
-          }
-          // Le visuel uploadé garde sa taille par défaut (70 %) : on le ramène
-          // dans la zone imprimable de la forme. Différé jusqu'au 'load' :
-          // la hauteur réelle — donc le ratio — n'est connue qu'ensuite.
-          if (typeof clampPatchLogo === 'function') {
-            setTimeout(function () { clampPatchLogo(true); }, 80);
-          }
-          if (coinsPreviewImg) {
-            coinsPreviewImg.addEventListener('load', function onceLoaded() {
-              coinsPreviewImg.removeEventListener('load', onceLoaded);
-              if (typeof clampPatchLogo === 'function') clampPatchLogo(true);
-              if (typeof updatePatchRecapThumb === 'function') updatePatchRecapThumb();
-            });
-          }
-          // Recap - miniature : image du patch (forme + couleur) + logo positionné.
-          updatePatchRecapThumb();
-
-          return;
-        }
-
-        // Si c'est un upload de coin métallique (recto / verso)
-        if (zone === 'coin-recto' || zone === 'coin-verso') {
-          const face = zone === 'coin-recto' ? 'recto' : 'verso';
-
-          // Logo déplaçable/redimensionnable sur la pièce
-          const logo = document.getElementById('coin-logo-' + face);
-          if (logo) {
-            const limg = logo.querySelector('img');
-            if (limg) limg.src = src;
-            logo.style.display = 'block';
-            // À l'upload, le visuel remplit toute la zone frappée et se centre.
-            // À la RESTAURATION, on se contente de le borner : sa géométrie
-            // sauvegardée doit être respectée. Le drapeau est capturé ici, car
-            // il est remis à false avant que les callbacks différés ne partent.
-            if (typeof clampCoinLogo === 'function') {
-              const fillZone = !window.__restoringUploads;
-              setTimeout(function () { clampCoinLogo(face, fillZone); }, 80);
-              if (limg) limg.addEventListener('load', function () { clampCoinLogo(face, fillZone); }, { once: true });
-            }
-            // Mode « découpé à la forme » déjà actif : le nouveau visuel doit
-            // être détouré, sinon la pièce prendrait la forme de son rectangle.
-            const inDecoupe = document.querySelector('.coin-disc.shape-decoupe');
-            if (inDecoupe && !window.__restoringUploads &&
-                typeof window.applyDecoupeShape === 'function') {
-              setTimeout(function () { window.applyDecoupeShape(); }, 120);
-            }
-          }
-
-          // Afficher le logo recto aussi sur la vue de côté (aperçu)
-          if (face === 'recto') {
-            const coteLogo = document.getElementById('coin-cote-logo');
-            if (coteLogo) { coteLogo.src = src; coteLogo.style.display = 'block'; }
-          }
-
-          // Afficher le bouton Supprimer
-          const removeBtn = document.getElementById('coin-remove-' + face);
-          if (removeBtn) removeBtn.style.display = 'inline-block';
-
-          // Vignette du récap : recto composé (disque + logo), temps réel.
-          updateCoinRecapThumb();
-          return;
-        }
-
-        // Si c'est un upload de drapeau (recto / verso)
-        if (zone === 'flag-recto' || zone === 'flag-verso') {
-          const wrap = document.getElementById(zone);
-          if (wrap) {
-            // Masquer les placeholders (3D + 2D)
-            wrap.querySelectorAll('.flag-canvas-placeholder').forEach(ph => ph.style.display = 'none');
-            // Mettre l'image dans toutes les zones design (3D déplaçable + 2D codé)
-            wrap.querySelectorAll('.flag-design-img').forEach(img => { img.src = src; img.style.display = 'block'; });
-          }
-          // Afficher le logo déplaçable (vue 3D)
-          const face = zone === 'flag-recto' ? 'recto' : 'verso';
-          const dragLogo = document.getElementById('flag-logo-' + face);
-          if (dragLogo) dragLogo.style.display = 'block';
-          // Le visuel uploadé garde sa taille par défaut : on le ramène dans la
-          // zone imprimable (la contrainte du drag ne joue qu'au déplacement).
-          // Différé : l'image doit être décodée pour connaître sa hauteur réelle.
-          if (typeof clampFlagLogo === 'function') {
-            setTimeout(function () { clampFlagLogo(face); }, 80);
-            const fimg = dragLogo && dragLogo.querySelector('.flag-design-img');
-            if (fimg) fimg.addEventListener('load', function () { clampFlagLogo(face); }, { once: true });
-          }
-
-          // Afficher le bouton Supprimer
-          const flagRemoveBtn = document.getElementById('flag-remove-' + face);
-          if (flagRemoveBtn) flagRemoveBtn.style.display = 'inline-block';
-          // Miniature du récap (recto uniquement) : drapeau + logo positionné.
-          if (zone === 'flag-recto') {
-            updateFlagRecapThumb();
-          }
-          return;
-        }
-
-        // FACE : logo cœur et texte sont exclusifs. Ajouter un logo retire le texte.
-        if (zone === 'f' || zone === 'fr') {
-          if (typeof removeText === 'function') removeText(zone);
-          if (typeof setTextEnabled === 'function') setTextEnabled(zone, false);
-        }
-
-        // Sidebar preview (textiles)
-        const prev = document.getElementById('p' + zone);
-        const img  = document.getElementById('i' + zone);
-        const lbl  = document.getElementById('l' + zone);
-        if (prev && img) { img.src = src; prev.style.display = 'block'; }
-        if (lbl)          lbl.style.display = 'flex';
-
-        // SVG overlay
-        const ov = document.getElementById('ov-' + zone);
-        if (ov) { ov.setAttribute('href', src); ov.style.display = 'block'; }
-
-        // Logos manches déplaçables. Chaque manche a désormais SA vue : le
-        // profil est le même retourné en miroir, et [data-side] n'affiche que
-        // le côté courant. La manche droite n'était pas rendue du tout
-        // auparavant — un upload dessus restait invisible.
-        if (zone === 'sl' || zone === 'sr') {
-          const logo = document.getElementById('logo-' + zone);
-          if (logo) {
-            const limg = logo.querySelector('img');
-            if (limg) limg.src = src;
-            logo.style.display = 'block';
-          }
-          // Le logo "-face" conserve l'asset (compat récap/export) mais reste
-          // masqué : les manches ne s'affichent plus en vue de face.
-          const logoFace = document.getElementById('logo-' + zone + '-face');
-          if (logoFace) {
-            const limg2 = logoFace.querySelector('img');
-            if (limg2) limg2.src = src;
-            logoFace.style.display = 'none';
-          }
-          const rcS = document.getElementById('rc-sleeves');
-          if (rcS) rcS.style.display = 'flex';
-          if (typeof updateSleeveSurcharge === 'function') updateSleeveSurcharge();
-
-          // Placement auto dans la zone de la manche concernée.
-          placeLogoInZone(zone);
-
-          // La rotation vers la bonne manche est déclenchée par doUpload
-          // (showSleeve), qui passe en vue de côté puis pivote. On ne bascule
-          // pas ici : applyUpload sert aussi à la RESTAURATION au rechargement,
-          // et le vêtement se mettrait à tourner tout seul.
-        }
-
-        // Logos poitrine déplaçables (vue de face) + bascule auto vers la face.
-        // 'f' = cœur (gauche du porteur), 'fr' = poitrine droite : même
-        // traitement, seul l'id du calque change.
-        if (zone === 'f' || zone === 'fr') {
-          const logo = document.getElementById('logo-' + zone);
-          if (logo) {
-            const limg = logo.querySelector('img');
-            if (limg) {
-              limg.src = src;
-              // Placement auto dans la zone dès que l'image est chargée (ratio connu).
-              limg.onload = function () { placeLogoInZone(zone); };
-            }
-            logo.style.display = 'block';
-          }
-          placeLogoInZone(zone);
-          // Aperçu temps réel dans la vignette récap
-          updateRecapThumbLogo();
-          // Basculer vers la vue de face pour positionner le logo
-          const faceBtn = document.querySelector('.vt[onclick*="face"]');
-          if (faceBtn && typeof selView === 'function') {
-            selView(faceBtn, 'face');
-          }
-        }
-
-        // Logo dos déplaçable sur le produit + bascule automatique vers la vue de dos
-        if (zone === 'b') {
-          const logo = document.getElementById('logo-b');
-          if (logo) {
-            const limg = logo.querySelector('img');
-            if (limg) {
-              limg.src = src;
-              limg.onload = function () { placeLogoInZone('b'); };
-            }
-            logo.style.display = 'block';
-          }
-          placeLogoInZone('b');
-          // Basculer vers la vue de dos pour que le client positionne le logo
-          const dosBtn = document.querySelector('.vt[onclick*="dos"]');
-          if (dosBtn && typeof selView === 'function') {
-            selView(dosBtn, 'dos');
-          }
-        }
-
-        // Recap rows
-        if (zone === 'f') {
-          document.getElementById('rc-img-f').src = src;
-          document.getElementById('rc-front').style.display = 'flex';
-        }
-        if (zone === 'b') {
-          document.getElementById('rc-img-b').src = src;
-          document.getElementById('rc-back').style.display = 'flex';
-        }
-      }
-    }
+    /* applyUpload() vit desormais dans assets/conf-share.js (limite Shopify
+       de 256 Ko par template). Appelee via window.applyUpload. */
 
     function rmUp(zone) {
       // Retirer de la persistance
@@ -4770,15 +4575,26 @@
        - le passage de la zone pointillée en mode HORIZONTAL pour le texte,
        - le clamp du texte DANS sa zone. */
 
-    // Active/désactive la zone d'upload logo cœur (exclusivité face).
+    // Grise la zone d'upload d'un côté quand un TEXTE l'occupe déjà : la zone
+    // poitrine est unifiée, on interdit donc logo + texte du même côté.
+    //   f  (cœur/gauche)   -> upload uz-f
+    //   fr (poitrine droite) -> upload uz-fr
     function setUploadEnabled(zone, enabled) {
-      if (zone !== 'f') return;
-      var uz = document.getElementById('uz-f');
+      if (zone !== 'f' && zone !== 'fr') return;
+      var uz = document.getElementById('uz-' + zone);
       if (!uz) return;
       uz.style.pointerEvents = enabled ? '' : 'none';
       uz.style.opacity = enabled ? '' : '0.4';
+      uz.title = enabled ? '' : 'Retirez le texte de ce côté pour ajouter un logo';
     }
     function setTextEnabled(zone, enabled) { refreshTextButton(); }
+    /* Exposées pour conf-share.js, qui héberge applyUpload (limite 256 Ko). */
+    window.setTextEnabled = setTextEnabled;
+    window.placeLogoInZone = placeLogoInZone;
+    window.updateRecapThumbLogo = updateRecapThumbLogo;
+    window.updateFlagRecapThumb = updateFlagRecapThumb;
+    window.updatePatchRecapThumb = updatePatchRecapThumb;
+    window.updateCoinRecapThumb = updateCoinRecapThumb;
 
     /* Active/désactive le bouton « Ajouter un texte » selon la vue courante.
        Le bouton vit dans #txt-add-btns (un seul bouton + sélecteur
@@ -4962,7 +4778,13 @@
       get 'b'()  { return textZone('b'); }
     };
     function setTextZoneMode(zone, on) {
-      var zid = (zone === 'f' || zone === 'fr' || zone === 'b') ? ('zone-' + zone) : null;
+      // Un texte sur un côté (f/fr) grise l'upload logo de CE côté : zone
+      // poitrine unifiée -> pas de logo + texte au même endroit.
+      if (zone === 'f' || zone === 'fr') setUploadEnabled(zone, !on);
+
+      // Le devant partage une seule zone guide (zone-chest) ; le dos a zone-b.
+      var zid = (zone === 'f' || zone === 'fr') ? 'zone-chest'
+              : (zone === 'b') ? 'zone-b' : null;
       if (!zid) return;
       var zoneEl = document.getElementById(zid);
       if (!zoneEl) return;
@@ -5363,11 +5185,6 @@
     }
 
     /* ── Contact for custom (PVC/Tissé) ── */
-    function contactForCustom() {
-      confAlert('Email : contact@customtextile.com\nTél : +33 1 23 45 67 89',
-                { icon: 'info', title: 'Commande PVC ou Tissé' });
-    }
-
     /* ── Init : charge les images de la couleur par défaut au démarrage ── */
     document.addEventListener('DOMContentLoaded', () => {
       updateProductImages();
