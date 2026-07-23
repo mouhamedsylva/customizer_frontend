@@ -3105,6 +3105,38 @@
                        subtitle: 'Recevez un devis pour votre patch en ' + style + '.' });
     }
 
+    /* Devis depuis le PANIER : déclenché quand les patchs atteignent ≥ 100
+       pièces (prix « sur demande »). Agrège les lignes patch du panier
+       (productType='coins', nommage interne inversé) et ouvre le modal de devis.
+       Réutilise openQuoteModal, comme requestPatchQuote. */
+    function requestPatchQuoteFromCart() {
+      var patchs = cartItems.filter(function (i) { return i.productType === 'coins'; });
+      if (!patchs.length) { goToRecap(); return; }
+      var totalQty = patchs.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
+
+      // Une ligne de détail par patch du panier.
+      var details = patchs.map(function (i) {
+        return (i.qty || 1) + '× ' + (i.name || 'Patch') +
+               (i.size ? ' — ' + i.size : '') + (i.color ? ' — ' + i.color : '');
+      });
+      details.unshift('Total : ' + totalQty + ' patchs (prix sur demande au-delà de 100)');
+
+      // Aperçus : vignettes des patchs du panier (URLs http hébergées).
+      var previews = patchs.filter(function (i) {
+        return typeof i.img === 'string' && /^https?:\/\//i.test(i.img);
+      }).map(function (i, idx) {
+        return { label: 'Patch ' + (idx + 1), base: i.img };
+      });
+
+      openQuoteModal({
+        name: 'Commande de patchs (' + totalQty + ' pièces)',
+        subtitle: 'Recevez un devis pour votre commande de ' + totalQty + ' patchs.',
+        details: details,
+        qty: totalQty,
+        previews: previews
+      });
+    }
+
     // Ouvre le formulaire de devis PVC / Tissé pour le patch (bouton contact).
     function contactPatchStyle() {
       confConfirm('Souhaitez-vous un patch en PVC ou en Tissé ? Choisissez une option pour recevoir un devis.', {
@@ -4112,6 +4144,28 @@
       const totalCount = cartItems.reduce((s, i) => s + i.qty, 0);
       countEl.textContent = totalCount + ' article' + (totalCount > 1 ? 's' : '');
       totalEl.textContent = total.toFixed(2).replace('.',',') + ' €';
+
+      // Seuil PATCHS (productType='coins', nommage interne inversé) : à partir de
+      // 100 pièces, le prix passe « sur demande » -> le bouton « Continuer » du
+      // drawer devient « Faire une demande de devis » (le tarif est chiffré à la
+      // main au-delà de 100). totalsByType est calculé plus haut.
+      updateDrawerCheckoutBtn((totalsByType['coins'] || 0) >= 100);
+    }
+
+    /* Bascule le bouton de bas de drawer : checkout normal vs demande de devis
+       (déclenché par un seuil de quantité, ex. patchs ≥ 100). */
+    function updateDrawerCheckoutBtn(isQuote) {
+      var btn = document.getElementById('cd-checkout-btn');
+      if (!btn) return;
+      if (isQuote) {
+        btn.setAttribute('onclick', 'requestPatchQuoteFromCart()');
+        btn.innerHTML = 'Faire une demande de devis' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+      } else {
+        btn.setAttribute('onclick', 'goToRecap()');
+        btn.innerHTML = 'Continuer' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>';
+      }
     }
 
     // Persiste l'état courant du panier pour qu'il survive à un rechargement.
@@ -5187,17 +5241,10 @@
       let pricePerUnit = (typeof window.tierUnitPrice === 'function')
         ? window.tierUnitPrice('patches', q) : null;
       if (pricePerUnit == null) pricePerUnit = window.prixUnitaire('patches');
-      const totalHT = pricePerUnit * q;
-      const totalTTC = totalHT * 1.20; // TVA 20%
-
       const unitEl = document.getElementById('coins-unit-price');
       if (unitEl) unitEl.innerHTML = window.formatPrix(pricePerUnit) + ' <span class="rp-unit-ht">HT</span>';
       const qtyDisplay = document.getElementById('coins-qty-display');
       if (qtyDisplay) qtyDisplay.textContent = `à partir de (${q} unités)`;
-      const totalPrice = document.getElementById('coins-total-price');
-      if (totalPrice) totalPrice.textContent = totalHT.toFixed(2).replace('.', ',') + ' €';
-      const totalTtc = document.getElementById('coins-total-ttc');
-      if (totalTtc) totalTtc.textContent = totalTTC.toFixed(2).replace('.', ',') + ' € TTC';
     }
 
     /* ── Contact for custom (PVC/Tissé) ── */
@@ -5323,7 +5370,7 @@
         <span class="cd-subtotal-val" id="cd-total">0,00 €</span>
       </div>
       <p class="cd-tax-note">Taxes incluses. Livraison calculée à l'étape suivante.</p>
-      <button class="cd-checkout" onclick="goToRecap()">
+      <button class="cd-checkout" id="cd-checkout-btn" onclick="goToRecap()">
         Continuer
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
       </button>

@@ -513,20 +513,14 @@ class DynamicLayoutManager {
       </div>
       
       <div class="rp-section">
-        <div class="rp-unit-title">PRIX UNITAIRE</div>
-        <!-- Prix défini par l'admin : injecté par window.prixUnitaire('patches'). -->
-        <div class="rp-unit-price-big" id="coins-unit-price">${window.formatPrix ? window.formatPrix(window.prixUnitaire('patches')) : '2,45 €'} <span class="rp-unit-ht">HT</span></div>
+        <div class="rp-unit-title">PRIX</div>
+        <!-- Prix unitaire DÉGRESSIF selon la quantité (grille patchs) : injecté
+             par updateCoinPrice() dans #coins-unit-price. Pas de prix total
+             affiché, comme pour les textiles. -->
+        <div class="rp-unit-price-big" id="coins-unit-price">${(window.tierUnitPrice && window.formatPrix) ? window.formatPrix(window.tierUnitPrice('patches', 10)) : '20,00 €'} <span class="rp-unit-ht">HT</span></div>
+        <div class="rp-total-subtitle" id="coins-qty-display">à partir de (10 unités)</div>
       </div>
 
-      <div class="rp-section rp-total-section">
-        <div class="rp-total-title">PRIX TOTAL</div>
-        <div class="rp-total-subtitle" id="coins-qty-display">à partir de (20 unités)</div>
-        <div class="rp-total-price-line">
-          <span class="rp-total-price" id="coins-total-price">49,00 €</span> 
-          <span class="rp-total-ht" id="coins-total-ht">HT</span>
-        </div>
-      </div>
-      
       <div class="rp-actions-coins">
         <button class="rp-btn-primary" onclick="addCustomToCart(this)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
@@ -976,9 +970,12 @@ class DynamicLayoutManager {
       </div>
 
       <div class="rp-actions-coins">
-        <button class="rp-btn-primary" onclick="requestCoinQuote(this)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
-          FAIRE UNE DEMANDE DE DEVIS
+        <!-- COINS (productType='patches') : ajout au panier direct, comme les
+             autres produits. Au-delà d'un seuil, le drawer bascule sur une
+             demande de devis (voir logique du panier). -->
+        <button class="rp-btn-primary" onclick="addCustomToCart(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM2.73 5.15L4 12h12.55c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21 3H5.21l-.94-2H1v2h2l3.6 7.59z"/></svg>
+          AJOUTER AU PANIER
         </button>
         <button class="rp-btn-secondary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
@@ -1216,20 +1213,12 @@ function updateCoinPrice(qty) {
   if (unitPrice == null) {
     unitPrice = window.prixUnitaire ? window.prixUnitaire('patches') : 2.45;
   }
-  const totalHT = (q * unitPrice).toFixed(2);
-  const totalTTC = (totalHT * 1.20).toFixed(2);
-
-  // Mise à jour de l'affichage.
+  // Affichage : prix UNITAIRE du palier atteint + rappel de quantité.
+  // Pas de prix total (retiré, comme pour les textiles).
   const unitEl = document.getElementById('coins-unit-price');
-  const totalPriceEl = document.getElementById('coins-total-price');
-  const totalTTCEl = document.getElementById('coins-total-ttc');
   const qtyDisplayEl = document.getElementById('coins-qty-display');
-
-  // Prix unitaire = celui du palier atteint (et non le prix de base figé).
   if (unitEl) unitEl.innerHTML = (window.formatPrix ? window.formatPrix(unitPrice)
       : unitPrice.toFixed(2).replace('.', ',') + ' €') + ' <span class="rp-unit-ht">HT</span>';
-  if (totalPriceEl) totalPriceEl.textContent = totalHT.replace('.', ',') + ' €';
-  if (totalTTCEl) totalTTCEl.textContent = totalTTC.replace('.', ',') + ' € TTC';
   if (qtyDisplayEl) qtyDisplayEl.textContent = `à partir de (${q} unités)`;
 }
 
