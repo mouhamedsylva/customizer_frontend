@@ -268,6 +268,9 @@
     <script src="{{ 'conf-dynamic-layout.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-drapeaux.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-patches.js' | asset_url }}" defer></script>
+    <!-- Devis panier (patchs ≥100 / multi-produits ≥3 familles). Déporté ici
+         pour alléger le template ; lit window.getCartItems exposé plus bas. -->
+    <script src="{{ 'conf-cart-quote.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-logo-drag.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-sleeve-side.js' | asset_url }}" defer></script>
     <script src="{{ 'conf-api.js' | asset_url }}" defer></script>
@@ -3111,39 +3114,9 @@
                        subtitle: 'Recevez un devis pour votre patch en ' + style + '.' });
     }
 
-    /* Devis depuis le PANIER : déclenché quand les patchs atteignent ≥ 100
-       pièces (prix « sur demande »). Agrège les lignes patch du panier
-       (productType='coins', nommage interne inversé) et ouvre le modal de devis.
-       Réutilise openQuoteModal, comme requestPatchQuote. */
-    function requestPatchQuoteFromCart() {
-      // Cible les patchs par leur nom (« Patch… »), cohérent avec le seuil du
-      // drawer — robuste au nommage interne inversé.
-      var patchs = cartItems.filter(function (i) { return /patch/i.test(i.name || ''); });
-      if (!patchs.length) { goToRecap(); return; }
-      var totalQty = patchs.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
-
-      // Une ligne de détail par patch du panier.
-      var details = patchs.map(function (i) {
-        return (i.qty || 1) + '× ' + (i.name || 'Patch') +
-               (i.size ? ' — ' + i.size : '') + (i.color ? ' — ' + i.color : '');
-      });
-      details.unshift('Total : ' + totalQty + ' patchs (prix sur demande au-delà de 100)');
-
-      // Aperçus : vignettes des patchs du panier (URLs http hébergées).
-      var previews = patchs.filter(function (i) {
-        return typeof i.img === 'string' && /^https?:\/\//i.test(i.img);
-      }).map(function (i, idx) {
-        return { label: 'Patch ' + (idx + 1), base: i.img };
-      });
-
-      openQuoteModal({
-        name: 'Commande de patchs (' + totalQty + ' pièces)',
-        subtitle: 'Recevez un devis pour votre commande de ' + totalQty + ' patchs.',
-        details: details,
-        qty: totalQty,
-        previews: previews
-      });
-    }
+    /* Devis depuis le panier (patchs ≥100 / multi-produits ≥3 familles) et
+       bascule du bouton de checkout : déportés dans conf-cart-quote.js. Ils
+       accèdent au panier via window.getCartItems (exposé plus bas). */
 
     // Ouvre le formulaire de devis PVC / Tissé pour le patch (bouton contact).
     function contactPatchStyle() {
@@ -4153,30 +4126,21 @@
       countEl.textContent = totalCount + ' article' + (totalCount > 1 ? 's' : '');
       totalEl.textContent = total.toFixed(2).replace('.',',') + ' €';
 
-      // Seuil PATCHS : à partir de 100 pièces, le prix passe « sur demande » ->
-      // le bouton « Continuer » du drawer devient « Faire une demande de devis ».
-      // On cible les PATCHS par leur nom (« Patch… »), pas par productType : le
-      // nommage interne est inversé et un coin réel ne doit PAS déclencher ce
-      // seuil. Le nom vient du récap Shopify (« Patch personnalisé »).
-      var patchQty = cartItems.reduce(function (s, i) {
-        return s + (/patch/i.test(i.name || '') ? (i.qty || 0) : 0);
-      }, 0);
-      updateDrawerCheckoutBtn(patchQty >= 100);
+      // Bascule « Continuer » <-> « Faire une demande de devis » (coin présent,
+      // patchs ≥100, ou ≥3 familles). Logique déportée dans conf-cart-quote.js.
+      refreshDrawerCheckoutBtn();
     }
 
-    /* Bascule le bouton de bas de drawer : checkout normal vs demande de devis
-       (déclenché par un seuil de quantité, ex. patchs ≥ 100). */
-    function updateDrawerCheckoutBtn(isQuote) {
-      var btn = document.getElementById('cd-checkout-btn');
-      if (!btn) return;
-      if (isQuote) {
-        btn.setAttribute('onclick', 'requestPatchQuoteFromCart()');
-        btn.innerHTML = 'Faire une demande de devis' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
-      } else {
-        btn.setAttribute('onclick', 'goToRecap()');
-        btn.innerHTML = 'Continuer' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>';
+    /* Met à jour le bouton bas de drawer selon l'état du panier. Robuste au
+       timing de chargement (asset en defer) : réessaie brièvement si l'asset
+       n'est pas encore prêt. */
+    function refreshDrawerCheckoutBtn(_retry) {
+      if (typeof window.updateDrawerCheckoutBtn === 'function' &&
+          typeof window.cartNeedsQuote === 'function') {
+        window.updateDrawerCheckoutBtn(window.cartNeedsQuote());
+      } else if (!_retry || _retry < 10) {
+        // asset conf-cart-quote.js pas encore chargé : on retente sous peu.
+        setTimeout(function () { refreshDrawerCheckoutBtn((_retry || 0) + 1); }, 100);
       }
     }
 
@@ -4219,6 +4183,9 @@
       document.getElementById('cart-drawer').classList.add('open');
       document.getElementById('cart-overlay').classList.add('open');
       document.body.style.overflow = 'hidden';
+      // Filet de sécurité : garantit le bon bouton (Continuer / Devis) à
+      // l'ouverture, même si le rendu initial a précédé le chargement de l'asset.
+      if (typeof refreshDrawerCheckoutBtn === 'function') refreshDrawerCheckoutBtn();
     }
 
     function closeCartDrawer() {
@@ -4239,6 +4206,13 @@
       } catch (e) {}
       window.location.href = '/pages/recapitulatif';
     }
+
+    /* Exposition pour conf-cart-quote.js (devis panier déporté). getCartItems
+       renvoie la référence vive de cartItems (réassigné via let). */
+    window.getCartItems = function () { return cartItems; };
+    window.openQuoteModal = openQuoteModal;
+    window.closeCartDrawer = closeCartDrawer;
+    window.goToRecap = goToRecap;
 
     // function scrollToCart() {
     //   // Scroll vers le récap ou simplement un feedback visuel
