@@ -9,6 +9,9 @@
     {{ 'conf-coins.css' | asset_url | stylesheet_tag }}
     {{ 'conf-drapeaux.css' | asset_url | stylesheet_tag }}
     {{ 'conf-patches.css' | asset_url | stylesheet_tag }}
+    <!-- Prix dégressif par quantité (QTY_TIERS + helpers). Chargé en SYNCHRONE
+         avant les scripts inline : ils utilisent window.QTY_TIERS dès le départ. -->
+    <script src="{{ 'conf-pricing-tiers.js' | asset_url }}"></script>
     <script>
       /* URL de base du backend NestJS (déployé sur Railway).
          Pilotée par le réglage de thème « API Endpoint » (settings.api_endpoint),
@@ -40,69 +43,10 @@
         return isNaN(v) ? 0 : v;
       };
 
-      /* ── Prix DÉGRESSIF par quantité, PAR PRODUIT (TTC) ──
-         Table { productType: [ {min, price}, … ] }, paliers du plus grand au
-         plus petit min. Seuls les produits listés sont dégressifs ; les autres
-         gardent leur prix unitaire fixe (window.PRICES). Le palier se calcule
-         sur le total de CE produit dans le panier (toutes lignes cumulées).
-         Sweatshirt : 1-4 → 60 €, 5-14 → 56,50 €, 15-39 → 53,90 €, 40+ → 52 €.
-         Coton / polyester / coins : à ajouter ici quand les grilles seront prêtes.
-
-         ┌─ PAIEMENT (à faire dans Shopify, PAS dans le code) ────────────────┐
-         │ Ceci est un AFFICHAGE. Le panier natif facture le prix du variant  │
-         │ (60 €). Pour que le CLIENT PAIE ce tableau, créer dans l'admin     │
-         │ Shopify 3 réductions automatiques « montant fixe par article »,   │
-         │ ciblées sur le produit Sweatshirt, condition sur la quantité :     │
-         │   quantité ≥ 5   → −3,50 € / article  (→ 56,50 €)                  │
-         │   quantité ≥ 15  → −6,10 € / article  (→ 53,90 €)                  │
-         │   quantité ≥ 40  → −8,00 € / article  (→ 52,00 €)                  │
-         │ Montant fixe (pas %) : le résultat tombe juste au centime.        │
-         │ Si ce tableau change ici, mettre à jour les remises en conséquence.│
-         └────────────────────────────────────────────────────────────────────┘ */
-      window.QTY_TIERS = {
-        sweatshirt: [
-          { min: 40, price: 52.00 },
-          { min: 15, price: 53.90 },
-          { min: 5,  price: 56.50 },
-          { min: 1,  price: 60.00 }
-        ],
-        // T-shirt coton ET polyester : même grille tarifaire.
-        // 1-4 → 29,50 €, 5-9 → 28,90 €, 10-19 → 26,50 €, 20-49 → 25,90 €, 50+ → 24,50 €.
-        tshirt: [
-          { min: 50, price: 24.50 },
-          { min: 20, price: 25.90 },
-          { min: 10, price: 26.50 },
-          { min: 5,  price: 28.90 },
-          { min: 1,  price: 29.50 }
-        ],
-        tshirt_polyester: [
-          { min: 50, price: 24.50 },
-          { min: 20, price: 25.90 },
-          { min: 10, price: 26.50 },
-          { min: 5,  price: 28.90 },
-          { min: 1,  price: 29.50 }
-        ]
-        // coins : à venir
-      };
-      /** Prix unitaire dégressif d'un produit pour une quantité totale.
-          Renvoie null si le produit n'a pas de grille (non dégressif). */
-      window.tierUnitPrice = function (productType, totalQty) {
-        var tiers = (window.QTY_TIERS || {})[productType];
-        if (!tiers || !tiers.length) return null;
-        var q = Math.max(0, parseInt(totalQty, 10) || 0);
-        for (var i = 0; i < tiers.length; i++) {
-          if (q >= tiers[i].min) return tiers[i].price;
-        }
-        return tiers[tiers.length - 1].price;
-      };
-      /** Prix unitaire effectif d'un article selon la quantité totale de son type.
-          @param totalsByType  { productType: quantité totale dans le panier }
-          Produit dégressif → prix du palier ; sinon → prix stocké de la ligne. */
-      window.effectiveUnitPrice = function (item, totalsByType) {
-        if (!item) return 0;
-        var tier = window.tierUnitPrice(item.productType, (totalsByType || {})[item.productType] || 0);
-        return tier != null ? tier : (Number(item.price) || 0);
-      };
+      /* Prix DÉGRESSIF par quantité (window.QTY_TIERS, tierUnitPrice,
+         effectiveUnitPrice, tierMinQty) : déporté dans l'asset partagé
+         conf-pricing-tiers.js (chargé plus bas), pour libérer de la marge
+         template et éviter la duplication avec recapitulatif.liquid. */
 
       /** Formate un prix à la française : 2.45 -> "2,45 €". */
       window.formatPrix = function (n) {
@@ -2584,6 +2528,12 @@
         restoreLogosForProduct(productType);
         // Restaurer les textes personnalisés de ce produit.
         if (typeof restoreTexts === 'function') restoreTexts();
+
+        // Recalcule le prix affiché pour le TEXTILE choisi : sans cela, le prix
+        // restait figé sur celui du produit affiché au chargement de la page
+        // (sweat 60 € gardé sur les t-shirts, ou inversement). Limité aux
+        // textiles : coins/drapeaux ont leur propre affichage de prix.
+        if (typeof updateTotalPrice === 'function') updateTotalPrice();
       }
     }
 
@@ -4145,9 +4095,7 @@
           <div class="cd-info">
             <div class="cd-name">${item.name}${item.personName ? ' — ' + item.personName : ''}</div>
             <div class="cd-meta">${item.color}${item.size ? ' · ' + item.size : ''}</div>
-            <div class="cd-price">${unit.toFixed(2).replace('.',',')} € <span class="cd-tier">/u${
-              item.qty > 1 ? ' · total ' + (unit * item.qty).toFixed(2).replace('.',',') + ' €' : ''
-            }</span></div>
+            <div class="cd-price">${unit.toFixed(2).replace('.',',')} € <span class="cd-tier">/u</span></div>
             <div class="cd-qty">
               <button class="cd-qty-btn" onclick="changeCartQty(${item.id}, -1)">−</button>
               <span class="cd-qty-val">${item.qty}</span>
@@ -5231,31 +5179,25 @@
       updateCoinPrice(qty);
     }
 
+    /* NB : version de repli — la définition active est dans conf-dynamic-layout.js
+       (chargé après). Gardée alignée : prix unitaire HT DÉGRESSIF (grille patchs)
+       pour le produit réel PATCHS. */
     function updateCoinPrice(qty) {
-      // Prix défini par l'admin (dashboard) ; repli sur window.PRICES.
-      const pricePerUnit = window.prixUnitaire('patches');
-      const totalHT = pricePerUnit * qty;
+      const q = Math.max(0, parseInt(qty, 10) || 0);
+      let pricePerUnit = (typeof window.tierUnitPrice === 'function')
+        ? window.tierUnitPrice('patches', q) : null;
+      if (pricePerUnit == null) pricePerUnit = window.prixUnitaire('patches');
+      const totalHT = pricePerUnit * q;
       const totalTTC = totalHT * 1.20; // TVA 20%
-      
-      // Mettre à jour l'affichage de la quantité
+
+      const unitEl = document.getElementById('coins-unit-price');
+      if (unitEl) unitEl.innerHTML = window.formatPrix(pricePerUnit) + ' <span class="rp-unit-ht">HT</span>';
       const qtyDisplay = document.getElementById('coins-qty-display');
-      if (qtyDisplay) {
-        qtyDisplay.textContent = `à partir de (${qty} unités)`;
-      }
-      
-      // Mettre à jour le prix total HT
+      if (qtyDisplay) qtyDisplay.textContent = `à partir de (${q} unités)`;
       const totalPrice = document.getElementById('coins-total-price');
-      if (totalPrice) {
-        totalPrice.textContent = totalHT.toFixed(2) + ' €';
-      }
-      
-      // Mettre à jour le prix total TTC
+      if (totalPrice) totalPrice.textContent = totalHT.toFixed(2).replace('.', ',') + ' €';
       const totalTtc = document.getElementById('coins-total-ttc');
-      if (totalTtc) {
-        totalTtc.textContent = totalTTC.toFixed(2) + ' € TTC';
-      }
-      
-      console.log('Quantité:', qty, '| Prix total HT:', totalHT.toFixed(2), '€ | TTC:', totalTTC.toFixed(2), '€');
+      if (totalTtc) totalTtc.textContent = totalTTC.toFixed(2).replace('.', ',') + ' € TTC';
     }
 
     /* ── Contact for custom (PVC/Tissé) ── */

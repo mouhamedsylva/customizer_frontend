@@ -1204,19 +1204,33 @@ function handleQtyInput() {
 
 // Mise à jour du prix
 function updateCoinPrice(qty) {
-  // Prix défini par l'admin (window.PRICES, chargé depuis /api/pricing).
-  const unitPrice = window.prixUnitaire ? window.prixUnitaire('patches') : 2.45;
-  const totalHT = (qty * unitPrice).toFixed(2);
+  // NB : cette fonction sert le produit réel PATCHS (écran "Patch personnalisé",
+  // productType='coins' — nommage interne inversé). Prix unitaire HT DÉGRESSIF
+  // selon la quantité (grille patchs de window.QTY_TIERS), repli sur le prix
+  // admin fixe si l'asset des paliers n'a pas chargé.
+  const q = Math.max(0, parseInt(qty, 10) || 0);
+  let unitPrice = null;
+  if (typeof window.tierUnitPrice === 'function') {
+    unitPrice = window.tierUnitPrice('patches', q);   // prix HT du palier
+  }
+  if (unitPrice == null) {
+    unitPrice = window.prixUnitaire ? window.prixUnitaire('patches') : 2.45;
+  }
+  const totalHT = (q * unitPrice).toFixed(2);
   const totalTTC = (totalHT * 1.20).toFixed(2);
-  
-  // Mise à jour de l'affichage
+
+  // Mise à jour de l'affichage.
+  const unitEl = document.getElementById('coins-unit-price');
   const totalPriceEl = document.getElementById('coins-total-price');
   const totalTTCEl = document.getElementById('coins-total-ttc');
   const qtyDisplayEl = document.getElementById('coins-qty-display');
-  
+
+  // Prix unitaire = celui du palier atteint (et non le prix de base figé).
+  if (unitEl) unitEl.innerHTML = (window.formatPrix ? window.formatPrix(unitPrice)
+      : unitPrice.toFixed(2).replace('.', ',') + ' €') + ' <span class="rp-unit-ht">HT</span>';
   if (totalPriceEl) totalPriceEl.textContent = totalHT.replace('.', ',') + ' €';
   if (totalTTCEl) totalTTCEl.textContent = totalTTC.replace('.', ',') + ' € TTC';
-  if (qtyDisplayEl) qtyDisplayEl.textContent = `à partir de (${qty} unités)`;
+  if (qtyDisplayEl) qtyDisplayEl.textContent = `à partir de (${q} unités)`;
 }
 
 // Changement de vue (2D/3D)
