@@ -3116,7 +3116,9 @@
        (productType='coins', nommage interne inversé) et ouvre le modal de devis.
        Réutilise openQuoteModal, comme requestPatchQuote. */
     function requestPatchQuoteFromCart() {
-      var patchs = cartItems.filter(function (i) { return i.productType === 'coins'; });
+      // Cible les patchs par leur nom (« Patch… »), cohérent avec le seuil du
+      // drawer — robuste au nommage interne inversé.
+      var patchs = cartItems.filter(function (i) { return /patch/i.test(i.name || ''); });
       if (!patchs.length) { goToRecap(); return; }
       var totalQty = patchs.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
 
@@ -4151,11 +4153,15 @@
       countEl.textContent = totalCount + ' article' + (totalCount > 1 ? 's' : '');
       totalEl.textContent = total.toFixed(2).replace('.',',') + ' €';
 
-      // Seuil PATCHS (productType='coins', nommage interne inversé) : à partir de
-      // 100 pièces, le prix passe « sur demande » -> le bouton « Continuer » du
-      // drawer devient « Faire une demande de devis » (le tarif est chiffré à la
-      // main au-delà de 100). totalsByType est calculé plus haut.
-      updateDrawerCheckoutBtn((totalsByType['coins'] || 0) >= 100);
+      // Seuil PATCHS : à partir de 100 pièces, le prix passe « sur demande » ->
+      // le bouton « Continuer » du drawer devient « Faire une demande de devis ».
+      // On cible les PATCHS par leur nom (« Patch… »), pas par productType : le
+      // nommage interne est inversé et un coin réel ne doit PAS déclencher ce
+      // seuil. Le nom vient du récap Shopify (« Patch personnalisé »).
+      var patchQty = cartItems.reduce(function (s, i) {
+        return s + (/patch/i.test(i.name || '') ? (i.qty || 0) : 0);
+      }, 0);
+      updateDrawerCheckoutBtn(patchQty >= 100);
     }
 
     /* Bascule le bouton de bas de drawer : checkout normal vs demande de devis
