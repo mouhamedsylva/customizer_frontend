@@ -247,12 +247,16 @@
 <script>
   // Variants Shopify pour le panier natif (produits à prix fixe).
   // coins n'a pas de variant : il passe par une demande de devis.
+  /* Nommage interne INVERSÉ (voir configurateur.liquid) :
+       'coins'   = PATCHS codés  -> « Patch personnalisé » (47843295428771)
+       'patches' = COINS réels   -> « Coin métal personnalisé » (ID à câbler) */
   var CONF_VARIANTS = {
     sweatshirt:       47843224944803,
     tshirt:           47843225338019,
     tshirt_polyester: 47843228319907,
     drapeaux:         47843229270179,
-    patches:          47843295428771
+    coins:            47843295428771,  // « Patch personnalisé » (patchs codés)
+    patches:          47843220521123   // « Coin métal personnalisé » (coins réels)
   };
 
   // Variants par COULEUR (produits textiles avec option Couleur dans Shopify).
