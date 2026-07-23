@@ -29,7 +29,7 @@
          injoignable : l'affichage reste correct au lieu de tomber à 0.
          window.PRICES est renseigné dès la réponse, puis prixUnitaire() l'utilise. */
       window.PRICES = {
-        sweatshirt: 60, tshirt: 25, tshirt_polyester: 28,
+        sweatshirt: 60, tshirt: 29.50, tshirt_polyester: 29.50,
         coins: 2.45, drapeaux: 19.90, patches: 2.45
       };
 
@@ -47,17 +47,42 @@
          sur le total de CE produit dans le panier (toutes lignes cumulées).
          Sweatshirt : 1-4 → 60 €, 5-14 → 56,50 €, 15-39 → 53,90 €, 40+ → 52 €.
          Coton / polyester / coins : à ajouter ici quand les grilles seront prêtes.
-         NB : c'est un AFFICHAGE. Le paiement dégressif se règle via des
-         réductions automatiques Shopify (Admin → Réductions), le panier natif
-         facturant le prix du variant. */
+
+         ┌─ PAIEMENT (à faire dans Shopify, PAS dans le code) ────────────────┐
+         │ Ceci est un AFFICHAGE. Le panier natif facture le prix du variant  │
+         │ (60 €). Pour que le CLIENT PAIE ce tableau, créer dans l'admin     │
+         │ Shopify 3 réductions automatiques « montant fixe par article »,   │
+         │ ciblées sur le produit Sweatshirt, condition sur la quantité :     │
+         │   quantité ≥ 5   → −3,50 € / article  (→ 56,50 €)                  │
+         │   quantité ≥ 15  → −6,10 € / article  (→ 53,90 €)                  │
+         │   quantité ≥ 40  → −8,00 € / article  (→ 52,00 €)                  │
+         │ Montant fixe (pas %) : le résultat tombe juste au centime.        │
+         │ Si ce tableau change ici, mettre à jour les remises en conséquence.│
+         └────────────────────────────────────────────────────────────────────┘ */
       window.QTY_TIERS = {
         sweatshirt: [
           { min: 40, price: 52.00 },
           { min: 15, price: 53.90 },
           { min: 5,  price: 56.50 },
           { min: 1,  price: 60.00 }
+        ],
+        // T-shirt coton ET polyester : même grille tarifaire.
+        // 1-4 → 29,50 €, 5-9 → 28,90 €, 10-19 → 26,50 €, 20-49 → 25,90 €, 50+ → 24,50 €.
+        tshirt: [
+          { min: 50, price: 24.50 },
+          { min: 20, price: 25.90 },
+          { min: 10, price: 26.50 },
+          { min: 5,  price: 28.90 },
+          { min: 1,  price: 29.50 }
+        ],
+        tshirt_polyester: [
+          { min: 50, price: 24.50 },
+          { min: 20, price: 25.90 },
+          { min: 10, price: 26.50 },
+          { min: 5,  price: 28.90 },
+          { min: 1,  price: 29.50 }
         ]
-        // tshirt: [...], tshirt_polyester: [...], coins: [...]  (à venir)
+        // coins : à venir
       };
       /** Prix unitaire dégressif d'un produit pour une quantité totale.
           Renvoie null si le produit n'a pas de grille (non dégressif). */

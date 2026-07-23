@@ -406,8 +406,17 @@
       sweatshirt: [
         { min: 40, price: 52.00 }, { min: 15, price: 53.90 },
         { min: 5, price: 56.50 }, { min: 1, price: 60.00 }
+      ],
+      // T-shirt coton ET polyester : même grille.
+      tshirt: [
+        { min: 50, price: 24.50 }, { min: 20, price: 25.90 }, { min: 10, price: 26.50 },
+        { min: 5, price: 28.90 }, { min: 1, price: 29.50 }
+      ],
+      tshirt_polyester: [
+        { min: 50, price: 24.50 }, { min: 20, price: 25.90 }, { min: 10, price: 26.50 },
+        { min: 5, price: 28.90 }, { min: 1, price: 29.50 }
       ]
-      // tshirt: [...], tshirt_polyester: [...], coins: [...]  (à venir)
+      // coins : à venir
     };
     function tierUnitPrice(productType, totalQty) {
       var tiers = QTY_TIERS[productType];
